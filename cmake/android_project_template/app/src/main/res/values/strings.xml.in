@@ -1,0 +1,3 @@
+<resources>
+    <string name="app_name">@ANDROID_TARGET_NAME@</string>
+</resources>

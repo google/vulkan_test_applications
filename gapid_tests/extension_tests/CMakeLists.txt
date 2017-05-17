@@ -1,0 +1,1 @@
+add_subdirectory(VK_NV_dedicated_allocation_test)

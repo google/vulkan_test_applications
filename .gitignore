@@ -1,0 +1,14 @@
+build/
+build-*/
+build_*/
+
+# Vim swap
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+
+# Python compiled files
+*.pyc
+
+# VSCode config files
+.vscode/
+

@@ -1,0 +1,43 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "24.0.0"
+    defaultConfig {
+        applicationId "com.example.test.@ANDROID_TARGET_NAME@"
+        minSdkVersion 23
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++11"
+                arguments "-DFIXED_TIMESTEP=@FIXED_TIMESTEP@",
+                      "-DPREFER_SEPARATE_PRESENT=@PREFER_SEPARATE_PRESENT@"
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+    defaultConfig {
+        externalNativeBuild {
+            cmake {
+                targets "@ANDROID_TARGET_NAME@", "VkLayer_CallbackSwapchain"
+                abiFilters "@ANDROID_ABIS@"
+            }
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+}
