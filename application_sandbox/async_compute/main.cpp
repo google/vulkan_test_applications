@@ -188,12 +188,13 @@ class ASyncThreadRunner {
 
     srand(0);
     // Fill this SSBO with random initial positions.
-    containers::vector<simulation_data> fill_data(TOTAL_PARTICLES, allocator_);
+    containers::vector<simulation_data> fill_data(allocator_);
+    fill_data.resize(TOTAL_PARTICLES);
     for (auto& particle : fill_data) {
       float distance =
           static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
       float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-      angle = angle * 3.1415 * 2;
+      angle = angle * 3.1415f * 2.0f;
       float x = sin(angle);
       float y = cos(angle);
 
@@ -232,15 +233,16 @@ class ASyncThreadRunner {
           queue_family_indices                     // pQueueFamilyIndices
       };
 
-      data_.push_back(PrivateAsyncData{
-          vulkan::CreateFence(&app_->device()),
-          app_->CreateAndBindDeviceBuffer(&create_info),
-          app_->GetCommandBuffer(), app_->GetCommandBuffer(),
-          containers::make_unique<vulkan::DescriptorSet>(
-              allocator_, app_->AllocateDescriptorSet(
-                              {compute_descriptor_set_layouts_[0],
-                               compute_descriptor_set_layouts_[1],
-                               compute_descriptor_set_layouts_[2]}))});
+      data_.push_back(
+          PrivateAsyncData{vulkan::CreateFence(&app_->device()),
+                           app_->CreateAndBindDeviceBuffer(&create_info),
+                           app_->GetCommandBuffer(), app_->GetCommandBuffer(),
+                           containers::make_unique<vulkan::DescriptorSet>(
+                               allocator_,
+                               app_->AllocateDescriptorSet(
+                                   {compute_descriptor_set_layouts_[0],
+                                    compute_descriptor_set_layouts_[1],
+                                    compute_descriptor_set_layouts_[2]}))});
       auto& dat = data_.back();
       VkDescriptorBufferInfo buffer_infos[3] = {
           {
@@ -345,7 +347,7 @@ class ASyncThreadRunner {
           nullptr);
 
       command_buffer->vkEndCommandBuffer(command_buffer);
-      ready_buffers_.push_back(i);
+      ready_buffers_.push_back(static_cast<uint32_t>(i));
 
       // Wake command buffer
       auto& wake_command_buffer = dat.wake_command_buffer_;
@@ -521,7 +523,7 @@ class ASyncThreadRunner {
         simulation_count_ = 0;
       }
       simulation_count_++;
-      update_time_data_->data()[0] = current_frame++;
+      update_time_data_->data()[0] = static_cast<float>(current_frame++);
       update_time_data_->data()[1] = elapsed_time.count();
       if (current_frame >= TOTAL_PARTICLES) {
         current_frame = 0;
@@ -572,8 +574,9 @@ class ASyncThreadRunner {
     while (!returned_buffers_.empty()) {
       if (VK_SUCCESS !=
           app_->device()->vkGetFenceStatus(
-              app_->device(), data_[returned_buffers_.front()]
-                                  .return_fence_.get_raw_object())) {
+              app_->device(),
+              data_[returned_buffers_.front()]
+                  .return_fence_.get_raw_object())) {
         break;
       }
       app_->device()->vkResetFences(
@@ -808,11 +811,12 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
 
     frame_data->particle_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator, app()->AllocateDescriptorSet(
-                                       {particle_descriptor_set_layouts_[0],
-                                        particle_descriptor_set_layouts_[1],
-                                        particle_descriptor_set_layouts_[2],
-                                        particle_descriptor_set_layouts_[3]}));
+            data_->root_allocator,
+            app()->AllocateDescriptorSet(
+                {particle_descriptor_set_layouts_[0],
+                 particle_descriptor_set_layouts_[1],
+                 particle_descriptor_set_layouts_[2],
+                 particle_descriptor_set_layouts_[3]}));
 
     ::VkImageView raw_view = color_view(frame_data);
 
@@ -952,7 +956,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
     vulkan::VkCommandBuffer& cmdBuffer = (*data->command_buffer_);
 
     VkClearValue clear;
-    vulkan::ZeroMemory(&clear);
+    vulkan::MemoryClear(&clear);
     clear.color.float32[3] = 1.0f;
 
     if (swapped_buffer) {

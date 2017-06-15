@@ -66,7 +66,7 @@ class InstanceFunctions {
 #elif defined __linux__
         ,
         CONSTRUCT_LAZY_FUNCTION(vkCreateXcbSurfaceKHR)
-#elif defined __WIN32__
+#elif defined _WIN32
         ,
         CONSTRUCT_LAZY_FUNCTION(vkCreateWin32SurfaceKHR)
 #endif
@@ -110,7 +110,7 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkCreateAndroidSurfaceKHR);
 #elif defined __linux__
   LAZY_FUNCTION(vkCreateXcbSurfaceKHR);
-#elif defined __WIN32__
+#elif defined _WIN32
   LAZY_FUNCTION(vkCreateWin32SurfaceKHR);
 #endif
 #undef LAZY_FUNCTION

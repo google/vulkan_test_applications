@@ -39,8 +39,7 @@ namespace {
 struct Version {
   Version(const char* version_string)
       : major_val(0), minor_val(0), revision_val(0) {
-    sscanf(version_string, "%d.%d.%d", &major_val, &minor_val,
-                &revision_val);
+    sscanf(version_string, "%d.%d.%d", &major_val, &minor_val, &revision_val);
   }
   bool operator<=(const Version& other) {
     if (major_val > other.major_val) {

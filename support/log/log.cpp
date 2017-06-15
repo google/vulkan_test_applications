@@ -28,7 +28,7 @@ class InternalLogger : public Logger {
     __android_log_print(ANDROID_LOG_INFO, "VulkanTestApplication", "%s", str);
   }
 };
-#else
+#elif defined __linux__
 #include <cstdio>
 class InternalLogger : public Logger {
  public:
@@ -36,6 +36,33 @@ class InternalLogger : public Logger {
     fprintf(stderr, "error: %s", str);
   }
   void LogInfoString(const char* str) override { fprintf(stdout, "%s", str); }
+};
+#elif defined _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+class InternalLogger : public Logger {
+ public:
+  InternalLogger() { console_handle_ = GetStdHandle(STD_OUTPUT_HANDLE); }
+  void LogErrorString(const char* str) override {
+    SetConsoleTextAttribute(console_handle_,
+                            FOREGROUND_RED | FOREGROUND_INTENSITY);
+    DWORD written = 0;
+    WriteConsole(console_handle_,
+                 "error: ", static_cast<DWORD>(strlen("error: ")), &written,
+                 nullptr);
+    SetConsoleTextAttribute(
+        console_handle_, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+    WriteConsole(console_handle_, str, static_cast<DWORD>(strlen(str)),
+                 &written, nullptr);
+  }
+  void LogInfoString(const char* str) override {
+    DWORD written = 0;
+    WriteConsole(console_handle_, str, static_cast<DWORD>(strlen(str)),
+                 &written, nullptr);
+  }
+
+ private:
+  HANDLE console_handle_;
 };
 #endif
 

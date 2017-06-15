@@ -170,7 +170,9 @@ struct VulkanModel {
     (*cmdBuffer)
         ->vkCmdBindIndexBuffer(*cmdBuffer, *indexBuffer_, 0,
                                VK_INDEX_TYPE_UINT32);
-    (*cmdBuffer)->vkCmdDrawIndexed(*cmdBuffer, num_indices_, 1, 0, 0, 0);
+    (*cmdBuffer)
+        ->vkCmdDrawIndexed(*cmdBuffer, static_cast<uint32_t>(num_indices_), 1,
+                           0, 0, 0);
   }
 
   // Draws an instanced version of this model.
@@ -185,7 +187,8 @@ struct VulkanModel {
         ->vkCmdBindIndexBuffer(*cmdBuffer, *indexBuffer_, 0,
                                VK_INDEX_TYPE_UINT32);
     (*cmdBuffer)
-        ->vkCmdDrawIndexed(*cmdBuffer, num_indices_, instance_count, 0, 0, 0);
+        ->vkCmdDrawIndexed(*cmdBuffer, static_cast<uint32_t>(num_indices_),
+                           instance_count, 0, 0, 0);
   }
 
  private:

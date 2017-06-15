@@ -46,8 +46,9 @@ class BufferFrameData {
   BufferFrameData(VulkanApplication* application, size_t buffered_data_count,
                   VkBufferUsageFlags usage)
       : application_(application),
-        uninitialized_(true, buffered_data_count, application->GetAllocator()),
+        uninitialized_(application->GetAllocator()),
         update_commands_(application->GetAllocator()) {
+    uninitialized_.insert(uninitialized_.begin(), buffered_data_count, true);
     const size_t aligned_data_size =
         RoundUp(sizeof(set_value_), kMaxOffsetAlignment);
 

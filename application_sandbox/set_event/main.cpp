@@ -154,10 +154,10 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
         (float)app()->swapchain().width() / (float)app()->swapchain().height();
     camera_data->data().projection_matrix =
         Mat44::FromScaleVector(mathfu::Vector<float, 3>{1.0f, -1.0f, 1.0f}) *
-        Mat44::Perspective(1.5708, aspect, 0.1f, 100.0f);
+        Mat44::Perspective(1.5708f, aspect, 0.1f, 100.0f);
 
-    model_data->data().transform =
-        Mat44::FromTranslationVector(mathfu::Vector<float, 3>{0.0, 0.0, -3.0});
+    model_data->data().transform = Mat44::FromTranslationVector(
+        mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
   }
 
   virtual void InitializeFrameData(
@@ -174,10 +174,10 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
             sizeof(AlphaData), VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT);
     AlphaData* init_color_data = reinterpret_cast<AlphaData*>(
         frame_data->color_data_buffer_->base_address());
-    init_color_data->r = 0.33;
-    init_color_data->g = 0.67;
-    init_color_data->b = 1.0;
-    init_color_data->a = 0.0;
+    init_color_data->r = 0.33f;
+    init_color_data->g = 0.67f;
+    init_color_data->b = 1.0f;
+    init_color_data->a = 0.0f;
     frame_data->color_data_update_event_ =
         containers::make_unique<vulkan::VkEvent>(
             data_->root_allocator, vulkan::CreateEvent(&app()->device()));
@@ -216,11 +216,12 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
 
     frame_data->cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator, app()->AllocateDescriptorSet({
-                                       cube_descriptor_set_layouts_[0],
-                                       cube_descriptor_set_layouts_[1],
-                                       cube_descriptor_set_layouts_[2],
-                                   }));
+            data_->root_allocator,
+            app()->AllocateDescriptorSet({
+                cube_descriptor_set_layouts_[0],
+                cube_descriptor_set_layouts_[1],
+                cube_descriptor_set_layouts_[2],
+            }));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -293,7 +294,7 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
     vulkan::VkCommandBuffer& cmdBuffer = (*frame_data->command_buffer_);
 
     VkClearValue clear;
-    vulkan::ZeroMemory(&clear);
+    vulkan::MemoryClear(&clear);
 
     VkRenderPassBeginInfo pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
@@ -331,8 +332,8 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
     model_data->data().transform =
         model_data->data().transform *
         Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14 * time_since_last_render) *
-            Mat44::RotationY(3.14 * time_since_last_render * 0.5));
+            Mat44::RotationX(3.14f * time_since_last_render) *
+            Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       CubeFrameData* frame_data) override {
@@ -358,16 +359,17 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
     app()->render_queue()->vkQueueSubmit(app()->render_queue(), 1,
                                          &init_submit_info,
                                          static_cast<VkFence>(VK_NULL_HANDLE));
-    std::thread wait_idle([&](){
-      app()->render_queue()->vkQueueWaitIdle(app()->render_queue());});
+    std::thread wait_idle([&]() {
+      app()->render_queue()->vkQueueWaitIdle(app()->render_queue());
+    });
 
     AlphaData* color_data = reinterpret_cast<AlphaData*>(
         frame_data->color_data_buffer_->base_address());
-    auto wave_func = [](float* d, float a) { *d = *d > 2.0 ? 0.0 : *d + a; };
-    wave_func(&color_data->r, 0.02);
-    wave_func(&color_data->g, 0.04);
-    wave_func(&color_data->b, 0.08);
-    wave_func(&color_data->a, 0.1);
+    auto wave_func = [](float* d, float a) { *d = *d > 2.0f ? 0.0f : *d + a; };
+    wave_func(&color_data->r, 0.02f);
+    wave_func(&color_data->g, 0.04f);
+    wave_func(&color_data->b, 0.08f);
+    wave_func(&color_data->a, 0.1f);
     app()->device()->vkSetEvent(
         app()->device(),
         frame_data->color_data_update_event_->get_raw_object());

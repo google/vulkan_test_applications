@@ -140,10 +140,10 @@ class ClearColorImageSample : public sample_application::Sample<CubeFrameData> {
         (float)app()->swapchain().width() / (float)app()->swapchain().height();
     camera_data->data().projection_matrix =
         Mat44::FromScaleVector(mathfu::Vector<float, 3>{1.0f, -1.0f, 1.0f}) *
-        Mat44::Perspective(1.5708, aspect, 0.1f, 100.0f);
+        Mat44::Perspective(1.5708f, aspect, 0.1f, 100.0f);
 
-    model_data->data().transform =
-        Mat44::FromTranslationVector(mathfu::Vector<float, 3>{0.0, 0.0, -3.0});
+    model_data->data().transform = Mat44::FromTranslationVector(
+        mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
   }
 
   virtual void InitializeFrameData(
@@ -231,7 +231,7 @@ class ClearColorImageSample : public sample_application::Sample<CubeFrameData> {
         swapchain_image(frame_data), {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
         VK_IMAGE_LAYOUT_UNDEFINED, 0, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         VK_ACCESS_TRANSFER_WRITE_BIT, &cmdBuffer);
-    VkClearColorValue clear_color{0.8, 0.8, 1.0, 0.2};
+    VkClearColorValue clear_color{0.8f, 0.8f, 1.0f, 0.2f};
     VkImageSubresourceRange clear_range{
         VK_IMAGE_ASPECT_COLOR_BIT,  // aspectMask
         0,                          // baseMipLevel
@@ -269,8 +269,8 @@ class ClearColorImageSample : public sample_application::Sample<CubeFrameData> {
     model_data->data().transform =
         model_data->data().transform *
         Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14 * time_since_last_render) *
-            Mat44::RotationY(3.14 * time_since_last_render * 0.5));
+            Mat44::RotationX(3.14f * time_since_last_render) *
+            Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       CubeFrameData* frame_data) override {

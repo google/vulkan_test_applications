@@ -178,12 +178,14 @@ def main():
                 first_element = False
             f.write("}\n")
             f.write("};\n")
+            f.write("#ifndef _WIN32\n")
             f.write("static_assert(model.positions + " +
                     str(num_vertices * 3) + " == model.uv, " +
                     "\"Memory layout is not as expected\");\n")
             f.write("static_assert(model.uv + " +
                     str(num_vertices * 2) + " == model.normals, " +
                     "\"Memory layout is not as expected\");\n")
+            f.write("#endif\n")
     except IOError as err:
         print err
         return -1

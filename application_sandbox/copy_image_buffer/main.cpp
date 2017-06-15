@@ -148,10 +148,10 @@ class CopyImageBufferSample : public sample_application::Sample<CubeFrameData> {
         (float)app()->swapchain().width() / (float)app()->swapchain().height();
     camera_data->data().projection_matrix =
         Mat44::FromScaleVector(mathfu::Vector<float, 3>{1.0f, -1.0f, 1.0f}) *
-        Mat44::Perspective(1.5708, aspect, 0.1f, 100.0f);
+        Mat44::Perspective(1.5708f, aspect, 0.1f, 100.0f);
 
-    model_data->data().transform =
-        Mat44::FromTranslationVector(mathfu::Vector<float, 3>{0.0, 0.0, -3.0});
+    model_data->data().transform = Mat44::FromTranslationVector(
+        mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
   }
 
   virtual void InitializeFrameData(
@@ -460,8 +460,8 @@ class CopyImageBufferSample : public sample_application::Sample<CubeFrameData> {
     model_data->data().transform =
         model_data->data().transform *
         Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14 * time_since_last_render) *
-            Mat44::RotationY(3.14 * time_since_last_render * 0.5));
+            Mat44::RotationX(3.14f * time_since_last_render) *
+            Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       CubeFrameData* frame_data) override {

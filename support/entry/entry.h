@@ -23,20 +23,20 @@
 #include "support/containers/unique_ptr.h"
 #include "support/log/log.h"
 
-#if defined __linux__ || defined __ANDROID__
-
 #if defined __ANDROID__
-
 struct android_app;
 struct ANativeWindow;
-
-#else
-
+#elif defined __linux__
 #include <xcb/xcb.h>
-
+#elif defined _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#error Unsupported platform
 #endif
 
 namespace entry {
+#if defined __ANDROID__ || defined __linux__
 namespace internal {
 // Hack to make sure that this entry-point library gets linked in properly.
 void dummy_function();
@@ -47,10 +47,6 @@ struct dummy {
 }  // namespace internal
 
 static internal::dummy __attribute__((used)) test_dummy;
-#elif defined _WIN32
-typedef void* HANDLE;
-#else
-#error "Unsupported platform"
 #endif
 
 // If output_frame is > -1, then the given image frame will be written
@@ -68,7 +64,7 @@ struct entry_data {
   std::string os_version;
 #elif defined _WIN32
   HINSTANCE native_hinstance;
-  HANDLE native_window_handle;
+  HWND native_window_handle;
 #elif defined __linux__
   xcb_window_t native_window_handle;
   xcb_connection_t* native_connection;
