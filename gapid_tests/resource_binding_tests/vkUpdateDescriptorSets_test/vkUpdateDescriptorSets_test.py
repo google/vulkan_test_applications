@@ -277,6 +277,9 @@ class ZeroWritesTwoCopies(GapitTest):
         d_set0 = get_descriptor_set(self, 3)
         d_set1 = get_descriptor_set(self, 1)  # the next one after the previous
 
+        # The first call to vkUpdateDesriptorSets writes the descriptors.
+        require(self.next_call_of("vkUpdateDescriptorSets"))
+        # The second call to vkUpdateDescriptorSets copies the descriptors.
         update_atom = require(self.next_call_of("vkUpdateDescriptorSets"))
         require_equal(0, update_atom.descriptorWriteCount)
         require_equal(0, update_atom.pDescriptorWrites)

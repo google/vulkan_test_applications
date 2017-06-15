@@ -51,12 +51,15 @@ struct WireframeFrameData {
 class CopyQueryPoolResultSample
     : public sample_application::Sample<WireframeFrameData> {
  public:
-  CopyQueryPoolResultSample(const entry::entry_data* data)
+  CopyQueryPoolResultSample(
+      const entry::entry_data* data,
+      const VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
-        Sample<WireframeFrameData>(data->root_allocator, data, 1, 512, 1,
+        Sample<WireframeFrameData>(data->root_allocator, data, 1, 512, 1, 1,
                                    sample_application::SampleOptions()
                                        .EnableDepthBuffer()
-                                       .EnableMultisampling()),
+                                       .EnableMultisampling(),
+                                   requested_features),
         torus_(data->root_allocator, data->log.get(), torus_data),
         grey_scale_(0u),
         num_frames_(0u) {}
@@ -118,16 +121,12 @@ class CopyQueryPoolResultSample
         vulkan::kMaxOffsetAlignment * num_swapchain_images;
 
     VkBufferCreateInfo query_pool_results_buf_create_info{
-        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        nullptr,
-        0,
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, nullptr, 0,
         query_pool_result_buf_size,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0,
-        nullptr};
+        VK_SHARING_MODE_EXCLUSIVE, 0, nullptr};
     query_pool_results_buf_ =
         app()->CreateAndBindHostBuffer(&query_pool_results_buf_create_info);
     containers::vector<uint32_t> query_pool_init_values(
@@ -277,15 +276,26 @@ class CopyQueryPoolResultSample
 
     // Buffer memory barriers for the query/descriptor buffer.
     VkBufferMemoryBarrier to_store_query_results{
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,    // sType
+        nullptr,                                    // pNext
+        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,        // srcAccessMask
+        VK_ACCESS_TRANSFER_WRITE_BIT,               // dstAccessMask
+        VK_QUEUE_FAMILY_IGNORED,                    // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                    // dstQueueFamilyIndex
+        *query_pool_results_buf_,                   // buffer
+        vulkan::kMaxOffsetAlignment * frame_index,  // offset
+        vulkan::kMaxOffsetAlignment,                // size
+    };
+    VkBufferMemoryBarrier to_use_query_results{
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
         nullptr,                                  // pNext
-        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,      // srcAccessMask
-        VK_ACCESS_TRANSFER_WRITE_BIT,             // dstAccessMask
+        VK_ACCESS_TRANSFER_WRITE_BIT,      // srcAccessMask
+        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,             // dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,                  // srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                  // dstQueueFamilyIndex
         *query_pool_results_buf_,                 // buffer
-        0,                                        // offset
-        VK_WHOLE_SIZE,                            // size
+        vulkan::kMaxOffsetAlignment * frame_index,  // offset
+        vulkan::kMaxOffsetAlignment,                // size
     };
 
     // Populate the command buffer
@@ -394,12 +404,17 @@ class CopyQueryPoolResultSample
         cmdBuffer, *query_pool_, frame_index, 1, *query_pool_results_buf_,
         frame_index * vulkan::kMaxOffsetAlignment, sizeof(uint32_t),
         VK_QUERY_RESULT_WAIT_BIT);
+    cmdBuffer->vkCmdPipelineBarrier(
+        cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 1,
+        &to_use_query_results, 0, nullptr);
     cmdBuffer->vkCmdResetQueryPool(cmdBuffer, *query_pool_, frame_index, 1);
     cmdBuffer->vkCmdBeginQuery(cmdBuffer, *query_pool_, frame_index,
                                VkQueryControlFlagBits(0));
 
     cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);
+
 
     cmdBuffer->vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                  *torus_pipeline_);
@@ -417,6 +432,7 @@ class CopyQueryPoolResultSample
         cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1,
         &to_store_query_results, 0, nullptr);
+
 
     (*frame_data->command_buffer_)
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
@@ -479,7 +495,9 @@ class CopyQueryPoolResultSample
 
 int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
-  CopyQueryPoolResultSample sample(data);
+  VkPhysicalDeviceFeatures requested_features = {0};
+  requested_features.fillModeNonSolid = VK_TRUE;
+  CopyQueryPoolResultSample sample(data, requested_features);
   sample.Initialize();
 
   while (!sample.should_exit()) {
@@ -488,4 +506,5 @@ int main_entry(const entry::entry_data* data) {
   sample.WaitIdle();
 
   data->log->LogInfo("Application Shutdown");
+  return 0;
 }

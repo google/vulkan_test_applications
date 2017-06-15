@@ -42,15 +42,31 @@ int main_entry(const entry::entry_data* data) {
     render_queue->vkQueueSubmit(render_queue, 0, nullptr, fence);
 
     LOG_ASSERT(==, data->log.get(), VK_SUCCESS,
-               device->vkWaitForFences(device, 1, &fence, VK_FALSE, 10000));
+               device->vkWaitForFences(device, 1, &fence, VK_FALSE, 1000000));
     LOG_ASSERT(==, data->log.get(), VK_SUCCESS,
                device->vkResetFences(device, 1, &fence));
 
     device->vkDestroyFence(device, fence, nullptr);
   }
 
+  { // Get fence status
+    vulkan::VkFence fence = vulkan::CreateFence(&device, false);
+    LOG_ASSERT(==, data->log.get(), VK_NOT_READY, device->vkGetFenceStatus(device, fence));
+    render_queue->vkQueueSubmit(render_queue, 0, nullptr, fence);
+    render_queue->vkQueueWaitIdle(render_queue);
+    LOG_ASSERT(==, data->log.get(), VK_SUCCESS, device->vkGetFenceStatus(device, fence));
+    device->vkResetFences(device, 1, &fence.get_raw_object());
+    LOG_ASSERT(==, data->log.get(), VK_NOT_READY, device->vkGetFenceStatus(device, fence));
+
+    vulkan::VkFence fence_signaled = vulkan::CreateFence(&device, true);
+    LOG_ASSERT(==, data->log.get(), VK_SUCCESS, device->vkGetFenceStatus(device, fence_signaled));
+  }
+
   {  // Destroy empty fence
-    device->vkDestroyFence(device, (VkFence)VK_NULL_HANDLE, nullptr);
+    // Destroying a null fence handle crashes on Nvidia driver 375.66
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5dd08000)) {
+      device->vkDestroyFence(device, (VkFence)VK_NULL_HANDLE, nullptr);
+    }
   }
 
   data->log->LogInfo("Application Shutdown");

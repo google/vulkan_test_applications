@@ -5,6 +5,7 @@ command buffers.
 
 # Tests
 - [BeginAndEndCommandBuffer_test](BeginAndEndCommandBuffer_test/README.md)
+- [BeginAndEndQuery_test](BeginAndEndQuery_test/README.md)
 - [BeginAndEndRenderPass_test](BeginAndEndRenderPass_test/README.md)
 - [BufferImageCopy_test](BufferImageCopy_test/README.md)
 - [DispatchAndDispatchIndirect_test](DispatchAndDispatchIndirect_test/README.md)
@@ -21,12 +22,12 @@ command buffers.
 - [vkCmdClearColorImage_test](vkCmdClearColorImage_test/README.md)
 - [vkCmdClearDepthStencilImage_test](vkCmdClearDepthStencilImage_test/README.md)
 - [vkCmdCopyImage_test](vkCmdCopyImage_test/README.md)
-- [vkCmdQueryPoolResults_test](vkCmdCopyQueryPoolResults_test/README.md)
+- [vkCmdCopyQueryPoolResults_test](vkCmdCopyQueryPoolResults_test/README.md)
 - [vkCmdNextSubpass_test](vkCmdNextSubpass_test/README.md)
 - [vkCmdExecuteCommands_test](vkCmdExecuteCommands_test/README.md)
 - [vkCmdFillBuffer_test](vkCmdFillBuffer_test/README.md)
 - [vkCmdPushConstants_test](vkCmdPushConstants_test/README.md)
-- [vkCmdResolveImage_test](vkCmdResolveImage_test/README.md)
 - [vkCmdResetQueryPool_test](vkCmdResetQueryPool_test/README.md)
+- [vkCmdResolveImage_test](vkCmdResolveImage_test/README.md)
 - [vkCmdUpdateBuffer_test](vkCmdUpdateBuffer_test/README.md)
 - [vkQueuePresentKHR_test](vkQueuePresentKHR_test/README.md)

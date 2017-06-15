@@ -26,9 +26,26 @@ int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
 
   vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
-  vulkan::PipelineLayout pipeline_layout = app.CreatePipelineLayout({{}});
+  vulkan::VkDevice& device = app.device();
+  VkDescriptorSetLayoutBinding binding{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                                       VK_SHADER_STAGE_VERTEX_BIT, nullptr};
+  vulkan::VkDescriptorSetLayout descriptor_set_layout =
+      vulkan::CreateDescriptorSetLayout(data->root_allocator, &device,
+                                        {binding});
+
   // The size of the data must be a multiple of 4
   containers::vector<char> constants(100, 0xab, data->root_allocator);
+
+  VkPushConstantRange range{VK_SHADER_STAGE_VERTEX_BIT, 0,
+                            uint32_t(constants.size())};
+  VkPipelineLayoutCreateInfo pipeline_create_info{
+      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr, 0,     1,
+      &descriptor_set_layout.get_raw_object(),       1,       &range};
+  ::VkPipelineLayout raw_pipeline_layout;
+  device->vkCreatePipelineLayout(device, &pipeline_create_info, nullptr,
+                                 &raw_pipeline_layout);
+  vulkan::VkPipelineLayout pipeline_layout(raw_pipeline_layout, nullptr,
+                                           &device);
   {
     // 1. Offset of value 0, push to vertex stage.
     vulkan::VkCommandBuffer cmd_buf = app.GetCommandBuffer();

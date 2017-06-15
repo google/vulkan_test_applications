@@ -146,10 +146,9 @@ int main_entry(const entry::entry_data* data) {
         },
     };
     ::VkImageView raw_image_view;
-    LOG_EXPECT(==, data->log,
-               application.device()->vkCreateImageView(
-                   application.device(), &image_view_create_info, nullptr,
-                   &raw_image_view),
+    LOG_EXPECT(==, data->log, application.device()->vkCreateImageView(
+                                  application.device(), &image_view_create_info,
+                                  nullptr, &raw_image_view),
                VK_SUCCESS);
     vulkan::VkImageView image_view(raw_image_view, nullptr,
                                    &application.device());
@@ -181,11 +180,6 @@ int main_entry(const entry::entry_data* data) {
     };
     command_buffer->vkBeginCommandBuffer(command_buffer,
                                          &command_buffer_begin_info);
-    VkClearValue clear_value{};
-    clear_value.color.float32[0] = 0.2;
-    clear_value.color.float32[1] = 0.2;
-    clear_value.color.float32[2] = 0.2;
-    clear_value.color.float32[3] = 0.2;
     VkRenderPassBeginInfo render_pass_begin_info{
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
         nullptr,                                   // pNext
@@ -197,8 +191,8 @@ int main_entry(const entry::entry_data* data) {
             application.swapchain().width(),   // renderArea.extent.width
             application.swapchain().height(),  // renderArea.extent.height
         },
-        1,             // clearValueCount
-        &clear_value,  // pClearValues
+        0,        // clearValueCount
+        nullptr,  // pClearValues
     };
     command_buffer->vkCmdBeginRenderPass(
         command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);

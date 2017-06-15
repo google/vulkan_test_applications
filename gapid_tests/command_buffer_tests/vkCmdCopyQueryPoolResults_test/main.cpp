@@ -46,16 +46,16 @@ void QueryWithoutDrawingAnythingAndCopyResults(
       0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
   vulkan::VkRenderPass render_pass = app->CreateRenderPass(
       {{
-          0,                                         // flags
-          app->swapchain().format(),                 // format
-          VK_SAMPLE_COUNT_1_BIT,                     // samples
-          VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // loadOp
-          VK_ATTACHMENT_STORE_OP_STORE,              // storeOp
-          VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // stenilLoadOp
-          VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stenilStoreOp
-          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // initialLayout
-          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL   // finalLayout
-      }},                                            // AttachmentDescriptions
+          0,                                        // flags
+          app->swapchain().format(),                // format
+          VK_SAMPLE_COUNT_1_BIT,                    // samples
+          VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // loadOp
+          VK_ATTACHMENT_STORE_OP_STORE,             // storeOp
+          VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // stenilLoadOp
+          VK_ATTACHMENT_STORE_OP_DONT_CARE,         // stenilStoreOp
+          VK_IMAGE_LAYOUT_UNDEFINED,                // initialLayout
+          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  // finalLayout
+      }},                                           // AttachmentDescriptions
       {{
           0,                                // flags
           VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
@@ -287,11 +287,6 @@ void QueryWithoutDrawingAnythingAndCopyResults(
   };
   command_buffer->vkBeginCommandBuffer(command_buffer,
                                        &command_buffer_begin_info);
-  VkClearValue clear_value = {};
-  clear_value.color.float32[0] = 0.2;
-  clear_value.color.float32[1] = 0.2;
-  clear_value.color.float32[2] = 0.2;
-  clear_value.color.float32[3] = 0.2;
   VkRenderPassBeginInfo render_pass_begin_info{
       VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
       nullptr,                                   // pNext
@@ -303,8 +298,8 @@ void QueryWithoutDrawingAnythingAndCopyResults(
           {app->swapchain().width(),    // renderArea.extent.width
            app->swapchain().height()},  // renderArea.extent.height
       },
-      1,             // clearValueCount
-      &clear_value,  // pClearValues
+      0,        // clearValueCount
+      nullptr,  // pClearValues
   };
 
   command_buffer->vkCmdResetQueryPool(command_buffer, query_pool, 0, 2);
@@ -421,9 +416,11 @@ int main_entry(const entry::entry_data* data) {
 
     for (uint32_t i = 0; i < buffer_size; i++) {
       if (i < offset) {
-        LOG_ASSERT(==, data->log, result_buffer->base_address()[i], 0xFF);
+        LOG_ASSERT(==, data->log, uint8_t(result_buffer->base_address()[i]),
+                   0xFFU);
       } else {
-        LOG_ASSERT(==, data->log, result_buffer->base_address()[i], 0x0);
+        LOG_ASSERT(==, data->log, uint8_t(result_buffer->base_address()[i]),
+                   0x0U);
       }
     }
   }
@@ -452,7 +449,8 @@ int main_entry(const entry::entry_data* data) {
     result_buffer->invalidate();
 
     for (uint32_t i = 0; i < buffer_size; i++) {
-      LOG_ASSERT(==, data->log, result_buffer->base_address()[i], 0x0);
+      LOG_ASSERT(==, data->log, uint8_t(result_buffer->base_address()[i]),
+                 0x0U);
     }
   }
 
@@ -482,11 +480,11 @@ int main_entry(const entry::entry_data* data) {
     uint32_t* ptr = reinterpret_cast<uint32_t*>(result_buffer->base_address());
     for (uint32_t i = 0; i < buffer_size / sizeof(uint32_t); i++) {
       if (i % 3 == 0) {
-        LOG_ASSERT(==, data->log, ptr[i], 0x0);
+        LOG_ASSERT(==, data->log, ptr[i], 0x0U);
       } else if (i % 3 == 1) {
-        LOG_ASSERT(==, data->log, ptr[i], 0x1);
+        LOG_ASSERT(==, data->log, ptr[i], 0x1U);
       } else {
-        LOG_ASSERT(==, data->log, ptr[i], 0xFFFFFFFF);
+        LOG_ASSERT(==, data->log, ptr[i], 0xFFFFFFFFU);
       }
     }
   }

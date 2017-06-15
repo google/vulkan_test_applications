@@ -70,7 +70,7 @@ class ClearDepthImageSample
   ClearDepthImageSample(const entry::entry_data* data)
       : data_(data),
         Sample<CubeDepthFrameData>(
-            data->root_allocator, data, 1, 512, 1,
+            data->root_allocator, data, 1, 512, 1, 1,
             sample_application::SampleOptions().EnableDepthBuffer()),
         cube_(data->root_allocator, data->log.get(), cube_data),
         plane_(data->root_allocator, data->log.get(), plane_data) {}
@@ -410,12 +410,12 @@ class ClearDepthImageSample
                                     &sample_application::kBeginCommandBuffer);
 
     // // Call vkCmdClearDepthStencilImage to clear the depth image
-    vulkan::SetImageLayout(
+    vulkan::RecordImageLayoutTransition(
         depth_image(frame_data), {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1},
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-        &cmdBuffer, nullptr, {}, {}, VkFence(0), data_->root_allocator);
+        &cmdBuffer);
     VkClearDepthStencilValue clear_depth{
         0.93,  // depth
         1,     // stencil
@@ -430,12 +430,11 @@ class ClearDepthImageSample
     cmdBuffer->vkCmdClearDepthStencilImage(cmdBuffer, depth_image(frame_data),
                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                            &clear_depth, 1, &clear_range);
-    vulkan::SetImageLayout(
+    vulkan::RecordImageLayoutTransition(
         depth_image(frame_data), {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1},
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, &cmdBuffer, nullptr, {},
-        {}, VkFence(0), data_->root_allocator);
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, &cmdBuffer);
 
     // Render the cube
     VkClearValue clears[2];
@@ -467,13 +466,12 @@ class ClearDepthImageSample
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
 
     // Render the depth buffer
-    vulkan::SetImageLayout(depth_image(frame_data),
-                           {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1},
-                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                           VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-                           VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, &cmdBuffer,
-                           nullptr, {}, {}, VkFence(0), data_->root_allocator);
+    vulkan::RecordImageLayoutTransition(
+        depth_image(frame_data), {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1},
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, &cmdBuffer);
 
     pass_begin.renderPass = *depth_render_pass_;
     pass_begin.framebuffer = *frame_data->depth_render_framebuffer_;
@@ -488,14 +486,13 @@ class ClearDepthImageSample
     plane_.Draw(&cmdBuffer);
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
 
-    vulkan::SetImageLayout(
+    vulkan::RecordImageLayoutTransition(
         depth_image(frame_data), {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1},
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
             VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, &cmdBuffer, nullptr, {},
-        {}, VkFence(0), data_->root_allocator);
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, &cmdBuffer);
 
     (*frame_data->command_buffer_)
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
@@ -567,4 +564,5 @@ int main_entry(const entry::entry_data* data) {
   sample.WaitIdle();
 
   data->log->LogInfo("Application Shutdown");
+  return 0;
 }

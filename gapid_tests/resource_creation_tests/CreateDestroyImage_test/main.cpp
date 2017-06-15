@@ -58,7 +58,9 @@ int main_entry(const entry::entry_data* data) {
     device->vkCreateImage(device, &image_create_info, nullptr, &image);
     device->vkDestroyImage(device, image, nullptr);
 
-    device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5DD08000)) {
+      device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    }
   }
 
   {
@@ -89,7 +91,9 @@ int main_entry(const entry::entry_data* data) {
     device->vkCreateImage(device, &image_create_info, nullptr, &image);
     device->vkDestroyImage(device, image, nullptr);
 
-    device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5DD08000)) {
+      device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    }
   }
 
   {
@@ -120,7 +124,9 @@ int main_entry(const entry::entry_data* data) {
     ::VkImage image;
     device->vkCreateImage(device, &image_create_info, nullptr, &image);
     device->vkDestroyImage(device, image, nullptr);
-    device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5DD08000)) {
+      device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    }
   }
   {
     // 4. Test creating an image with linear tiling that can be used as the
@@ -151,7 +157,9 @@ int main_entry(const entry::entry_data* data) {
     ::VkImage image;
     device->vkCreateImage(device, &image_create_info, nullptr, &image);
     device->vkDestroyImage(device, image, nullptr);
-    device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5DD08000)) {
+      device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    }
   }
   {
     // 5. Test an image of 3D type with different extent values and
@@ -181,7 +189,9 @@ int main_entry(const entry::entry_data* data) {
     ::VkImage image;
     device->vkCreateImage(device, &image_create_info, nullptr, &image);
     device->vkDestroyImage(device, image, nullptr);
-    device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5DD08000)) {
+      device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    }
   }
   {
     // 6. Test creating an preinitialized image with multi-sample
@@ -210,7 +220,9 @@ int main_entry(const entry::entry_data* data) {
     ::VkImage image;
     device->vkCreateImage(device, &image_create_info, nullptr, &image);
     device->vkDestroyImage(device, image, nullptr);
-    device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5DD08000)) {
+      device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    }
   }
   {
     // 7. Test a 1D image
@@ -239,7 +251,9 @@ int main_entry(const entry::entry_data* data) {
     ::VkImage image;
     device->vkCreateImage(device, &image_create_info, nullptr, &image);
     device->vkDestroyImage(device, image, nullptr);
-    device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5DD08000)) {
+      device->vkDestroyImage(device, (VkImage)VK_NULL_HANDLE, nullptr);
+    }
   }
 
   data->log->LogInfo("Application Shutdown");

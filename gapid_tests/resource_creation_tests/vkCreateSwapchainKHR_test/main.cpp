@@ -17,6 +17,7 @@
 #include "support/log/log.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/known_device_infos.h"
+#include "vulkan_helpers/known_device_infos.h"
 #include "vulkan_helpers/structs.h"
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
@@ -47,25 +48,22 @@ int main_entry(const entry::entry_data* data) {
 
   containers::vector<VkSurfaceFormatKHR> surface_formats(num_formats,
                                                          data->root_allocator);
-  LOG_ASSERT(==, data->log,
-             instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
-                 device.physical_device(), surface, &num_formats,
-                 surface_formats.data()),
+  LOG_ASSERT(==, data->log, instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
+                                device.physical_device(), surface, &num_formats,
+                                surface_formats.data()),
              VK_SUCCESS);
 
   uint32_t num_present_modes = 0;
 
-  LOG_ASSERT(
-      ==, data->log,
-      instance->vkGetPhysicalDeviceSurfacePresentModesKHR(
-          device.physical_device(), surface, &num_present_modes, nullptr),
-      VK_SUCCESS);
+  LOG_ASSERT(==, data->log, instance->vkGetPhysicalDeviceSurfacePresentModesKHR(
+                                device.physical_device(), surface,
+                                &num_present_modes, nullptr),
+             VK_SUCCESS);
   containers::vector<VkPresentModeKHR> present_modes(num_present_modes,
                                                      data->root_allocator);
-  LOG_ASSERT(==, data->log,
-             instance->vkGetPhysicalDeviceSurfacePresentModesKHR(
-                 device.physical_device(), surface, &num_present_modes,
-                 present_modes.data()),
+  LOG_ASSERT(==, data->log, instance->vkGetPhysicalDeviceSurfacePresentModesKHR(
+                                device.physical_device(), surface,
+                                &num_present_modes, present_modes.data()),
              VK_SUCCESS);
 
   data->log->LogInfo("Created device for rendering to a swapchain");
@@ -113,8 +111,15 @@ int main_entry(const entry::entry_data* data) {
 
   device->vkDestroySwapchainKHR(device, swapchain, nullptr);
 
-  device->vkDestroySwapchainKHR(device, (VkSwapchainKHR)VK_NULL_HANDLE,
-                                nullptr);
+  data->log->LogInfo("Device ID: ", device.device_id());
+  data->log->LogInfo("Vendor ID: ", device.vendor_id());
+  data->log->LogInfo("driver version: ", device.driver_version());
+
+  if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000) &&
+      NOT_ANDROID_VERSION(data, "7.1.1")) {
+    device->vkDestroySwapchainKHR(device, (VkSwapchainKHR)VK_NULL_HANDLE,
+                                  nullptr);
+  }
 
   data->log->LogInfo("Application Shutdown");
   return 0;

@@ -48,10 +48,6 @@ option(FIXED_TIMESTEP
 option(PREFER_SEPARATE_PRESENT
     "Should the application prefer a separate present queue" ${PREFER_SEPARATE_PRESENT})
 
-if (NOT HAVE_CALLBACK_SWAPCHAIN AND NOT OUTPUT_FRAME EQUAL -1)
-    message(FATAL_ERROR "Callback swapchain was not build, OUTPUT_FRAME must be -1")
-endif()
-
 configure_file(entry_config.h.in entry_config.h)
 
 add_vulkan_static_library(entry

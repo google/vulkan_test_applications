@@ -65,6 +65,7 @@ struct application_options {
 struct entry_data {
 #if defined __ANDROID__
   ANativeWindow* native_window_handle;
+  std::string os_version;
 #elif defined _WIN32
   HINSTANCE native_hinstance;
   HANDLE native_window_handle;

@@ -17,4 +17,5 @@
 
 namespace vulkan {
 const DeviceInfo PixelC{0x10DE, 0x92BA03D7};
+const DeviceInfo NvidiaK2200{0x10DE, 0x13ba};
 }  // namespace vulkan

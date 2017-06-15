@@ -39,13 +39,15 @@ int main_entry(const entry::entry_data* data) {
     };
 
     VkPipelineCache cache;
-    LOG_ASSERT(
-        ==, data->log,
-        device->vkCreatePipelineCache(device, &create_info, nullptr, &cache),
-        VK_SUCCESS);
+    LOG_ASSERT(==, data->log, device->vkCreatePipelineCache(
+                                  device, &create_info, nullptr, &cache),
+               VK_SUCCESS);
     device->vkDestroyPipelineCache(device, cache, nullptr);
-    device->vkDestroyPipelineCache(
-        device, static_cast<VkPipelineCache>(VK_NULL_HANDLE), nullptr);
+
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
+      device->vkDestroyPipelineCache(
+          device, static_cast<VkPipelineCache>(VK_NULL_HANDLE), nullptr);
+    }
   }
 
   data->log->LogInfo("Application Shutdown");

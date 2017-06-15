@@ -15,8 +15,32 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest
+from gapit_test_framework import get_read_offset_function
+from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
-from struct_offsets import VulkanStruct, UINT32_T, POINTER, HANDLE
+from struct_offsets import VulkanStruct, UINT32_T, POINTER, HANDLE, BOOL32
+
+SWAPCHAIN_CREATE_INFO_ELEMENTS = [
+    ("stype", UINT32_T),
+    ("pNext", POINTER),
+    ("flags", UINT32_T),
+    ("surface", HANDLE),
+    ("minImageCount", UINT32_T),
+    ("imageFormat", UINT32_T),
+    ("imageColorSpace", UINT32_T),
+    ("imageExtent_width", UINT32_T),
+    ("imageExtent_height", UINT32_T),
+    ("imageArrayLayers", UINT32_T),
+    ("imageUsage", UINT32_T),
+    ("imageSharingMode", UINT32_T),
+    ("queueFamilyIndexCount", UINT32_T),
+    ("pQueueFamilyIndices", POINTER),
+    ("preTransform", UINT32_T),
+    ("compositeAlpha", UINT32_T),
+    ("presentMode", UINT32_T),
+    ("clipped", BOOL32),
+    ("oldSwapchain", HANDLE),
+]
 
 IMAGE_VIEW_CREATE_INFO_ELEMENTS = [
     ("sType", UINT32_T),
@@ -70,8 +94,9 @@ def check_destroy_image_view(test, device, image_view, device_properties):
     require_equal(image_view, destroy_image_view.int_imageView)
     # Our second vkDestroyImageView should have been called with
     # VK_NULL_HANDLE
-    destroy_image_view_2 = require(test.next_call_of("vkDestroyImageView"))
-    require_equal(0, destroy_image_view_2.int_imageView)
+    if test.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
+        destroy_image_view_2 = require(test.next_call_of("vkDestroyImageView"))
+        require_equal(0, destroy_image_view_2.int_imageView)
 
 
 def get_image_view_create_info(create_image_view, architecture):
@@ -83,8 +108,7 @@ def get_image_view_create_info(create_image_view, architecture):
             create_image_view.get_read_data(create_image_view.hex_pCreateInfo +
                                             offset, size)))
 
-    return VulkanStruct(architecture, IMAGE_VIEW_CREATE_INFO_ELEMENTS,
-                        get_data)
+    return VulkanStruct(architecture, IMAGE_VIEW_CREATE_INFO_ELEMENTS, get_data)
 
 
 @gapit_test("CreateDestroyImageView_test")
@@ -97,6 +121,10 @@ class ColorAttachmentImage(GapitTest):
         architecture = self.architecture
         device_properties = require(self.next_call_of(
             "vkGetPhysicalDeviceProperties"))
+        create_swapchain = require(self.next_call_of("vkCreateSwapchainKHR"))
+        image_format = VulkanStruct(architecture, SWAPCHAIN_CREATE_INFO_ELEMENTS,
+                                    get_read_offset_function(
+                                        create_swapchain, create_swapchain.hex_pCreateInfo)).imageFormat
         create_image_view, device, image = check_create_image_view(self, 1)
         info = get_image_view_create_info(create_image_view, architecture)
         check_destroy_image_view(self, device, image, device_properties)
@@ -105,13 +133,13 @@ class ColorAttachmentImage(GapitTest):
         require_equal(info.pNext, 0)
         require_equal(info.flags, 0)
         require_equal(info.viewType, VK_IMAGE_VIEW_TYPE_2D)
-        require_equal(info.format, VK_FORMAT_R8G8B8A8_UNORM)
+        require_equal(info.format, image_format)
         require_equal(info.components_r, VK_COMPONENT_SWIZZLE_IDENTITY)
         require_equal(info.components_g, VK_COMPONENT_SWIZZLE_IDENTITY)
         require_equal(info.components_b, VK_COMPONENT_SWIZZLE_IDENTITY)
         require_equal(info.components_a, VK_COMPONENT_SWIZZLE_IDENTITY)
-        require_equal(
-            info.subresourceRange_aspectMask, VK_IMAGE_ASPECT_COLOR_BIT)
+        require_equal(info.subresourceRange_aspectMask,
+                      VK_IMAGE_ASPECT_COLOR_BIT)
         require_equal(info.subresourceRange_baseMipLevel, 0)
         require_equal(info.subresourceRange_levelCount, 1)
         require_equal(info.subresourceRange_baseArrayLayer, 0)

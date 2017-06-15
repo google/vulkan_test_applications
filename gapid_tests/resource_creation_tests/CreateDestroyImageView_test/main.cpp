@@ -61,7 +61,7 @@ int main_entry(const entry::entry_data* data) {
         /* flags = */ 0,
         /* image = */ images.front(),  // uses the first image
         /* viewType = */ VK_IMAGE_VIEW_TYPE_2D,
-        /* format = */ VK_FORMAT_R8G8B8A8_UNORM,
+        /* format = */ swapchain.format(),
         /* components = */
         {
             /* r = */ VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -86,7 +86,9 @@ int main_entry(const entry::entry_data* data) {
 
     device->vkDestroyImageView(device, image_view, nullptr);
 
-    device->vkDestroyImageView(device, (VkImageView)VK_NULL_HANDLE, nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
+      device->vkDestroyImageView(device, (VkImageView)VK_NULL_HANDLE, nullptr);
+    }
   }
 
   data->log->LogInfo("Application Shutdown");

@@ -20,7 +20,7 @@ import json
 import re
 import subprocess
 import sys
-
+from collections import namedtuple
 
 class Observation(object):
 
@@ -416,7 +416,7 @@ def next_line(proc):
         return line.strip()
 
 
-def get_architecture_from_trace_file(filename):
+def get_device_and_architecture_info_from_trace_file(filename):
     '''Parses a trace file and returns the device architecture info
 
     Arguments:
@@ -426,8 +426,24 @@ def get_architecture_from_trace_file(filename):
         info header is parsed successfully, otherwise returns None
     '''
     proc = subprocess.Popen(
-        ['gapit', '-log-level', 'Fatal', 'dump', '-showabiinfo', filename],
+        ['gapit', '-log-level', 'Fatal', 'dump', '-showabiinfo', '-showdeviceinfo', filename],
         stdout=subprocess.PIPE)
+
+    def get_json_str():
+        return_str = ""
+        line = next_line(proc)
+        while not line.startswith('}') or not line.strip() == '}':
+            return_str += line
+            line = proc.stdout.readline()
+            if line == '':
+                return None
+        # append the ending '}'
+        return_str += line
+        return return_str
+
+    device = None
+    architecture = None
+
     # This parsing routine is basically a state machine to parse the device info
     # which is stored in json string form.
     # The first several lines of the process is un-necessary.
@@ -435,17 +451,13 @@ def get_architecture_from_trace_file(filename):
     # an empty string.
     line = next_line(proc)
     while line != '':
-        if line.strip() == "Trace ABI Information:":
-            abi_info_str = ""
-            line = proc.stdout.readline()
-            while not line.startswith('}') or not line.strip() == '}':
-                abi_info_str += line
-                line = proc.stdout.readline()
-                if line == '':
-                    return None
+        if line.strip() == "Device Information:":
+            device_info_str = get_json_str()
+            device = json.loads(device_info_str,
+                                object_hook=lambda d: namedtuple('Device', d.keys())(*d.values()))
 
-            # append the ending '}'
-            abi_info_str += line
+        elif line.strip() == "Trace ABI Information:":
+            abi_info_str = get_json_str()
             abi_info = json.loads(abi_info_str)
             memory_layout = abi_info["MemoryLayout"]
             layout_dict = {}
@@ -456,9 +468,10 @@ def get_architecture_from_trace_file(filename):
                     key = 'int_' + t[0].lower() + t[1:] + p.title()
                     layout_dict[key] = memory_layout[t][p]
             architecture = type("Architecture", (), layout_dict)
-            return architecture
+        if (device is not None) and (architecture is not None):
+            break
         line = next_line(proc)
-    return None
+    return device, architecture
 
 
 def parse_trace_file(filename):

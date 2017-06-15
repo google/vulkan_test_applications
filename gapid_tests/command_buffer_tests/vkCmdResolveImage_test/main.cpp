@@ -52,11 +52,9 @@ int main_entry(const entry::entry_data* data) {
     // only 1 layer, 1 miplevel and 0 offsets in all dimensions.
     VkImageCreateInfo src_image_create_info = sample_image_create_info;
     src_image_create_info.samples = VK_SAMPLE_COUNT_4_BIT;  // 4x multi-sampled
-    src_image_create_info.initialLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     vulkan::ImagePointer src_image =
         application.CreateAndBindImage(&src_image_create_info);
     VkImageCreateInfo dst_image_create_info = sample_image_create_info;
-    dst_image_create_info.initialLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     vulkan::ImagePointer dst_image =
         application.CreateAndBindImage(&dst_image_create_info);
     // Data in the multi-sampled source image
@@ -64,8 +62,7 @@ int main_entry(const entry::entry_data* data) {
         {0.5, 0.5, 0.5, 0.5}  // uint32[4]
     };
     // Range used for vkCmdClearColorImage() to fill the multi-sampled image
-    // with
-    // data
+    // with data
     VkImageSubresourceRange clear_color_range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1,
                                               0, 1};
 
@@ -75,25 +72,21 @@ int main_entry(const entry::entry_data* data) {
     VkCommandBufferBeginInfo cmd_buf_begin_info{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr, 0, nullptr};
     cmd_buf->vkBeginCommandBuffer(cmd_buf, &cmd_buf_begin_info);
+    vulkan::RecordImageLayoutTransition(*src_image, clear_color_range,
+        VK_IMAGE_LAYOUT_UNDEFINED, 0, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_ACCESS_TRANSFER_WRITE_BIT, &cmd_buf);
     cmd_buf->vkCmdClearColorImage(cmd_buf, *src_image,
                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                   &clear_color, 1, &clear_color_range);
     // Switch src image layout from TRANSFER_DST to TRANSFER_SRC
-    VkImageMemoryBarrier src_image_layout_dst_to_src_barrier{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        nullptr,
-        vulkan::VulkanApplication::kAllWriteBits,
-        VK_ACCESS_TRANSFER_READ_BIT,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        VK_QUEUE_FAMILY_IGNORED,
-        VK_QUEUE_FAMILY_IGNORED,
-        *src_image,
-        clear_color_range};
-    cmd_buf->vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0,
-                                  nullptr, 0, nullptr, 1,
-                                  &src_image_layout_dst_to_src_barrier);
+    vulkan::RecordImageLayoutTransition(*src_image, clear_color_range,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT,
+        &cmd_buf);
+    vulkan::RecordImageLayoutTransition(*dst_image, clear_color_range,
+        VK_IMAGE_LAYOUT_UNDEFINED, 0,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
+        &cmd_buf);
     VkImageResolve image_resolve{
         // mip level 0, layerbase 0, layer count 1
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},

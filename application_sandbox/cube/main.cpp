@@ -52,7 +52,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
   CubeSample(const entry::entry_data* data)
       : data_(data),
         Sample<CubeFrameData>(
-            data->root_allocator, data, 1, 512, 1,
+            data->root_allocator, data, 1, 512, 1, 1,
             sample_application::SampleOptions().EnableMultisampling()),
         cube_(data->root_allocator, data->log.get(), cube_data) {}
   virtual void InitializeApplicationData(
@@ -245,7 +245,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
   }
 
-  virtual void Update(float time_since_last_render) {
+  virtual void Update(float time_since_last_render) override {
     model_data_->data().transform =
         model_data_->data().transform *
         Mat44::FromRotationMatrix(
@@ -253,7 +253,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             Mat44::RotationY(3.14 * time_since_last_render * 0.5));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
-                      CubeFrameData* frame_data) {
+                      CubeFrameData* frame_data) override {
     // Update our uniform buffers.
     camera_data_->UpdateBuffer(queue, frame_index);
     model_data_->UpdateBuffer(queue, frame_index);
@@ -306,4 +306,5 @@ int main_entry(const entry::entry_data* data) {
   sample.WaitIdle();
 
   data->log->LogInfo("Application Shutdown");
+  return 0;
 }

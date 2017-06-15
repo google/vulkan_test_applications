@@ -32,28 +32,26 @@ int main_entry(const entry::entry_data* data) {
 
   float priority = 1.f;
   VkDeviceQueueCreateInfo queue_info{
-      VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr, 0, 0, 1, &priority};
+      VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,  // sType
+      nullptr,                                     // pNext
+      0,                                           // flags
+      0,                                           // queueFamilyIndex
+      1,                                           // queueCount
+      &priority                                    // pQueuePriorities
+  };
 
-  VkDeviceCreateInfo info{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                          nullptr,
-                          0,
-                          0,        // Start with 0 queues
-                          nullptr,  // we will update this in the next test.
-                          0,
-                          nullptr,
-                          0,
-                          nullptr,
-                          nullptr};
-
-  {
-    ::VkDevice raw_device;
-    LOG_EXPECT(==, data->log, (*instance).vkCreateDevice(devices[0], &info,
-                                                         nullptr, &raw_device),
-               VK_SUCCESS);
-
-    vulkan::VkDevice device(data->root_allocator, raw_device, nullptr,
-                            &instance);
-  }
+  VkDeviceCreateInfo info{
+      VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,  // sType
+      nullptr,                               // pNext
+      0,                                     // flags
+      0,                                     // queueCreateInfoCount
+      nullptr,                               // pQueueCreateInfo
+      0,                                     // enabledLayerNames
+      nullptr,                               // ppEnabledLayerNames
+      0,                                     // enabledExtensionCount
+      nullptr,                               // ppEnabledextensionNames
+      nullptr                                // pEnalbedFeatures
+  };
 
   {
     info.queueCreateInfoCount = 1;

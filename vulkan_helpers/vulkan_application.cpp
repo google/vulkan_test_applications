@@ -60,7 +60,7 @@ VulkanApplication::VulkanApplication(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features, uint32_t host_buffer_size,
     uint32_t device_image_size, uint32_t device_buffer_size,
-    bool use_async_compute_queue)
+    uint32_t coherent_buffer_size, bool use_async_compute_queue)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -148,20 +148,22 @@ VulkanApplication::VulkanApplication(
   // Furthermore for both types, we will have ZERO flags
   // set (we do not want to do sparse binding.)
 
-  containers::unique_ptr<VulkanArena>* device_memories[2] = {
-      &host_accessible_heap_, &device_only_buffer_heap_};
-  uint32_t device_memory_sizes[2] = {host_buffer_size, device_buffer_size};
+  containers::unique_ptr<VulkanArena>* device_memories[3] = {
+      &host_accessible_heap_, &device_only_buffer_heap_, &coherent_heap_};
+  uint32_t device_memory_sizes[3] = {host_buffer_size, device_buffer_size,
+                                     coherent_buffer_size};
 
   const uint32_t kAllBufferBits =
       (VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT << 1) - 1;
 
-  VkBufferUsageFlags usages[2] = {
+  VkBufferUsageFlags usages[3] = {
       VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-      kAllBufferBits};
-  VkMemoryPropertyFlags property_flags[2] = {
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+      kAllBufferBits, kAllBufferBits};
+  VkMemoryPropertyFlags property_flags[3] = {
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 
-  for (size_t i = 0; i < 2; ++i) {
+  for (size_t i = 0; i < 3; ++i) {
     // 1) Create a tiny buffer so that we can determine what memory flags are
     // required.
     VkBufferCreateInfo create_info = {
@@ -187,7 +189,8 @@ VulkanApplication::VulkanApplication(
         &device_, log_, requirements.memoryTypeBits, property_flags[i]);
     *device_memories[i] = containers::make_unique<VulkanArena>(
         allocator_, allocator_, log_, device_memory_sizes[i], memory_index,
-        &device_, property_flags[i] & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+        &device_, property_flags[i] & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
   }
 
   // Same idea as above, but for image memory.
@@ -221,10 +224,9 @@ VulkanApplication::VulkanApplication(
         VK_IMAGE_LAYOUT_UNDEFINED,            // initialLayout
     };
     ::VkImage image;
-    LOG_ASSERT(
-        ==, log_,
-        device_->vkCreateImage(device_, &image_create_info, nullptr, &image),
-        VK_SUCCESS);
+    LOG_ASSERT(==, log_, device_->vkCreateImage(device_, &image_create_info,
+                                                nullptr, &image),
+               VK_SUCCESS);
     VkMemoryRequirements requirements;
     device_->vkGetImageMemoryRequirements(device_, image, &requirements);
     device_->vkDestroyImage(device_, image, nullptr);
@@ -337,6 +339,12 @@ VulkanApplication::CreateAndBindHostBuffer(
 }
 
 containers::unique_ptr<VulkanApplication::Buffer>
+VulkanApplication::CreateAndBindCoherentBuffer(
+    const VkBufferCreateInfo* create_info) {
+  return CreateAndBindBuffer(coherent_heap_.get(), create_info);
+}
+
+containers::unique_ptr<VulkanApplication::Buffer>
 VulkanApplication::CreateAndBindDefaultExclusiveHostBuffer(
     VkDeviceSize size, VkBufferUsageFlags usages) {
   VkBufferCreateInfo create_info{
@@ -353,12 +361,45 @@ VulkanApplication::CreateAndBindDefaultExclusiveHostBuffer(
 }
 
 containers::unique_ptr<VulkanApplication::Buffer>
+VulkanApplication::CreateAndBindDefaultExclusiveCoherentBuffer(
+    VkDeviceSize size, VkBufferUsageFlags usages) {
+  VkBufferCreateInfo create_info{
+      /* sType = */ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+      /* pNext = */ nullptr,
+      /* flags = */ 0,
+      /* size = */ size,
+      /* usage = */ usages,
+      /* sharingMode = */ VK_SHARING_MODE_EXCLUSIVE,
+      /* queueFamilyIndexCount = */ 0,
+      /* pQueueFamilyIndices = */ nullptr,
+  };
+  return CreateAndBindCoherentBuffer(&create_info);
+}
+
+containers::unique_ptr<VulkanApplication::Buffer>
 VulkanApplication::CreateAndBindDeviceBuffer(
     const VkBufferCreateInfo* create_info) {
   return CreateAndBindBuffer(device_only_buffer_heap_.get(), create_info);
 }
 
-std::tuple<bool, VkCommandBuffer> VulkanApplication::FillImageLayersData(
+containers::unique_ptr<VulkanApplication::Buffer>
+VulkanApplication::CreateAndBindDefaultExclusiveDeviceBuffer(
+    VkDeviceSize size, VkBufferUsageFlags usages) {
+  VkBufferCreateInfo create_info{
+      /* sType = */ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+      /* pNext = */ nullptr,
+      /* flags = */ 0,
+      /* size = */ size,
+      /* usage = */ usages,
+      /* sharingMode = */ VK_SHARING_MODE_EXCLUSIVE,
+      /* queueFamilyIndexCount = */ 0,
+      /* pQueueFamilyIndices = */ nullptr,
+  };
+  return CreateAndBindDeviceBuffer(&create_info);
+}
+
+std::tuple<bool, VkCommandBuffer, BufferPointer>
+VulkanApplication::FillImageLayersData(
     Image* img, const VkImageSubresourceLayers& image_subresource,
     const VkOffset3D& image_offset, const VkExtent3D& image_extent,
     VkImageLayout initial_img_layout, const containers::vector<uint8_t>& data,
@@ -366,7 +407,8 @@ std::tuple<bool, VkCommandBuffer> VulkanApplication::FillImageLayersData(
     std::initializer_list<::VkSemaphore> signal_semaphores, ::VkFence fence) {
   auto failure_return = std::make_tuple(
       false, VkCommandBuffer(static_cast<::VkCommandBuffer>(VK_NULL_HANDLE),
-                             &command_pool_, &device_));
+                             &command_pool_, &device_),
+      BufferPointer(nullptr));
   if (!img) {
     log_->LogError("FillImageLayersData(): The given *img is nullptr");
     return failure_return;
@@ -474,7 +516,8 @@ std::tuple<bool, VkCommandBuffer> VulkanApplication::FillImageLayersData(
       signals.size() == 0 ? nullptr : signals.data()    // pSignalSemaphores
   };
   (*render_queue_)->vkQueueSubmit(render_queue(), 1, &submit_info, fence);
-  return std::make_tuple(true, std::move(command_buffer));
+  return std::make_tuple(true, std::move(command_buffer),
+                         std::move(src_buffer));
 }
 
 const size_t MAX_UPDATE_SIZE = 65536;

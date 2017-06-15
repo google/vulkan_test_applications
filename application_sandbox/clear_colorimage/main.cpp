@@ -51,7 +51,7 @@ class ClearColorImageSample : public sample_application::Sample<CubeFrameData> {
  public:
   ClearColorImageSample(const entry::entry_data* data)
       : data_(data),
-        Sample<CubeFrameData>(data->root_allocator, data, 1, 512, 1,
+        Sample<CubeFrameData>(data->root_allocator, data, 1, 512, 1, 1,
                               sample_application::SampleOptions()),
         cube_(data->root_allocator, data->log.get(), cube_data) {}
   virtual void InitializeApplicationData(
@@ -89,7 +89,7 @@ class ClearColorImageSample : public sample_application::Sample<CubeFrameData> {
                 0,                                         // flags
                 render_format(),                           // format
                 num_samples(),                             // samples
-                VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // loadOp
+                VK_ATTACHMENT_LOAD_OP_LOAD,                // loadOp
                 VK_ATTACHMENT_STORE_OP_STORE,              // storeOp
                 VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // stenilLoadOp
                 VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stenilStoreOp
@@ -214,9 +214,6 @@ class ClearColorImageSample : public sample_application::Sample<CubeFrameData> {
                                &sample_application::kBeginCommandBuffer);
     vulkan::VkCommandBuffer& cmdBuffer = (*frame_data->command_buffer_);
 
-    VkClearValue clear;
-    vulkan::ZeroMemory(&clear);
-
     VkRenderPassBeginInfo pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
         nullptr,                                   // pNext
@@ -225,16 +222,15 @@ class ClearColorImageSample : public sample_application::Sample<CubeFrameData> {
         {{0, 0},
          {app()->swapchain().width(),
           app()->swapchain().height()}},  // renderArea
-        1,                                // clearValueCount
-        &clear                            // clears
+        0,                                // clearValueCount
+        nullptr                           // clears
     };
 
     // Call vkCmdClearColorImage the make a light blue background.
-    vulkan::SetImageLayout(
+    vulkan::RecordImageLayoutTransition(
         swapchain_image(frame_data), {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-        &cmdBuffer, nullptr, {}, {}, VkFence(0), data_->root_allocator);
+        VK_IMAGE_LAYOUT_UNDEFINED, 0, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_ACCESS_TRANSFER_WRITE_BIT, &cmdBuffer);
     VkClearColorValue clear_color{0.8, 0.8, 1.0, 0.2};
     VkImageSubresourceRange clear_range{
         VK_IMAGE_ASPECT_COLOR_BIT,  // aspectMask
@@ -246,12 +242,11 @@ class ClearColorImageSample : public sample_application::Sample<CubeFrameData> {
     cmdBuffer->vkCmdClearColorImage(cmdBuffer, swapchain_image(frame_data),
                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                     &clear_color, 1, &clear_range);
-    vulkan::SetImageLayout(
+    vulkan::RecordImageLayoutTransition(
         swapchain_image(frame_data), {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, &cmdBuffer, nullptr, {}, {},
-        VkFence(0), data_->root_allocator);
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, &cmdBuffer);
 
     cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);
@@ -331,4 +326,5 @@ int main_entry(const entry::entry_data* data) {
   sample.WaitIdle();
 
   data->log->LogInfo("Application Shutdown");
+  return 0;
 }

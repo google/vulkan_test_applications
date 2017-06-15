@@ -1,3 +1,4 @@
-add_subdirectory(vkCmdPipelineBarrier_test)
+add_subdirectory(Event_test)
 add_subdirectory(Fence_test)
+add_subdirectory(vkCmdPipelineBarrier_test)
 add_subdirectory(vkDeviceWaitIdle_test)

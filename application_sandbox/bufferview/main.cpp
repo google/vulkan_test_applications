@@ -52,7 +52,7 @@ class BufferViewSample : public sample_application::Sample<CubeFrameData> {
  public:
   BufferViewSample(const entry::entry_data* data)
       : data_(data),
-        Sample<CubeFrameData>(data->root_allocator, data, 1, 512, 1,
+        Sample<CubeFrameData>(data->root_allocator, data, 1, 512, 1, 1,
                               sample_application::SampleOptions()),
         cube_(data->root_allocator, data->log.get(), cube_data) {}
   virtual void InitializeApplicationData(
@@ -304,9 +304,8 @@ class BufferViewSample : public sample_application::Sample<CubeFrameData> {
             Mat44::RotationX(3.14 * time_since_last_render) *
             Mat44::RotationY(3.14 * time_since_last_render * 0.5));
     alpha_data_->data().alpha =
-        alpha_data_->data().alpha > 2.0
-            ? 0.0
-            : alpha_data_->data().alpha + time_since_last_render / 2;
+        alpha_data_->data().alpha > 2.0 ? 0.0 : alpha_data_->data().alpha +
+                                                    time_since_last_render / 2;
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       CubeFrameData* frame_data) override {
@@ -371,4 +370,5 @@ int main_entry(const entry::entry_data* data) {
   sample.WaitIdle();
 
   data->log->LogInfo("Application Shutdown");
+  return 0;
 }

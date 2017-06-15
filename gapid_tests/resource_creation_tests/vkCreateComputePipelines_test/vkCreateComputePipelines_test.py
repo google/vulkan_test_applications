@@ -50,14 +50,8 @@ class DoubleNumbers(GapitTest):
         require_equal(0, create_compute_pipelines.hex_pAllocator)
         require_not_equal(0, create_compute_pipelines.hex_pPipelines)
 
-        if arch.int_pointerSize == 4:
-            self.check_create_info(arch, create_compute_pipelines,
-                                   COMPUTE_PIPELINE_CREATE_INFO_32)
-        else:
-            # Need the corresponding COMPUTE_PIPELINE_CREATE_INFO_64 for
-            # 64-bit architecture here.
-            raise NotImplementedError
-
+        self.check_create_info(arch, create_compute_pipelines,
+                               COMPUTE_PIPELINE_CREATE_INFO_32)
 
     def check_create_info(self, arch, atom, create_info_scheme):
         create_info = VulkanStruct(

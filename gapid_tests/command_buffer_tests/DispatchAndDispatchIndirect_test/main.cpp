@@ -121,13 +121,13 @@ int main_entry(const entry::entry_data* data) {
         &*in_buffer,
         reinterpret_cast<const char*>(initial_in_buffer_value.data()),
         initial_in_buffer_value.size() * sizeof(uint32_t), 0, &cmd_buf,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT);
+        VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     std::vector<uint32_t> initial_out_buffer_value(kNumElements, 0);
     app.FillHostVisibleBuffer(
         &*out_buffer,
         reinterpret_cast<const char*>(initial_out_buffer_value.data()),
         initial_out_buffer_value.size() * sizeof(uint32_t), 0, &cmd_buf,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT);
+        VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
     // Call dispatch
     cmd_buf->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -162,13 +162,13 @@ int main_entry(const entry::entry_data* data) {
         &*in_buffer,
         reinterpret_cast<const char*>(initial_in_buffer_value.data()),
         initial_in_buffer_value.size() * sizeof(uint32_t), 0, &cmd_buf,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT);
+        VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     std::vector<uint32_t> initial_out_buffer_value(kNumElements, 0);
     app.FillHostVisibleBuffer(
         &*out_buffer,
         reinterpret_cast<const char*>(initial_out_buffer_value.data()),
         initial_out_buffer_value.size() * sizeof(uint32_t), 0, &cmd_buf,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT);
+        VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
     // Set the values for the indirect buffer
     VkDispatchIndirectCommand indirect_command{kNumElements, 1, 1};

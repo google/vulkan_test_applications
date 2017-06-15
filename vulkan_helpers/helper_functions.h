@@ -74,6 +74,14 @@ uint32_t GetGraphicsAndComputeQueueFamily(containers::Allocator* allocator,
                                           VkInstance& instance,
                                           ::VkPhysicalDevice device);
 
+// Returns the index for the first queue family with the capabilities specified
+// by the given |queue_flags| for the given physical |device|. Returns the max
+// uint32_t value if no such queue can be obtained.
+uint32_t GetQueueFamily(containers::Allocator* allocator,
+    VkInstance& instance,
+    ::VkPhysicalDevice device,
+    VkQueueFlags queue_flags);
+
 // Creates a device from the given |instance| with one queue. If
 // |require_graphics_and_compute_queue| is true, the queue is of both graphics
 // and compute capabilities. Vulkan functions that are resolved through the
@@ -247,21 +255,15 @@ uint32_t inline GetMemoryIndex(VkDevice* device, logging::Logger* log,
   return memory_index;
 }
 
-// Changes the layout of the given |image| with the specified
-// |subresource_range| from |old_layout| with access mask |src_access_mask| to
-// |new_layout| with access mask |dst_access_mask| through the given command
-// buffer |cmd_buffer|. If a |queue| is given, |cmd_buffer| will be submitted
-// to the given |queue| and the execution will wait until the |wait_semaphores|
-// signal to begin and signal the |signal_semaphores| and |fence| once
-// finished.
-void SetImageLayout(::VkImage image,
+// Records a pipeline barrier to the given command buffer |cmd_buf| to change
+// the layout of the given |image| with the specified |subresource_range| from
+// |old_layout| with access mask |src_access_mask| to |new_layout| with access
+// mask |dst_access_mask| through the given command buffer |cmd_buffer|.
+void RecordImageLayoutTransition(::VkImage image,
                     const VkImageSubresourceRange& subresource_range,
                     VkImageLayout old_layout, VkAccessFlags src_access_mask,
                     VkImageLayout new_layout, VkAccessFlags dst_access_mask,
-                    VkCommandBuffer* cmd_buffer, VkQueue* queue,
-                    std::initializer_list<::VkSemaphore> wait_semaphores,
-                    std::initializer_list<::VkSemaphore> signal_semaphores,
-                    ::VkFence fence, containers::Allocator* allocator);
+                    VkCommandBuffer* cmd_buffer);
 
 // Returns a tuple of three uint_32 values: element size in bytes, texel block
 // width and height in pixel, for the given format. Returns a tuple with all
@@ -270,7 +272,7 @@ std::tuple<uint32_t, uint32_t, uint32_t> GetElementAndTexelBlockSize(
     VkFormat format);
 
 inline VkFence CreateFence(VkDevice* device, bool signaled = false) {
-  ::VkFence raw_fence_ = VK_NULL_HANDLE;
+  ::VkFence raw_fence = VK_NULL_HANDLE;
   VkFenceCreateInfo create_info = {
       VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,                             // sType
       nullptr,                                                         // pNext
@@ -278,12 +280,12 @@ inline VkFence CreateFence(VkDevice* device, bool signaled = false) {
   };
   LOG_ASSERT(
       ==, device->GetLogger(), VK_SUCCESS,
-      (*device)->vkCreateFence(*device, &create_info, nullptr, &raw_fence_));
-  return VkFence(raw_fence_, nullptr, device);
+      (*device)->vkCreateFence(*device, &create_info, nullptr, &raw_fence));
+  return VkFence(raw_fence, nullptr, device);
 }
 
 inline VkSemaphore CreateSemaphore(VkDevice* device) {
-  ::VkSemaphore raw_semaphore_ = VK_NULL_HANDLE;
+  ::VkSemaphore raw_semaphore = VK_NULL_HANDLE;
   VkSemaphoreCreateInfo create_info = {
       VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,  // sType
       nullptr,                                  // pNext
@@ -291,8 +293,20 @@ inline VkSemaphore CreateSemaphore(VkDevice* device) {
   };
   LOG_ASSERT(==, device->GetLogger(), VK_SUCCESS,
              (*device)->vkCreateSemaphore(*device, &create_info, nullptr,
-                                          &raw_semaphore_));
-  return VkSemaphore(raw_semaphore_, nullptr, device);
+                                          &raw_semaphore));
+  return VkSemaphore(raw_semaphore, nullptr, device);
+}
+
+inline VkEvent CreateEvent(VkDevice* device) {
+  ::VkEvent raw_event = VK_NULL_HANDLE;
+  VkEventCreateInfo create_info = {
+    VK_STRUCTURE_TYPE_EVENT_CREATE_INFO, // sType
+    nullptr, // pNext
+    0, // flags
+  };
+  LOG_ASSERT(==, device->GetLogger(), VK_SUCCESS,
+      (*device)->vkCreateEvent(*device, &create_info, nullptr, &raw_event));
+  return VkEvent(raw_event, nullptr, device);
 }
 
 // Returns the size of the given image extent specified through width, height,

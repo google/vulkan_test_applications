@@ -26,10 +26,35 @@ int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
 
   vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
-  vulkan::PipelineLayout pipeline_layout = app.CreatePipelineLayout({{}});
-  app.CreatePipelineLayout({{}});
-  ::VkPipelineLayout raw_pipeline_layout =
-      static_cast<::VkPipelineLayout>(pipeline_layout);
+  vulkan::VkDevice& device = app.device();
+  containers::vector<char> pseudo_data(16, 0xba, data->root_allocator);
+
+  // Create pipeline layout
+  // Frist, create descriptor set layout bindings
+  VkDescriptorSetLayoutBinding vertex_binding{
+      0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT,
+      nullptr};
+  VkDescriptorSetLayoutBinding fragement_binding{
+      1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT,
+      nullptr};
+  // Second, create descriptor set layout
+  vulkan::VkDescriptorSetLayout descriptor_set_layout =
+      vulkan::CreateDescriptorSetLayout(data->root_allocator, &device,
+                                        {vertex_binding, fragement_binding});
+  // Third, create push constant range
+  VkPushConstantRange ranges[2]{
+      {VK_SHADER_STAGE_VERTEX_BIT, 0, uint32_t(pseudo_data.size())},
+      {VK_SHADER_STAGE_FRAGMENT_BIT, 0, uint32_t(pseudo_data.size())}};
+  // Fourth, Create pipeline layout
+  VkPipelineLayoutCreateInfo pipeline_create_info{
+      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr, 0,     1,
+      &descriptor_set_layout.get_raw_object(),       2,       ranges};
+  ::VkPipelineLayout raw_pipeline_layout;
+  device->vkCreatePipelineLayout(device, &pipeline_create_info, nullptr,
+                                 &raw_pipeline_layout);
+  vulkan::VkPipelineLayout pipeline_layout(raw_pipeline_layout, nullptr,
+                                           &device);
+
   {
     // 1. Two secondary command buffers allocated by the same pool as the
     // primary command buffer and call vkCmdExecuteCommands out of a render
@@ -65,20 +90,18 @@ int main_entry(const entry::entry_data* data) {
     };
     // Call vkCmdPushConstants on the secondary command buffers.
     // First secondary command buffer
-    containers::vector<char> pseudo_data(16, 0xba, data->root_allocator);
     secondary_cmd_bufs[0]->vkBeginCommandBuffer(secondary_cmd_bufs[0],
                                                 &secondary_begin_info);
     secondary_cmd_bufs[0]->vkCmdPushConstants(
-        secondary_cmd_bufs[0], raw_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT,
-        0, pseudo_data.size(), static_cast<void*>(pseudo_data.data()));
+        secondary_cmd_bufs[0], pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+        pseudo_data.size(), static_cast<void*>(pseudo_data.data()));
     secondary_cmd_bufs[0]->vkEndCommandBuffer(secondary_cmd_bufs[0]);
     // Second secondary command buffer
     secondary_cmd_bufs[1]->vkBeginCommandBuffer(secondary_cmd_bufs[1],
                                                 &secondary_begin_info);
     secondary_cmd_bufs[1]->vkCmdPushConstants(
-        secondary_cmd_bufs[1], raw_pipeline_layout,
-        VK_SHADER_STAGE_FRAGMENT_BIT, 0, pseudo_data.size(),
-        static_cast<void*>(pseudo_data.data()));
+        secondary_cmd_bufs[1], pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+        pseudo_data.size(), static_cast<void*>(pseudo_data.data()));
     secondary_cmd_bufs[1]->vkEndCommandBuffer(secondary_cmd_bufs[1]);
     // Call vkCmdExecuteCommands on the primary command buffer.
     primary_cmd_buf->vkBeginCommandBuffer(primary_cmd_buf, &primary_begin_info);

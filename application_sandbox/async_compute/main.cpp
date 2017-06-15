@@ -673,7 +673,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
  public:
   AsyncSample(const entry::entry_data* data)
       : data_(data),
-        Sample<AsyncFrameData>(data->root_allocator, data, 1, 512, 32,
+        Sample<AsyncFrameData>(data->root_allocator, data, 1, 512, 32, 1,
                                sample_application::SampleOptions()
                                    .EnableAsyncCompute()
                                    .EnableMultisampling()),
@@ -808,11 +808,11 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
 
     frame_data->particle_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
-            app()->AllocateDescriptorSet({particle_descriptor_set_layouts_[0],
-                                          particle_descriptor_set_layouts_[1],
-                                          particle_descriptor_set_layouts_[2],
-                                          particle_descriptor_set_layouts_[3]}));
+            data_->root_allocator, app()->AllocateDescriptorSet(
+                                       {particle_descriptor_set_layouts_[0],
+                                        particle_descriptor_set_layouts_[1],
+                                        particle_descriptor_set_layouts_[2],
+                                        particle_descriptor_set_layouts_[3]}));
 
     ::VkImageView raw_view = color_view(frame_data);
 
@@ -837,12 +837,12 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
   }
 
-  virtual void InitializationComplete() {
+  virtual void InitializationComplete() override {
     particle_texture_.InitializationComplete();
     thread_runner_.start();
   }
 
-  virtual void Update(float delta_time) {
+  virtual void Update(float delta_time) override {
     time_since_last_notify_ += delta_time;
     frames_since_last_notify_ += 1;
     if (time_since_last_notify_ > 1.0f) {
@@ -856,7 +856,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
   }
 
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
-                      AsyncFrameData* data) {
+                      AsyncFrameData* data) override {
     // Get the next buffer that we use for the particle positions.
     int32_t old_buffer = current_computation_result_buffer_;
     current_computation_result_buffer_ =

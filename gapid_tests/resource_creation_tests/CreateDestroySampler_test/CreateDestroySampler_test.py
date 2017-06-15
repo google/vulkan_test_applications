@@ -16,6 +16,7 @@ from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_true, require_false
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest
+from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, FLOAT, POINTER
 
@@ -41,14 +42,14 @@ SAMPLER_CREATE_INFO_ELEMENTS = [
 ]
 
 
-def check_create_sampler(test, index):
-    """Gets the |index|'th vkCreateSampler call atom, and checks its return
-    value and arguments. Also checks the returned sampler handle is not null.
-    Returns the checked vkCreateSampler atom, device and sampler handle.
-    This method does not check the content of the VkSamplerCreateInfo struct
-    used in the vkCreateSampler call.
+def check_create_sampler(test):
+    """Gets the next vkCreateSampler call atom, and checks its return value and
+    arguments. Also checks the returned sampler handle is not null.  Returns the
+    checked vkCreateSampler atom, device and sampler handle.  This method does
+    not check the content of the VkSamplerCreateInfo struct used in the
+    vkCreateSampler call.
     """
-    create_sampler = require(test.nth_call_of("vkCreateSampler", index))
+    create_sampler = require(test.next_call_of("vkCreateSampler"))
     require_equal(VK_SUCCESS, int(create_sampler.return_val))
     device = create_sampler.int_device
     require_not_equal(0, device)
@@ -89,9 +90,9 @@ class NormalizedCoordinates(GapitTest):
 
         architecture = self.architecture
         device_properties = require(
-            self.next_call_of("vkGetPhysicalDeviceProperties"))
+            self.nth_call_of("vkGetPhysicalDeviceProperties", 1))
 
-        create_sampler, device, sampler = check_create_sampler(self, 1)
+        create_sampler, device, sampler = check_create_sampler(self)
         info = get_sampler_create_info(create_sampler, architecture)
         require_equal(info.sType, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO)
         require_equal(info.pNext, 0)
@@ -105,7 +106,7 @@ class NormalizedCoordinates(GapitTest):
                       VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)
         require_equal(info.mipLodBias, -1.)
         require_false(info.anisotropyEnable)
-        require_equal(info.maxAnisotropy, 4.)
+        require_equal(info.maxAnisotropy, 1.)
         require_false(info.compareEnable)
         require_equal(info.compareOp, VK_COMPARE_OP_ALWAYS)
         require_equal(info.minLod, 1.)
@@ -124,9 +125,13 @@ class UnnormalizedCoordinates(GapitTest):
 
         architecture = self.architecture
         device_properties = require(
-            self.next_call_of("vkGetPhysicalDeviceProperties"))
+            self.nth_call_of("vkGetPhysicalDeviceProperties", 2))
+        create_device = self.next_call_of("vkCreateDevice")
+        if create_device[0] is None:
+            raise GapidUnsupportedException(
+                "physical device feature: samplerAnisotropy not supported")
 
-        create_sampler, device, sampler = check_create_sampler(self, 2)
+        create_sampler, device, sampler = check_create_sampler(self)
         info = get_sampler_create_info(create_sampler, architecture)
         require_equal(info.sType, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO)
         require_equal(info.pNext, 0)
@@ -159,7 +164,8 @@ class DestroyNullSampler(GapitTest):
     def expect(self):
         """3. Destroys a null sampler handle."""
         device_properties = require(
-            self.next_call_of("vkGetPhysicalDeviceProperties"))
+            self.nth_call_of("vkGetPhysicalDeviceProperties", 3))
 
-        destroy_sampler = require(self.nth_call_of("vkDestroySampler", 3))
-        require_equal(0, destroy_sampler.int_sampler)
+        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
+            destroy_sampler = require(self.nth_call_of("vkDestroySampler", 3))
+            require_equal(0, destroy_sampler.int_sampler)

@@ -67,7 +67,10 @@ int main_entry(const entry::entry_data* data) {
                                &buffer_view);
     device->vkDestroyBufferView(device, buffer_view, nullptr);
 
-    device->vkDestroyBufferView(device, (VkBufferView)VK_NULL_HANDLE, nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
+      device->vkDestroyBufferView(device, (VkBufferView)VK_NULL_HANDLE,
+                                  nullptr);
+    }
   }
 
   {
@@ -102,7 +105,10 @@ int main_entry(const entry::entry_data* data) {
                                &buffer_view);
     device->vkDestroyBufferView(device, buffer_view, nullptr);
 
-    device->vkDestroyBufferView(device, (VkBufferView)VK_NULL_HANDLE, nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
+      device->vkDestroyBufferView(device, (VkBufferView)VK_NULL_HANDLE,
+                                  nullptr);
+    }
   }
 
   data->log->LogInfo("Application Shutdown");

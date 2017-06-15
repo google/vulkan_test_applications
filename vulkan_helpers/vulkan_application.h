@@ -390,6 +390,7 @@ class VulkanApplication {
                     uint32_t host_buffer_size = 1024 * 128,
                     uint32_t device_image_size = 1024 * 128,
                     uint32_t device_buffer_size = 1024 * 128,
+                    uint32_t coherent_buffer_size = 1024 * 128,
                     bool use_async_compute_queue = false);
 
   // Creates an image from the given create_info, and binds memory from the
@@ -400,15 +401,29 @@ class VulkanApplication {
   // host-visible buffer Arena. Also maps the memory needed for the device.
   containers::unique_ptr<Buffer> CreateAndBindHostBuffer(
       const VkBufferCreateInfo* create_info);
+  // Creates a buffer from the given create_info, and binds memory from the
+  // host-coherent buffer arena. Also maps the memory needed for the device.
+  containers::unique_ptr<Buffer> CreateAndBindCoherentBuffer(
+      const VkBufferCreateInfo* create_info);
   // Creates a buffer with the given size, usage flags from the host-visible
   // buffer Arena. The buffer is create with VkBufferCreateFlags set to 0,
   // VkSharingMode set to VK_SHARING_MODE_EXCLUSIVE.
   containers::unique_ptr<Buffer> CreateAndBindDefaultExclusiveHostBuffer(
       VkDeviceSize size, VkBufferUsageFlags usages);
+  // Creates a buffer with the given size, usage flags from the host-coherent
+  // buffer Arena. The buffer is create with VkBufferCreateFlags set to 0,
+  // VkSharingMode set to VK_SHARING_MODE_EXCLUSIVE.
+  containers::unique_ptr<Buffer> CreateAndBindDefaultExclusiveCoherentBuffer(
+      VkDeviceSize size, VkBufferUsageFlags usages);
   // Creates a buffer from the given create_info, and binds memory from the
   // device-only-accessible buffer Arena.
   containers::unique_ptr<Buffer> CreateAndBindDeviceBuffer(
       const VkBufferCreateInfo* create_info);
+  // Creates a buffer with the given size, usage flags from the device-only
+  // buffer Arena. The buffer is create with VkBufferCreateFlags set to 0,
+  // VkSharingMode set to VK_SHARING_MODE_EXCLUSIVE.
+  containers::unique_ptr<Buffer> CreateAndBindDefaultExclusiveDeviceBuffer(
+      VkDeviceSize size, VkBufferUsageFlags usages);
 
   // Creates a command buffer, appends commands to fill the given |data| to the
   // specified |image| and submit the command buffer to application's render
@@ -419,7 +434,9 @@ class VulkanApplication {
   // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL. If the operation can not be done
   // successfully, this method returns false and a command buffer wrapping
   // VK_NULL_HANDLE, the layout of the image will not be changed.
-  std::tuple<bool, VkCommandBuffer> FillImageLayersData(
+  std::tuple<bool, VkCommandBuffer,
+             containers::unique_ptr<VulkanApplication::Buffer>>
+  FillImageLayersData(
       Image* img, const VkImageSubresourceLayers& image_subresource,
       const VkOffset3D& image_offset, const VkExtent3D& image_extent,
       VkImageLayout initial_img_layout, const containers::vector<uint8_t>& data,
@@ -475,9 +492,8 @@ class VulkanApplication {
   // VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, and by default there is no
   // inheritance info.
   void BeginCommandBuffer(
-      VkCommandBuffer* cmd_buf,
-      VkCommandBufferUsageFlags usages =
-          VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+      VkCommandBuffer* cmd_buf, VkCommandBufferUsageFlags usages =
+                                    VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
       const VkCommandBufferInheritanceInfo* pInheritanceInfo = nullptr) {
     VkCommandBufferBeginInfo begin_info{
         /* sType = */ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -491,25 +507,27 @@ class VulkanApplication {
   // Ends the given command buffer and submits the command buffer to the given
   // queue with the given wait semaphores, signal semaphores and fences. Returns
   // the VkResult of the queue submit operation.
-  VkResult EndAndSubmitCommandBuffer(VkCommandBuffer* cmd_buf, VkQueue* queue,
-                                     size_t wait_semaphores_count,
-                                     const ::VkSemaphore* wait_semaphores,
-                                     size_t signal_semaphores_count,
-                                     const ::VkSemaphore* signal_semaphores,
-                                     ::VkFence fence) {
+  VkResult EndAndSubmitCommandBuffer(
+      VkCommandBuffer* cmd_buf, VkQueue* queue,
+      std::initializer_list<::VkSemaphore> wait_semaphores,
+      std::initializer_list<VkPipelineStageFlags> wait_stages,
+      std::initializer_list<::VkSemaphore> signal_semaphores, ::VkFence fence) {
+    std::vector<::VkSemaphore> wait_semaphores_vec(wait_semaphores);
+    std::vector<VkPipelineStageFlags> wait_stages_vec(wait_stages);
+    std::vector<::VkSemaphore> signal_semaphores_vec(signal_semaphores);
     (*cmd_buf)->vkEndCommandBuffer(*cmd_buf);
 
     auto& q = *queue;
     VkSubmitInfo submit_info{
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,    // sType
-        nullptr,                          // pNext
-        uint32_t(wait_semaphores_count),  // waitSemaphoreCount
-        wait_semaphores,                  // pWaitSemaphores
-        nullptr,                          // pWaitDstStageMask,
-        1,                                // commandBufferCount
+        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
+        nullptr,                               // pNext
+        uint32_t(wait_semaphores_vec.size()),  // waitSemaphoreCount
+        wait_semaphores_vec.data(),            // pWaitSemaphores
+        wait_stages_vec.data(),                // pWaitDstStageMask,
+        1,                                     // commandBufferCount
         &cmd_buf->get_command_buffer(),
-        uint32_t(signal_semaphores_count),  // signalSemaphoreCount
-        signal_semaphores                   // pSignalSemaphores
+        uint32_t(signal_semaphores_vec.size()),  // signalSemaphoreCount
+        signal_semaphores_vec.data()             // pSignalSemaphores
     };
 
     VkResult r = q->vkQueueSubmit(q, 1, &submit_info, fence);
@@ -520,8 +538,8 @@ class VulkanApplication {
   // queue and then wait for the queue idle.
   VkResult EndAndSubmitCommandBufferAndWaitForQueueIdle(
       VkCommandBuffer* cmd_buf, VkQueue* queue) {
-    VkResult r = EndAndSubmitCommandBuffer(cmd_buf, queue, 0, nullptr, 0,
-                                           nullptr, ::VkFence(VK_NULL_HANDLE));
+    VkResult r = EndAndSubmitCommandBuffer(cmd_buf, queue, {}, {}, {},
+                                           ::VkFence(VK_NULL_HANDLE));
     if (VK_SUCCESS == r) {
       return (*queue)->vkQueueWaitIdle(*queue);
     }
@@ -688,6 +706,7 @@ class VulkanApplication {
   VkCommandPool command_pool_;
   VkPipelineCache pipeline_cache_;
   containers::unique_ptr<VulkanArena> host_accessible_heap_;
+  containers::unique_ptr<VulkanArena> coherent_heap_;
   containers::unique_ptr<VulkanArena> device_only_image_heap_;
   containers::unique_ptr<VulkanArena> device_only_buffer_heap_;
   containers::vector<::VkImage> swapchain_images_;

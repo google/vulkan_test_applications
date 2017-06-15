@@ -206,6 +206,17 @@ struct FenceTraits {
 };
 using VkFence = VkSubObject<FenceTraits, DeviceTraits>;
 
+struct EventTraits {
+  using type = ::VkEvent;
+  using destruction_function_pointer_type =
+      LazyDeviceFunction<PFN_vkDestroyEvent>*;
+  static destruction_function_pointer_type get_destruction_function(
+      DeviceFunctions* functions) {
+    return &functions->vkDestroyEvent;
+  }
+};
+using VkEvent = VkSubObject<EventTraits, DeviceTraits>;
+
 struct ImageViewTraits {
   using type = ::VkImageView;
   using destruction_function_pointer_type =

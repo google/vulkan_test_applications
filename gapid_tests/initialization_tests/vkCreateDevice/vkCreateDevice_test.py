@@ -77,54 +77,13 @@ def GetPhysicalDevices(test, architecture):
 
 
 @gapit_test("vkCreateDevice_test")
-class ZeroQueueDevice(GapitTest):
-
-    def expect(self):
-        arch = self.architecture
-        physical_device = GetPhysicalDevices(self, arch)[0]
-
-        create_device = require(self.nth_call_of("vkCreateDevice", 1))
-        require_equal(physical_device, create_device.int_physicalDevice)
-        require_not_equal(0, create_device.hex_pCreateInfo)
-        require_equal(0, create_device.hex_pAllocator)
-        require_not_equal(0, create_device.hex_pDevice)
-        require_equal(VK_SUCCESS, int(create_device.return_val))
-
-        create_info = VulkanStruct(arch, DEVICE_CREATE_INFO,
-                                   get_read_offset_function(
-                                       create_device,
-                                       create_device.hex_pCreateInfo))
-        require_equal(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, create_info.sType)
-        # TODO(qining): Clear the pNext pointer assigned by the loader on
-        # tracing device, then turn on the test
-        #  require_equal(0, create_info.pNext)
-        require_equal(0, create_info.flags)
-        require_equal(0, create_info.queueCreateInfoCount)
-        require_equal(0, create_info.pQueueCreateInfos)
-        require_equal(0, create_info.enabledLayerCount)
-        require_equal(0, create_info.ppEnabledLayerNames)
-        require_equal(0, create_info.enabledExtensionCount)
-        require_equal(0, create_info.ppEnabledExtensionNames)
-        require_equal(0, create_info.pEnabledFeatures)
-
-        DEVICE = [("device", POINTER)]
-        device = VulkanStruct(arch, DEVICE, get_write_offset_function(
-            create_device, create_device.hex_pDevice)).device
-        require_not_equal(0, device)
-
-        destroy_device = require(self.next_call_of("vkDestroyDevice"))
-        require_equal(device, destroy_device.int_device)
-        require_equal(0, destroy_device.hex_pAllocator)
-
-
-@gapit_test("vkCreateDevice_test")
 class OneQueueDevice(GapitTest):
 
     def expect(self):
         arch = self.architecture
         physical_device = GetPhysicalDevices(self, arch)[0]
 
-        create_device = require(self.nth_call_of("vkCreateDevice", 2))
+        create_device = require(self.nth_call_of("vkCreateDevice", 1))
         require_equal(physical_device, create_device.int_physicalDevice)
         require_not_equal(0, create_device.hex_pCreateInfo)
         require_equal(0, create_device.hex_pAllocator)

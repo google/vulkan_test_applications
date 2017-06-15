@@ -59,8 +59,8 @@ class CopyImageBufferSample : public sample_application::Sample<CubeFrameData> {
         Sample<CubeFrameData>(
             data->root_allocator, data, 1, 512,
             128,  // Larger device buffer space may be required
-                  // if the swapchain image is large
-            sample_application::SampleOptions()),
+            // if the swapchain image is large
+            1, sample_application::SampleOptions()),
         cube_(data->root_allocator, data->log.get(), cube_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
@@ -517,4 +517,5 @@ int main_entry(const entry::entry_data* data) {
   sample.WaitIdle();
 
   data->log->LogInfo("Application Shutdown");
+  return 0;
 }

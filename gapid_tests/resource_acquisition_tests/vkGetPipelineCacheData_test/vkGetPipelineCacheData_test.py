@@ -12,7 +12,7 @@
 from gapit_test_framework import gapit_test, require, require_equal, require_true
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest, get_read_offset_function, get_write_offset_function
-import gapit_test_framework
+from gapit_test_framework import NVIDIA_K2200
 from struct_offsets import VulkanStruct, UINT32_T, SIZE_T, POINTER
 from struct_offsets import HANDLE, FLOAT, CHAR, ARRAY
 from vulkan_constants import *
@@ -65,10 +65,11 @@ class GetDataOfAnEmptyPipelineCache(GapitTest):
         destroy_pipeline_cache = require(
             self.next_call_of("vkDestroyPipelineCache"))
 
-        destroy_pipeline_cache = require(
-            self.next_call_of("vkDestroyPipelineCache"))
-        require_not_equal(0, destroy_pipeline_cache.int_device)
-        require_equal(0, destroy_pipeline_cache.int_pipelineCache)
+        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
+            destroy_pipeline_cache = require(
+                self.next_call_of("vkDestroyPipelineCache"))
+            require_not_equal(0, destroy_pipeline_cache.int_device)
+            require_equal(0, destroy_pipeline_cache.int_pipelineCache)
 
 
 @gapit_test("vkGetPipelineCacheData_test")

@@ -16,6 +16,7 @@ from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, GapitTest
 from gapit_test_framework import get_read_offset_function, get_write_offset_function
 from gapit_test_framework import GapidUnsupportedException
+from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, POINTER, HANDLE, DEVICE_SIZE
 from struct_offsets import ARRAY, CHAR
@@ -71,10 +72,11 @@ class OneQueryOcclusionQueryPool(GapitTest):
         require_equal(device, destroy_query_pool.int_device)
         require_equal(view.handle, destroy_query_pool.int_queryPool)
 
-        destroy_null_query_pool = require(self.next_call_of(
-            "vkDestroyQueryPool"))
-        require_equal(device, destroy_query_pool.int_device)
-        require_equal(0, destroy_null_query_pool.int_queryPool)
+        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
+            destroy_null_query_pool = require(self.next_call_of(
+                "vkDestroyQueryPool"))
+            require_equal(device, destroy_query_pool.int_device)
+            require_equal(0, destroy_null_query_pool.int_queryPool)
 
 
 @gapit_test("CreateDestroyQueryPool_test")
@@ -116,10 +118,11 @@ class SevenQueriesTimeStampQueryPool(GapitTest):
         require_equal(device, destroy_query_pool.int_device)
         require_equal(view.handle, destroy_query_pool.int_queryPool)
 
-        destroy_null_query_pool = require(self.next_call_of(
-            "vkDestroyQueryPool"))
-        require_equal(device, destroy_query_pool.int_device)
-        require_equal(0, destroy_null_query_pool.int_queryPool)
+        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
+            destroy_null_query_pool = require(self.next_call_of(
+                "vkDestroyQueryPool"))
+            require_equal(device, destroy_query_pool.int_device)
+            require_equal(0, destroy_null_query_pool.int_queryPool)
 
 
 @gapit_test("CreateDestroyQueryPool_test")
@@ -169,7 +172,8 @@ class FourQueriesPipelineStatisticsQueryPool(GapitTest):
         require_equal(device, destroy_query_pool.int_device)
         require_equal(view.handle, destroy_query_pool.int_queryPool)
 
-        destroy_null_query_pool = require(self.next_call_of(
-            "vkDestroyQueryPool"))
-        require_equal(device, destroy_query_pool.int_device)
-        require_equal(0, destroy_null_query_pool.int_queryPool)
+        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
+            destroy_null_query_pool = require(self.next_call_of(
+                "vkDestroyQueryPool"))
+            require_equal(device, destroy_query_pool.int_device)
+            require_equal(0, destroy_null_query_pool.int_queryPool)

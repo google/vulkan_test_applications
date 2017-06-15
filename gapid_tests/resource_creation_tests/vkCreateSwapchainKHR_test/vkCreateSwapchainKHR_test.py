@@ -11,8 +11,7 @@
 
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
-from gapit_test_framework import GapitTest
-import gapit_test_framework
+from gapit_test_framework import GapitTest, NVIDIA_K2200
 from struct_offsets import VulkanStruct, UINT32_T, SIZE_T, POINTER
 from struct_offsets import HANDLE, FLOAT, CHAR, ARRAY
 from vulkan_constants import *
@@ -23,17 +22,16 @@ class SwapchainCreateTest(GapitTest):
 
     def expect(self):
         architecture = self.architecture
-        device_properties = require(
-            self.next_call_of("vkGetPhysicalDeviceProperties"))
+        device_properties = require(self.next_call_of(
+            "vkGetPhysicalDeviceProperties"))
 
         createSwapchain = require(self.next_call_of("vkCreateSwapchainKHR"))
         destroySwapchain = require(self.next_call_of("vkDestroySwapchainKHR"))
 
         def get_swapchain_create_info_member(offset, size):
-            return little_endian_bytes_to_int(
-                require(
-                    createSwapchain.get_read_data(
-                        createSwapchain.hex_pCreateInfo + offset, size)))
+            return little_endian_bytes_to_int(require(
+                createSwapchain.get_read_data(createSwapchain.hex_pCreateInfo +
+                                              offset, size)))
 
         swapchain_create_info = VulkanStruct(
             architecture,
@@ -56,7 +54,7 @@ class SwapchainCreateTest(GapitTest):
              ("presentMode", UINT32_T),
              ("clipped", UINT32_T),
              ("oldSwapchain", HANDLE)  # oldSwapchain
-             ],
+            ],
             get_swapchain_create_info_member)
 
         require_equal(swapchain_create_info.sType,
@@ -70,7 +68,9 @@ class SwapchainCreateTest(GapitTest):
                              swapchain_create_info.queueFamilyIndexCount == 2))
 
         # Our second vkDestroySwapchain should have been called with
-        # VK_NULL_HANDLE
-        destroySwapchain = require(
-            self.next_call_of("vkDestroySwapchainKHR"))
-        require_equal(0, destroySwapchain.int_swapchain)
+        # VK_NULL_HANDLE.
+        if (self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200) and
+                self.not_android_version("7.1.1")):
+            destroySwapchain = require(self.next_call_of(
+                "vkDestroySwapchainKHR"))
+            require_equal(0, destroySwapchain.int_swapchain)

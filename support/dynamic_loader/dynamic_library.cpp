@@ -34,6 +34,12 @@ class InternalDynamicLibrary : public DynamicLibrary {
     lib_ = dlopen(lib_with_extension.c_str(), RTLD_LAZY);
   }
 
+  ~InternalDynamicLibrary() {
+    if (is_valid()) {
+      dlclose(lib_);
+    }
+  }
+
   void* ResolveFunction(const char* function_name) override {
     return dlsym(lib_, function_name);
   }

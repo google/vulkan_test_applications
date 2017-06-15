@@ -49,12 +49,14 @@ struct WireframeFrameData {
 // for host, and device buffer sizes.
 class WireframeSample : public sample_application::Sample<WireframeFrameData> {
  public:
-  WireframeSample(const entry::entry_data* data)
+  WireframeSample(const entry::entry_data* data,
+                  VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
-        Sample<WireframeFrameData>(data->root_allocator, data, 1, 512, 1,
+        Sample<WireframeFrameData>(data->root_allocator, data, 1, 512, 1, 1,
                                    sample_application::SampleOptions()
                                        .EnableDepthBuffer()
-                                       .EnableMultisampling()),
+                                       .EnableMultisampling(),
+                                   requested_features),
         torus_(data->root_allocator, data->log.get(), torus_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
@@ -268,7 +270,7 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
   }
 
-  virtual void Update(float time_since_last_render) {
+  virtual void Update(float time_since_last_render) override {
     model_data_->data().transform =
         model_data_->data().transform *
         Mat44::FromRotationMatrix(
@@ -276,7 +278,7 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
             Mat44::RotationY(3.14 * time_since_last_render * 0.1));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
-                      WireframeFrameData* frame_data) {
+                      WireframeFrameData* frame_data) override {
     // Update our uniform buffers.
     camera_data_->UpdateBuffer(queue, frame_index);
     model_data_->UpdateBuffer(queue, frame_index);
@@ -320,7 +322,9 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
 
 int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
-  WireframeSample sample(data);
+  VkPhysicalDeviceFeatures requested_features = {0};
+  requested_features.fillModeNonSolid = VK_TRUE;
+  WireframeSample sample(data, requested_features);
   sample.Initialize();
 
   while (!sample.should_exit()) {
@@ -329,4 +333,5 @@ int main_entry(const entry::entry_data* data) {
   sample.WaitIdle();
 
   data->log->LogInfo("Application Shutdown");
+  return 0;
 }

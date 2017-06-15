@@ -46,9 +46,10 @@ class FlushMappedMemoryRangesNonZeroOffsetNotWholeSize(GapitTest):
         EXPECTED_MEMORY_DATA = [i for i in range(FLUSH_SIZE)]
 
         architecture = self.architecture
-        # The first vkMapMemory() result is managed in VulkanApplication and is
-        # not used here, the second is the one we need here.
-        map_memory = require(self.nth_call_of("vkMapMemory", 2))
+        # The first and second vkMapMemory() result is managed in
+        # VulkanApplication and is not used here, the third is the one we need
+        # here.
+        map_memory = require(self.nth_call_of("vkMapMemory", 3))
         require_not_equal(0, map_memory.hex_ppData)
         # The flushed data starts at mapped offset + 256
         flushed_data_ptr = little_endian_bytes_to_int(require(
@@ -97,7 +98,10 @@ class InvalidateMappedMemoryRangesZeroOffsetWholeSize(GapitTest):
         EXPECTED_MEMORY_DATA = [i for i in range(DATA_SIZE)]
 
         architecture = self.architecture
-        map_memory = require(self.nth_call_of("vkMapMemory", 3))
+        # The first and second vkMapMemory() result is managed in
+        # VulkanApplication and is not used here, the fourth is the one we need
+        # here.
+        map_memory = require(self.nth_call_of("vkMapMemory", 4))
         require_not_equal(0, map_memory.hex_ppData)
         # The invalidated data offset is equal to the mapped offset, but the
         # flushed data starts at mapped offset + 256
@@ -146,9 +150,10 @@ class FlushMappedMemoryRangesZeroOffsetWholeSize(GapitTest):
                                 for i in range(DATA_SIZE)]
 
         architecture = self.architecture
-        # The first vkMapMemory() result is managed in VulkanApplication and is
-        # not used here, the second is the one we need here.
-        map_memory = require(self.nth_call_of("vkMapMemory", 4))
+        # The first and second vkMapMemory() result is managed in
+        # VulkanApplication and is not used here, the fifth is the one we need
+        # here.
+        map_memory = require(self.nth_call_of("vkMapMemory", 5))
         require_not_equal(0, map_memory.hex_ppData)
         # The flushed data starts at mapped offset
         flushed_data_ptr = little_endian_bytes_to_int(require(
@@ -197,7 +202,10 @@ class InvalidateMappedMemoryRangesNonZeroOffsetNotWholeSize(GapitTest):
                                 for i in range(INVALIDATE_SIZE, 512)]
 
         architecture = self.architecture
-        map_memory = require(self.nth_call_of("vkMapMemory", 5))
+        # The first and second vkMapMemory() result is managed in
+        # VulkanApplication and is not used here, the sixth is the one we need
+        # here.
+        map_memory = require(self.nth_call_of("vkMapMemory", 6))
         require_not_equal(0, map_memory.hex_ppData)
         # The invalidated data offset is equal to the mapped offset, but the
         # flushed data starts at mapped offset + 256

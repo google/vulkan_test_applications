@@ -128,16 +128,12 @@ VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
     wrapper->GetLogger()->LogInfo("    ", extension);
   }
 
-  VkInstanceCreateInfo info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                            nullptr,
-                            0,
-                            &app_info,
-                            uint32_t(data->options.output_frame >= 0
-                                         ? (sizeof(layers) / sizeof(layers[0]))
-                                         : 0),
-                            layers,
-                            (sizeof(extensions) / sizeof(extensions[0])),
-                            extensions};
+  VkInstanceCreateInfo info{
+      VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &app_info,
+      uint32_t(data->options.output_frame >= 0
+                   ? (sizeof(layers) / sizeof(layers[0]))
+                   : 0),
+      layers, (sizeof(extensions) / sizeof(extensions[0])), extensions};
 
   ::VkInstance raw_instance;
   LOG_ASSERT(==, wrapper->GetLogger(),
@@ -176,21 +172,26 @@ containers::vector<VkQueueFamilyProperties> GetQueueFamilyProperties(
   return std::move(properties);
 }
 
-inline bool HasGraphicsAndComputeQueue(
-    const VkQueueFamilyProperties& property) {
+inline bool HasQueueFlags(const VkQueueFamilyProperties& property,
+                          VkQueueFlags queue_flags) {
   return property.queueCount > 0 &&
-         ((property.queueFlags &
-           (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) ==
-          (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT));
+         ((property.queueFlags & queue_flags) == queue_flags);
 }
 
 uint32_t GetGraphicsAndComputeQueueFamily(containers::Allocator* allocator,
                                           VkInstance& instance,
                                           ::VkPhysicalDevice device) {
+  return GetQueueFamily(allocator, instance, device,
+                        VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+}
+
+inline uint32_t GetQueueFamily(containers::Allocator* allocator,
+                               VkInstance& instance, ::VkPhysicalDevice device,
+                               VkQueueFlags queue_flags) {
   auto properties = GetQueueFamilyProperties(allocator, instance, device);
 
   for (uint32_t i = 0; i < properties.size(); ++i) {
-    if (HasGraphicsAndComputeQueue(properties[i])) return i;
+    if (HasQueueFlags(properties[i], queue_flags)) return i;
   }
   return ~0u;
 }
@@ -208,7 +209,9 @@ uint32_t GetAsyncComputeQueueFamilyIndex(containers::Allocator* allocator,
     auto property = properties[i];
     if (property.queueCount > 0 &&
         (property.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
-      if (graphics_queue == -1 && HasGraphicsAndComputeQueue(properties[i])) {
+      if (graphics_queue == -1 &&
+          HasQueueFlags(properties[i],
+                        VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) {
         graphics_queue = static_cast<int32_t>(i);
         num_graphics_queues = property.queueCount;
       } else {
@@ -238,9 +241,11 @@ VkDevice CreateDefaultDevice(containers::Allocator* allocator,
   instance->vkGetPhysicalDeviceProperties(physical_device, &properties);
 
   const uint32_t queue_family_index =
-      require_graphics_compute_queue ? GetGraphicsAndComputeQueueFamily(
-                                           allocator, instance, physical_device)
-                                     : 0;
+      require_graphics_compute_queue
+          ? GetGraphicsAndComputeQueueFamily(allocator, instance,
+                                             physical_device)
+          : GetQueueFamily(allocator, instance, physical_device,
+                           VK_QUEUE_GRAPHICS_BIT);
   LOG_ASSERT(!=, instance.GetLogger(), queue_family_index, ~0u);
 
   VkDeviceQueueCreateInfo queue_info{
@@ -436,12 +441,13 @@ VkDevice CreateDeviceForSwapchain(
 
     uint32_t num_queue_infos = 1;
     VkDeviceQueueCreateInfo queue_infos[3];
-    queue_infos[0] = {/* sType = */ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                      /* pNext = */ nullptr,
-                      /* flags = */ 0,
-                      /* queueFamilyIndex = */ graphics_queue_family_index,
-                      /* queueCount */ 1,
-                      /* pQueuePriorities = */ &priority};
+    queue_infos[0] = {
+        /* sType = */ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        /* pNext = */ nullptr,
+        /* flags = */ 0,
+        /* queueFamilyIndex = */ graphics_queue_family_index,
+        /* queueCount */ 1,
+        /* pQueuePriorities = */ &priority};
     if (graphics_queue_family_index != present_queue_family_index) {
       queue_infos[num_queue_infos++] = {
           /* sType = */ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -583,10 +589,9 @@ VkCommandBuffer CreateCommandBuffer(VkCommandPool* pool,
       /* commandBufferCount = */ 1,
   };
   ::VkCommandBuffer raw_command_buffer;
-  LOG_ASSERT(
-      ==, device->GetLogger(),
-      (*device)->vkAllocateCommandBuffers(*device, &info, &raw_command_buffer),
-      VK_SUCCESS);
+  LOG_ASSERT(==, device->GetLogger(), (*device)->vkAllocateCommandBuffers(
+                                          *device, &info, &raw_command_buffer),
+             VK_SUCCESS);
   return vulkan::VkCommandBuffer(raw_command_buffer, pool, device);
 }
 
@@ -730,7 +735,7 @@ VkSampler CreateDefaultSampler(VkDevice* device) {
       /* addressModeW = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
       /* mipLodBias = */ 0.f,
       /* anisotropyEnable = */ false,
-      /* maxAnisotropy = */ 0.f,
+      /* maxAnisotropy = */ 1.f,
       /* compareEnable = */ false,
       /* compareOp = */ VK_COMPARE_OP_NEVER,
       /* minLod = */ 0.f,
@@ -839,10 +844,9 @@ VkDescriptorPool CreateDescriptorPool(VkDevice* device, uint32_t num_pool_size,
       /* pPoolSizes = */ pool_sizes};
 
   ::VkDescriptorPool raw_pool;
-  LOG_ASSERT(
-      ==, device->GetLogger(),
-      (*device)->vkCreateDescriptorPool(*device, &info, nullptr, &raw_pool),
-      VK_SUCCESS);
+  LOG_ASSERT(==, device->GetLogger(), (*device)->vkCreateDescriptorPool(
+                                          *device, &info, nullptr, &raw_pool),
+             VK_SUCCESS);
   return vulkan::VkDescriptorPool(raw_pool, nullptr, device);
 }
 
@@ -865,9 +869,8 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice* device,
   };
 
   ::VkDescriptorSetLayout raw_layout;
-  LOG_ASSERT(==, device->GetLogger(),
-             (*device)->vkCreateDescriptorSetLayout(*device, &info, nullptr,
-                                                    &raw_layout),
+  LOG_ASSERT(==, device->GetLogger(), (*device)->vkCreateDescriptorSetLayout(
+                                          *device, &info, nullptr, &raw_layout),
              VK_SUCCESS);
   return vulkan::VkDescriptorSetLayout(raw_layout, nullptr, device);
 }
@@ -882,10 +885,9 @@ VkDescriptorSet AllocateDescriptorSet(VkDevice* device, ::VkDescriptorPool pool,
       /* pSetLayouts = */ &layout,
   };
   ::VkDescriptorSet raw_set;
-  LOG_ASSERT(
-      ==, device->GetLogger(),
-      (*device)->vkAllocateDescriptorSets(*device, &alloc_info, &raw_set),
-      VK_SUCCESS);
+  LOG_ASSERT(==, device->GetLogger(), (*device)->vkAllocateDescriptorSets(
+                                          *device, &alloc_info, &raw_set),
+             VK_SUCCESS);
   return vulkan::VkDescriptorSet(raw_set, pool, device);
 }
 
@@ -906,15 +908,11 @@ VkDeviceMemory AllocateDeviceMemory(VkDevice* device,
   return vulkan::VkDeviceMemory(raw_memory, nullptr, device);
 }
 
-void SetImageLayout(::VkImage image,
-                    const VkImageSubresourceRange& subresource_range,
-                    VkImageLayout old_layout, VkAccessFlags src_access_mask,
-                    VkImageLayout new_layout, VkAccessFlags dst_access_mask,
-                    VkCommandBuffer* cmd_buffer, VkQueue* queue,
-                    std::initializer_list<::VkSemaphore> wait_semaphores,
-                    std::initializer_list<::VkSemaphore> signal_semaphores,
-                    ::VkFence fence, containers::Allocator* allocator) {
-  ::VkCommandBuffer raw_cmd_buffer = cmd_buffer->get_command_buffer();
+void RecordImageLayoutTransition(
+    ::VkImage image, const VkImageSubresourceRange& subresource_range,
+    VkImageLayout old_layout, VkAccessFlags src_access_mask,
+    VkImageLayout new_layout, VkAccessFlags dst_access_mask,
+    VkCommandBuffer* cmd_buffer) {
   // As we are changing the image memory layout, we should have a image memory
   // barrier.
   VkImageMemoryBarrier image_memory_barrier = {
@@ -929,58 +927,19 @@ void SetImageLayout(::VkImage image,
       image,                    // image
       subresource_range,        // subresourceRange
   };
-  // To start a command buffer, we need to create command buffer begin info.
-  VkCommandBufferInheritanceInfo cmd_buffer_hinfo = {
-      VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,  // sType
-      NULL,                                               // pNext
-      VK_NULL_HANDLE,                                     // renderPass
-      0,                                                  // subpass
-      VK_NULL_HANDLE,                                     // framebuffer
-      VK_FALSE,  // occlusionQueryEnable
-      0,         // queryFlags
-      0,         // pipelineStatistics
-  };
-  VkCommandBufferBeginInfo cmd_buffer_begin_info = {
-      VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // sType
-      NULL,                                         // pNext
-      0,                                            // flags
-      &cmd_buffer_hinfo,                            // pInheritanceInfo
-  };
-  if (queue) {
-    (*cmd_buffer)->vkBeginCommandBuffer(*cmd_buffer, &cmd_buffer_begin_info);
-  }
   (*cmd_buffer)
-      ->vkCmdPipelineBarrier(*cmd_buffer,  // commandBuffer
-                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,  // srcStageMask
-                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,  // dstStageMask
-                             0,                     // dependencyFlags
-                             0,                     // memoryBarrierCount
-                             nullptr,               // pMemoryBarriers
-                             0,                     // bufferMemoryBarrierCount
-                             nullptr,               // pBufferMemoryBarriers
-                             1,                     // imageMemoryBarrierCount
-                             &image_memory_barrier  // pImageMemoryBarriers
-                             );
-  if (queue) {
-    (*cmd_buffer)->vkEndCommandBuffer(*cmd_buffer);
-    containers::vector<::VkSemaphore> waits(wait_semaphores, allocator);
-    containers::vector<::VkSemaphore> signals(signal_semaphores, allocator);
-    const VkPipelineStageFlags wait_dst_stage_masks[1] = {
-        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
-    VkSubmitInfo submit_info = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,                   // sType
-        nullptr,                                         // pNext
-        uint32_t(waits.size()),                          // waitSemaphoreCount
-        waits.size() == 0 ? nullptr : waits.data(),      // pWaitSemaphores
-        wait_dst_stage_masks,                            // pWaitDstStageMask
-        1,                                               // commandBufferCount
-        &raw_cmd_buffer,                                 // pCommandBuffers
-        uint32_t(signals.size()),                        // signalSemaphoreCount
-        signals.size() == 0 ? nullptr : signals.data(),  // pSignalSemaphores
-    };
-    (*queue)->vkQueueSubmit(*queue, 1, &submit_info, fence);
-  }
-  return;
+      ->vkCmdPipelineBarrier(
+          *cmd_buffer,                         // commandBuffer
+          VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,  // srcStageMask
+          VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,  // dstStageMask
+          0,                                   // dependencyFlags
+          0,                                   // memoryBarrierCount
+          nullptr,                             // pMemoryBarriers
+          0,                                   // bufferMemoryBarrierCount
+          nullptr,                             // pBufferMemoryBarriers
+          1,                                   // imageMemoryBarrierCount
+          &image_memory_barrier                // pImageMemoryBarriers
+          );
 }
 
 namespace {

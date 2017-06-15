@@ -67,7 +67,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
  public:
   DepthReadbackSample(const entry::entry_data* data)
       : data_(data),
-        Sample<DepthFrameData>(data->root_allocator, data, 1, 512, 1,
+        Sample<DepthFrameData>(data->root_allocator, data, 1, 512, 1, 1,
                                sample_application::SampleOptions()
                                    .EnableMultisampling()
                                    .EnableDepthBuffer()),
@@ -388,7 +388,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
   }
 
-  virtual void Update(float time_since_last_render) {
+  virtual void Update(float time_since_last_render) override {
     model_data_->data().transform =
         model_data_->data().transform *
         Mat44::FromRotationMatrix(
@@ -396,7 +396,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
             Mat44::RotationY(3.14 * time_since_last_render * 0.5));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
-                      DepthFrameData* frame_data) {
+                      DepthFrameData* frame_data) override {
     // Update our uniform buffers.
     camera_data_->UpdateBuffer(queue, frame_index);
     model_data_->UpdateBuffer(queue, frame_index);
@@ -475,4 +475,5 @@ int main_entry(const entry::entry_data* data) {
   sample.WaitIdle();
 
   data->log->LogInfo("Application Shutdown");
+  return 0;
 }

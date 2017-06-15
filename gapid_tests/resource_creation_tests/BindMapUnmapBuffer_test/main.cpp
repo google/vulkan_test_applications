@@ -62,10 +62,11 @@ int main_entry(const entry::entry_data* data) {
         requirements.size,                       // allocationSize
         memory_index};
 
-    VkDeviceMemory device_memory;
+    ::VkDeviceMemory raw_device_memory;
     LOG_ASSERT(==, data->log, VK_SUCCESS,
                device->vkAllocateMemory(device, &allocate_info, nullptr,
-                                        &device_memory));
+                                        &raw_device_memory));
+    vulkan::VkDeviceMemory device_memory(raw_device_memory, nullptr, &device);
 
     LOG_ASSERT(==, data->log, VK_SUCCESS,
                device->vkBindBufferMemory(device, buffer, device_memory, 0));

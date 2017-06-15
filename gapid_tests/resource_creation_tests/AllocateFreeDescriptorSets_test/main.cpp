@@ -90,7 +90,9 @@ int main_entry(const entry::entry_data* data) {
     ::VkDescriptorPool raw_pool = pool.get_raw_object();
 
     ::VkDescriptorSet sets[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
-    device->vkFreeDescriptorSets(device, raw_pool, 2, sets);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
+      device->vkFreeDescriptorSets(device, raw_pool, 2, sets);
+    }
   }
 
   data->log->LogInfo("Application Shutdown");

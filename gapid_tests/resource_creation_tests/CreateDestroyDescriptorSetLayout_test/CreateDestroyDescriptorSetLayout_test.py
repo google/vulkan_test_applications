@@ -15,7 +15,7 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest
-from gapit_test_framework import
+from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, FLOAT, POINTER
 
@@ -44,8 +44,8 @@ def check_create_descriptor_set_layout(test, index):
     content of the VkDescriptorSetLayoutCreateInfo struct used in the
     vkCreateDescriptorSetLayout call.
     """
-    create_descriptor_set_layout = require(
-        test.nth_call_of("vkCreateDescriptorSetLayout", index))
+    create_descriptor_set_layout = require(test.nth_call_of(
+        "vkCreateDescriptorSetLayout", index))
     require_equal(VK_SUCCESS, int(create_descriptor_set_layout.return_val))
     device = create_descriptor_set_layout.int_device
     require_not_equal(0, device)
@@ -53,8 +53,8 @@ def check_create_descriptor_set_layout(test, index):
     require_not_equal(0, p_create_info)
     p_set_layout = create_descriptor_set_layout.hex_pSetLayout
     require_not_equal(0, p_set_layout)
-    descriptor_set_layout = little_endian_bytes_to_int(
-        require(create_descriptor_set_layout.get_write_data(
+    descriptor_set_layout = little_endian_bytes_to_int(require(
+        create_descriptor_set_layout.get_write_data(
             p_set_layout, NON_DISPATCHABLE_HANDLE_SIZE)))
     require_not_equal(0, descriptor_set_layout)
     return create_descriptor_set_layout, device, descriptor_set_layout
@@ -64,8 +64,8 @@ def check_destroy_descriptor_set_layout(test, device, descriptor_set_layout):
     """Checks that the next vkDestroyDescriptorSetLayout command call atom has
     the passed-in |device| and |descriptor_set_layout| handle value.
     """
-    destroy_descriptor_set_layout = require(
-        test.next_call_of("vkDestroyDescriptorSetLayout"))
+    destroy_descriptor_set_layout = require(test.next_call_of(
+        "vkDestroyDescriptorSetLayout"))
     require_equal(device, destroy_descriptor_set_layout.int_device)
     require_equal(descriptor_set_layout,
                   destroy_descriptor_set_layout.int_descriptorSetLayout)
@@ -77,9 +77,7 @@ def get_descriptor_set_layout_create_info(create_descriptor_set_layout,
     struct used in the given |create_descriptor_set_layout| command."""
     return VulkanStruct(
         architecture, DESCRIPTOR_SET_LAYOUT_CREATE_INFO_ELEMENTS,
-        lambda offset, size: little_endian_bytes_to_int(require(
-            create_descriptor_set_layout.get_read_data(
-                create_descriptor_set_layout.hex_pCreateInfo + offset, size))))
+        lambda offset, size: little_endian_bytes_to_int(require(create_descriptor_set_layout.get_read_data(create_descriptor_set_layout.hex_pCreateInfo + offset, size))))
 
 
 def get_binding(create_descriptor_set_layout, architecture, create_info, index):
@@ -95,9 +93,7 @@ def get_binding(create_descriptor_set_layout, architecture, create_info, index):
         4 * 4 + int(architecture.int_pointerSize))
     return VulkanStruct(
         architecture, BINDING_ELEMENTS,
-        lambda offset, size: little_endian_bytes_to_int(require(
-            create_descriptor_set_layout.get_read_data(
-                binding_offset + offset, size))))
+        lambda offset, size: little_endian_bytes_to_int(require(create_descriptor_set_layout.get_read_data(binding_offset + offset, size))))
 
 
 def get_samplers(test, count):
@@ -108,22 +104,21 @@ def get_samplers(test, count):
         require_equal(VK_SUCCESS, int(create.return_val))
         require_not_equal(0, create.int_device)
         require_not_equal(0, create.hex_pSampler)
-        sampler = little_endian_bytes_to_int(
-            require(create.get_write_data(
-                create.hex_pSampler, NON_DISPATCHABLE_HANDLE_SIZE)))
+        sampler = little_endian_bytes_to_int(require(create.get_write_data(
+            create.hex_pSampler, NON_DISPATCHABLE_HANDLE_SIZE)))
         require_not_equal(0, sampler)
         samplers.append(sampler)
     return samplers
 
 
-def get_bound_sampler(create_descriptor_set_layout, architecture,
-                      binding_info, index):
+def get_bound_sampler(create_descriptor_set_layout, architecture, binding_info,
+                      index):
     """Returns the |index|'th sampler contained in the |binding_info|
     VkDescriptorSetLayoutBinding struct's pImmutableSamplers field."""
-    offset = (binding_info.pImmutableSamplers +
-              index * NON_DISPATCHABLE_HANDLE_SIZE)
-    return little_endian_bytes_to_int(
-        require(create_descriptor_set_layout.get_read_data(
+    offset = (
+        binding_info.pImmutableSamplers + index * NON_DISPATCHABLE_HANDLE_SIZE)
+    return little_endian_bytes_to_int(require(
+        create_descriptor_set_layout.get_read_data(
             offset, NON_DISPATCHABLE_HANDLE_SIZE)))
 
 
@@ -146,8 +141,7 @@ class ZeroBindings(GapitTest):
         require_equal(info.bindingCount, 0)
         require_equal(info.pBindings, 0)
 
-        check_destroy_descriptor_set_layout(
-            self, device, descriptor_set_layout)
+        check_destroy_descriptor_set_layout(self, device, descriptor_set_layout)
 
 
 @gapit_test("CreateDestroyDescriptorSetLayout_test")
@@ -174,15 +168,14 @@ class ThreeBindings(GapitTest):
         require_equal(binding.binding, 0)
         require_equal(binding.descriptorType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
         require_equal(binding.descriptorCount, 6)
-        require_equal(binding.stageFlags, (VK_SHADER_STAGE_VERTEX_BIT |
-                                           VK_SHADER_STAGE_FRAGMENT_BIT))
+        require_equal(binding.stageFlags, (VK_SHADER_STAGE_VERTEX_BIT
+                                           | VK_SHADER_STAGE_FRAGMENT_BIT))
         require_equal(binding.pImmutableSamplers, 0)
 
         # The 2nd binding.
         binding = get_binding(create_descriptor_set_layout, arch, info, 1)
         require_equal(binding.binding, 2)
-        require_equal(
-            binding.descriptorType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+        require_equal(binding.descriptorType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
         require_equal(binding.descriptorCount, 1)
         require_equal(binding.stageFlags, VK_SHADER_STAGE_VERTEX_BIT)
         require_equal(binding.pImmutableSamplers, 0)
@@ -190,14 +183,12 @@ class ThreeBindings(GapitTest):
         # The 3rd binding.
         binding = get_binding(create_descriptor_set_layout, arch, info, 2)
         require_equal(binding.binding, 5)
-        require_equal(
-            binding.descriptorType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+        require_equal(binding.descriptorType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
         require_equal(binding.descriptorCount, 0)
         require_equal(binding.stageFlags, 0xdeadbeef)
         require_equal(binding.pImmutableSamplers, 0)
 
-        check_destroy_descriptor_set_layout(
-            self, device, descriptor_set_layout)
+        check_destroy_descriptor_set_layout(self, device, descriptor_set_layout)
 
 
 @gapit_test("CreateDestroyDescriptorSetLayout_test")
@@ -243,12 +234,11 @@ class TwoBindingsWithSamplers(GapitTest):
         # Let's check that the atom actually captures all sampler handles
         # generated by the driver.
         for i in range(3):
-            sampler = get_bound_sampler(create_descriptor_set_layout,
-                                        arch, binding, i)
+            sampler = get_bound_sampler(create_descriptor_set_layout, arch,
+                                        binding, i)
             require_equal(expected_samplers[i], sampler)
 
-        check_destroy_descriptor_set_layout(
-            self, device, descriptor_set_layout)
+        check_destroy_descriptor_set_layout(self, device, descriptor_set_layout)
 
 
 @gapit_test("CreateDestroyDescriptorSetLayout_test")
@@ -256,10 +246,11 @@ class DestroyNullDescriptorSetLayout(GapitTest):
 
     def expect(self):
         """4. Destroys a null descriptor set layout handle."""
-        device_properties = require(
-            self.next_call_of("vkGetPhysicalDeviceProperties"))
+        device_properties = require(self.next_call_of(
+            "vkGetPhysicalDeviceProperties"))
 
-        destroy_descriptor_set_layout = require(
-            self.nth_call_of("vkDestroyDescriptorSetLayout", 4))
-        require_equal(0,
-                      destroy_descriptor_set_layout.int_descriptorSetLayout)
+        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
+            destroy_descriptor_set_layout = require(self.nth_call_of(
+                "vkDestroyDescriptorSetLayout", 4))
+            require_equal(0,
+                          destroy_descriptor_set_layout.int_descriptorSetLayout)

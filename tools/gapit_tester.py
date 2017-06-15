@@ -30,6 +30,7 @@ class RunArgs(object):
         self.verbose = False
         self.output = None
         self.keep = False
+        self.additional_params = []
 
     def set_verbose(self):
         """Sets the verbose flag to true"""
@@ -43,9 +44,14 @@ class RunArgs(object):
         """Sets the keep flag to true"""
         self.keep = True
 
+    def set_additional_params(self, params):
+        """Sets additional params to gapit"""
+        self.additional_params = params
+
     verbose = False
     output = None
     keep = False
+    additional_params = []
 
 
 def run_on_single_apk(apk, args):
@@ -64,18 +70,20 @@ def run_on_single_apk(apk, args):
     gapit_args.extend(['trace'])
     if args.output:
         gapit_args.extend(['-out', args.output[0]])
+    gapit_args.extend(args.additional_params)
     gapit_args.extend([apk_info.package_name])
 
     if args.verbose:
         print gapit_args
 
     if args.verbose:
-        subprocess.Popen(gapit_args)
+        gapit = subprocess.Popen(gapit_args)
     else:
         null_file = open(os.devnull, 'w')
-        subprocess.Popen(gapit_args, stdout=null_file, stderr=null_file)
+        gapit = subprocess.Popen(
+            gapit_args, stdout=null_file, stderr=null_file)
 
-    return_value = android.watch_process(True, args)
+    return_value = android.watch_process(True, args, gapit)
     android.adb(['shell', 'am', 'force-stop', apk_info.package_name], args)
     if not args.keep:
         android.adb(['uninstall', apk_info.package_name], args)

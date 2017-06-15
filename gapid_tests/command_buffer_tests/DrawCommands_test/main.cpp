@@ -81,16 +81,16 @@ int main_entry(const entry::entry_data* data) {
       0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
   vulkan::VkRenderPass render_pass = app.CreateRenderPass(
       {{
-          0,                                         // flags
-          app.swapchain().format(),                  // format
-          VK_SAMPLE_COUNT_1_BIT,                     // samples
-          VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // loadOp
-          VK_ATTACHMENT_STORE_OP_STORE,              // storeOp
-          VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // stenilLoadOp
-          VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stenilStoreOp
-          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // initialLayout
-          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL   // finalLayout
-      }},                                            // AttachmentDescriptions
+          0,                                        // flags
+          app.swapchain().format(),                 // format
+          VK_SAMPLE_COUNT_1_BIT,                    // samples
+          VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // loadOp
+          VK_ATTACHMENT_STORE_OP_STORE,             // storeOp
+          VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // stenilLoadOp
+          VK_ATTACHMENT_STORE_OP_DONT_CARE,         // stenilStoreOp
+          VK_IMAGE_LAYOUT_UNDEFINED,                // initialLayout
+          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  // finalLayout
+      }},                                           // AttachmentDescriptions
       {{
           0,                                // flags
           VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
@@ -160,11 +160,10 @@ int main_entry(const entry::entry_data* data) {
       },
   };
   ::VkImageView raw_image_view;
-  LOG_ASSERT(
-      ==, data->log,
-      app.device()->vkCreateImageView(app.device(), &image_view_create_info,
-                                      nullptr, &raw_image_view),
-      VK_SUCCESS);
+  LOG_ASSERT(==, data->log, app.device()->vkCreateImageView(
+                                app.device(), &image_view_create_info, nullptr,
+                                &raw_image_view),
+             VK_SUCCESS);
   vulkan::VkImageView image_view(raw_image_view, nullptr, &app.device());
 
   // Create framebuffer
@@ -185,7 +184,6 @@ int main_entry(const entry::entry_data* data) {
   vulkan::VkFramebuffer framebuffer(raw_framebuffer, nullptr, &app.device());
 
   // Create render pass begin info
-  VkClearValue clear_value{0};
   VkRenderPassBeginInfo pass_begin{
       VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
       nullptr,                                   // pNext
@@ -193,14 +191,18 @@ int main_entry(const entry::entry_data* data) {
       framebuffer,                               // framebuffer
       {{0, 0},
        {app.swapchain().width(), app.swapchain().height()}},  // renderArea
-      1,                                                      // clearValueCount
-      &clear_value                                            // clears
+      0,                                                      // clearValueCount
+      nullptr                                                 // clears
   };
 
   {
     // 1. vkCmdDraw
     auto cmd_buf = app.GetCommandBuffer();
     app.BeginCommandBuffer(&cmd_buf);
+    vulkan::RecordImageLayoutTransition(
+        app.swapchain_images().front(), {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+        VK_IMAGE_LAYOUT_UNDEFINED, 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, &cmd_buf);
     app.FillHostVisibleBuffer(
         &*vertices_buf, reinterpret_cast<const char*>(kVertices),
         sizeof(kVertices), 0, &cmd_buf, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
@@ -227,6 +229,10 @@ int main_entry(const entry::entry_data* data) {
     // 2. vkCmdDrawIndexed
     auto cmd_buf = app.GetCommandBuffer();
     app.BeginCommandBuffer(&cmd_buf);
+    vulkan::RecordImageLayoutTransition(
+        app.swapchain_images().front(), {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+        VK_IMAGE_LAYOUT_UNDEFINED, 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, &cmd_buf);
     app.FillHostVisibleBuffer(
         &*vertices_buf, reinterpret_cast<const char*>(kVertices),
         sizeof(kVertices), 0, &cmd_buf, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
@@ -263,6 +269,10 @@ int main_entry(const entry::entry_data* data) {
 
     auto cmd_buf = app.GetCommandBuffer();
     app.BeginCommandBuffer(&cmd_buf);
+    vulkan::RecordImageLayoutTransition(
+        app.swapchain_images().front(), {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+        VK_IMAGE_LAYOUT_UNDEFINED, 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, &cmd_buf);
     app.FillHostVisibleBuffer(
         &*vertices_buf, reinterpret_cast<const char*>(kVertices),
         sizeof(kVertices), 0, &cmd_buf, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
@@ -298,6 +308,10 @@ int main_entry(const entry::entry_data* data) {
 
     auto cmd_buf = app.GetCommandBuffer();
     app.BeginCommandBuffer(&cmd_buf);
+    vulkan::RecordImageLayoutTransition(
+        app.swapchain_images().front(), {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+        VK_IMAGE_LAYOUT_UNDEFINED, 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, &cmd_buf);
     app.FillHostVisibleBuffer(
         &*vertices_buf, reinterpret_cast<const char*>(kVertices),
         sizeof(kVertices), 0, &cmd_buf, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,

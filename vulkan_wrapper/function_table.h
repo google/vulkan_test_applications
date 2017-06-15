@@ -169,7 +169,10 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdResetQueryPool),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginQuery),
         CONSTRUCT_LAZY_FUNCTION(vkCmdEndQuery),
-        CONSTRUCT_LAZY_FUNCTION(vkCmdCopyQueryPoolResults)
+        CONSTRUCT_LAZY_FUNCTION(vkCmdCopyQueryPoolResults),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetEvent),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdResetEvent),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdWaitEvents)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -215,6 +218,9 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdBeginQuery);
   LAZY_FUNCTION(vkCmdEndQuery);
   LAZY_FUNCTION(vkCmdCopyQueryPoolResults);
+  LAZY_FUNCTION(vkCmdSetEvent);
+  LAZY_FUNCTION(vkCmdResetEvent);
+  LAZY_FUNCTION(vkCmdWaitEvents);
 #undef LAZY_FUNCTION
 };
 
@@ -261,6 +267,7 @@ class DeviceFunctions {
 #define CONSTRUCT_LAZY_FUNCTION(function) function(device, #function, this)
         CONSTRUCT_LAZY_FUNCTION(vkDestroyDevice),
         CONSTRUCT_LAZY_FUNCTION(vkCreateCommandPool),
+        CONSTRUCT_LAZY_FUNCTION(vkResetCommandPool),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyCommandPool),
         CONSTRUCT_LAZY_FUNCTION(vkAllocateCommandBuffers),
         CONSTRUCT_LAZY_FUNCTION(vkFreeCommandBuffers),
@@ -273,6 +280,7 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkDestroySwapchainKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetSwapchainImagesKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetImageMemoryRequirements),
+        CONSTRUCT_LAZY_FUNCTION(vkGetImageSubresourceLayout),
         CONSTRUCT_LAZY_FUNCTION(vkCreateImageView),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyImageView),
         CONSTRUCT_LAZY_FUNCTION(vkCreateRenderPass),
@@ -321,7 +329,12 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkDeviceWaitIdle),
         CONSTRUCT_LAZY_FUNCTION(vkCreateQueryPool),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyQueryPool),
-        CONSTRUCT_LAZY_FUNCTION(vkGetQueryPoolResults)
+        CONSTRUCT_LAZY_FUNCTION(vkGetQueryPoolResults),
+        CONSTRUCT_LAZY_FUNCTION(vkCreateEvent),
+        CONSTRUCT_LAZY_FUNCTION(vkDestroyEvent),
+        CONSTRUCT_LAZY_FUNCTION(vkGetEventStatus),
+        CONSTRUCT_LAZY_FUNCTION(vkSetEvent),
+        CONSTRUCT_LAZY_FUNCTION(vkResetEvent)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -351,6 +364,7 @@ class DeviceFunctions {
 #define LAZY_FUNCTION(function) LazyDeviceFunction<PFN_##function> function;
   LAZY_FUNCTION(vkDestroyDevice);
   LAZY_FUNCTION(vkCreateCommandPool);
+  LAZY_FUNCTION(vkResetCommandPool);
   LAZY_FUNCTION(vkDestroyCommandPool);
   LAZY_FUNCTION(vkAllocateCommandBuffers);
   LAZY_FUNCTION(vkFreeCommandBuffers);
@@ -363,6 +377,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkDestroySwapchainKHR);
   LAZY_FUNCTION(vkGetSwapchainImagesKHR);
   LAZY_FUNCTION(vkGetImageMemoryRequirements);
+  LAZY_FUNCTION(vkGetImageSubresourceLayout);
   LAZY_FUNCTION(vkCreateImageView);
   LAZY_FUNCTION(vkDestroyImageView);
   LAZY_FUNCTION(vkCreateRenderPass);
@@ -412,6 +427,11 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkCreateQueryPool);
   LAZY_FUNCTION(vkDestroyQueryPool);
   LAZY_FUNCTION(vkGetQueryPoolResults);
+  LAZY_FUNCTION(vkCreateEvent);
+  LAZY_FUNCTION(vkDestroyEvent);
+  LAZY_FUNCTION(vkGetEventStatus);
+  LAZY_FUNCTION(vkSetEvent);
+  LAZY_FUNCTION(vkResetEvent);
 #undef LAZY_FUNCTION
 };
 

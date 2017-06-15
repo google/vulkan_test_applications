@@ -42,7 +42,7 @@ int main_entry(const entry::entry_data* data) {
   command_buffers.reserve(max_count);
   for (VkCommandBufferLevel level :
        vulkan::AllVkCommandBufferLevels(allocator)) {
-    for (uint32_t count : {uint32_t(0), uint32_t(1), max_count}) {
+    for (uint32_t count : {uint32_t(1), uint32_t(2), max_count}) {
       data->log->LogInfo("commandBufferLevel: ", level);
       data->log->LogInfo("commandBufferCount: ", count);
 

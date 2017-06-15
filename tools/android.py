@@ -18,6 +18,9 @@ information about .apks'''
 import collections
 import os
 import subprocess
+import time
+from threading import Thread
+from Queue import Queue, Empty
 
 
 def adb(params, program_args):
@@ -86,7 +89,7 @@ def get_apk_info(apk):
     return apk_info(test_name, package_name, activity_name, apk)
 
 
-def watch_process(silent, program_args):
+def watch_process(silent, program_args, other_proc=None):
     ''' Watches the output of a running android process.
 
     Arguments:
@@ -94,6 +97,9 @@ def watch_process(silent, program_args):
         program_args: The arguments passed to the program.
 
         program_args must contain a .verbose member.
+
+        if other_proc != None, then it will also be
+        waited for. If either process ends, the other is killed.
 
     It is expected that the log was cleared before the process started.
 
@@ -105,9 +111,31 @@ def watch_process(silent, program_args):
         program_args)
     return_value = 0
 
+    q = Queue()
+
+    def read_lines(out, queue):
+        for line in iter(out.readline, b''):
+            queue.put(line)
+        out.close()
+        queue.put(None)
+
+    t = Thread(target=read_lines, args=(proc.stdout, q))
+    t.daemon = True
+    t.start()
+
     while True:
-        line = proc.stdout.readline()
-        if line != '':
+        if other_proc:
+            val = other_proc.poll()
+            if val != None:
+                proc.kill()
+                return val
+        try:
+            line = q.get_nowait()
+        except Empty:
+            time.sleep(0.1)
+            continue
+
+        if line != None:
             if 'beginning of crash' in line:
                 print '**Application Crashed**'
                 proc.kill()

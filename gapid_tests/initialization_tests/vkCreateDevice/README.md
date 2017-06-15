@@ -99,8 +99,8 @@ typedef struct VkPhysicalDeviceFeatures {
 ```
 
 These tests should test the following cases:
-- [x] `queueCreateInfoCount` 0 or >0
+- [x] `queueCreateInfoCount` of value 1 or greater
 - [ ] `enabledLayerCount` 0 or >0
 - [ ] `enabledExtensionCount` 0 or >0
 - [ ] `enabledFeatures` Null or Not
-- [ ] `queueCount` 1 or greater
+- [x] `queueCount` 1 or greater

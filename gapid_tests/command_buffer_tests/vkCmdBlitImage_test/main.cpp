@@ -29,7 +29,7 @@ int main_entry(const entry::entry_data* data) {
                                         1024 * 100);
 
   VkExtent3D src_image_extent{32, 32, 1};
-  VkImageCreateInfo src_image_create_info{
+  VkImageCreateInfo image_create_info{
       /* sType = */ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
       /* pNext = */ nullptr,
       /* flags = */ 0,
@@ -49,7 +49,7 @@ int main_entry(const entry::entry_data* data) {
   };
 
   vulkan::ImagePointer src_image =
-      application.CreateAndBindImage(&src_image_create_info);
+      application.CreateAndBindImage(&image_create_info);
   size_t image_data_size = vulkan::GetImageExtentSizeInBytes(
       src_image_extent, VK_FORMAT_R8G8B8A8_UNORM);
   containers::vector<uint8_t> image_data(image_data_size, 0,
@@ -57,6 +57,8 @@ int main_entry(const entry::entry_data* data) {
   for (size_t i = 0; i < image_data_size; i++) {
     image_data[i] = i & 0xFF;
   }
+  vulkan::ImagePointer dst_image =
+      application.CreateAndBindImage(&image_create_info);
 
   // Create semaphores, one for image data filling, another for layout
   // transitioning.
@@ -70,14 +72,23 @@ int main_entry(const entry::entry_data* data) {
       image_fill_semaphore, nullptr, &application.device());
   VkSemaphoreCreateInfo layout_transition_semaphore_create_info{
       VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0};
-  ::VkSemaphore layout_transition_semaphore;
+
+  ::VkSemaphore src_layout_transition_semaphore;
   application.device()->vkCreateSemaphore(
       application.device(), &layout_transition_semaphore_create_info, nullptr,
-      &layout_transition_semaphore);
-  vulkan::VkSemaphore layout_transition_semaphore_wrapper(
-      layout_transition_semaphore, nullptr, &application.device());
+      &src_layout_transition_semaphore);
+  vulkan::VkSemaphore src_layout_transition_semaphore_wrapper(
+      src_layout_transition_semaphore, nullptr, &application.device());
+  ::VkSemaphore dst_layout_transition_semaphore;
+  application.device()->vkCreateSemaphore(
+      application.device(), &layout_transition_semaphore_create_info, nullptr,
+      &dst_layout_transition_semaphore);
+  vulkan::VkSemaphore dst_layout_transition_semaphore_wrapper(
+      dst_layout_transition_semaphore, nullptr, &application.device());
+  ::VkSemaphore layout_transition_semaphores[2] = {
+      src_layout_transition_semaphore, dst_layout_transition_semaphore};
 
-  std::tuple<bool, vulkan::VkCommandBuffer> fill_result =
+  std::tuple<bool, vulkan::VkCommandBuffer, vulkan::BufferPointer> fill_result =
       application.FillImageLayersData(
           src_image.get(),
           {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},   // subresourcelayer
@@ -110,22 +121,43 @@ int main_entry(const entry::entry_data* data) {
       application.GetCommandBuffer();
   {
     // Image layout transition.
-    vulkan::SetImageLayout(
-        *src_image.get(), {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT,
+
+    VkImageMemoryBarrier src_image_barrier = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
+        nullptr,                                  // pNext
+        VK_ACCESS_TRANSFER_WRITE_BIT,             // srcAccessMask
+        VK_ACCESS_TRANSFER_READ_BIT,              // dstAccessMask
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,     // oldLayout
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     // newLayout
+        VK_QUEUE_FAMILY_IGNORED,                  // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                  // dstQueueFamilyIndex
+        *src_image,                               // image
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},  // subresourceRange
+    };
+    VkImageMemoryBarrier dst_image_barrier = src_image_barrier;
+    dst_image_barrier.srcAccessMask = 0;
+    dst_image_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    dst_image_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    dst_image_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    dst_image_barrier.image = *dst_image;
+
+    VkImageMemoryBarrier barriers[2] = {src_image_barrier, dst_image_barrier};
+    VkPipelineStageFlags wait_stages[1] = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+    application.BeginCommandBuffer(&layout_transition_cmd_buf);
+    layout_transition_cmd_buf->vkCmdPipelineBarrier(
+        layout_transition_cmd_buf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 2,
+        barriers);
+    application.EndAndSubmitCommandBuffer(
         &layout_transition_cmd_buf, &application.render_queue(),
-        {image_fill_semaphore}, {layout_transition_semaphore},
-        static_cast<::VkFence>(VK_NULL_HANDLE), data->root_allocator);
+        {image_fill_semaphore}, {VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT},
+        {src_layout_transition_semaphore, dst_layout_transition_semaphore},
+        ::VkFence(VK_NULL_HANDLE));
   }
 
   {
     // 1. Blit to an image with exactly the same image create info as the source
     // image. And the source image has only one layer and one mip level.
-    VkImageCreateInfo dst_image_create_info = src_image_create_info;
-    dst_image_create_info.initialLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    vulkan::ImagePointer dst_image =
-        application.CreateAndBindImage(&dst_image_create_info);
     VkImageBlit region{
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
         {{0, 0, 0},
@@ -144,12 +176,14 @@ int main_entry(const entry::entry_data* data) {
     cmd_buf->vkEndCommandBuffer(cmd_buf);
 
     VkCommandBuffer raw_cmd_buf = cmd_buf.get_command_buffer();
-    const VkPipelineStageFlags wait_dst_stage_masks[1] = {
-        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+    const VkPipelineStageFlags wait_dst_stage_masks[2] = {
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+    const ::VkSemaphore wait_semaphores[2] = {src_layout_transition_semaphore,
+                                              dst_layout_transition_semaphore};
     VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO,
                         nullptr,
-                        1,
-                        &layout_transition_semaphore,
+                        2,
+                        wait_semaphores,
                         wait_dst_stage_masks,
                         1,
                         &raw_cmd_buf,

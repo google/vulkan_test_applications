@@ -27,7 +27,6 @@ namespace sample_application {
 const static VkSampleCountFlagBits kVkMultiSampledSampleCount =
     VK_SAMPLE_COUNT_4_BIT;
 const static VkFormat kDepthFormat = VK_FORMAT_D16_UNORM;
-const static VkFormat kMultisampledFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
 struct SampleOptions {
   bool enable_multisampling = false;
@@ -123,15 +122,18 @@ class Sample {
  public:
   Sample(containers::Allocator* allocator, const entry::entry_data* entry_data,
          uint32_t host_buffer_size_in_MB, uint32_t image_memory_size_in_MB,
-         uint32_t device_buffer_size_in_MB, const SampleOptions& options)
+         uint32_t device_buffer_size_in_MB, uint32_t coherent_buffer_size_in_MB,
+         const SampleOptions& options,
+         const VkPhysicalDeviceFeatures& physical_device_features = {0})
       : options_(options),
         data_(entry_data),
         allocator_(allocator),
-        application_(allocator, entry_data->log.get(), entry_data, {}, {0},
-                     host_buffer_size_in_MB * 1024 * 1024,
-                     image_memory_size_in_MB * 1024 * 1024,
-                     device_buffer_size_in_MB * 1024 * 1024,
-                     options.async_compute),
+        application_(
+            allocator, entry_data->log.get(), entry_data, {},
+            physical_device_features, host_buffer_size_in_MB * 1024 * 1024,
+            image_memory_size_in_MB * 1024 * 1024,
+            device_buffer_size_in_MB * 1024 * 1024,
+            coherent_buffer_size_in_MB * 1024 * 1024, options.async_compute),
         frame_data_(allocator),
         swapchain_images_(application_.swapchain_images()),
         last_frame_time_(std::chrono::high_resolution_clock::now()),
@@ -143,9 +145,10 @@ class Sample {
     }
 
     frame_data_.reserve(swapchain_images_.size());
-    render_target_format_ = options.enable_multisampling
-                                ? kMultisampledFormat
-                                : application_.swapchain().format();
+    // TODO: The image format used by the swapchain image may not suppport
+    // multi-sampling. Fix this later by adding a vkCmdBlitImage command
+    // after the vkCmdResolveImage.
+    render_target_format_ = application_.swapchain().format();
     num_samples_ = options.enable_multisampling ? kVkMultiSampledSampleCount
                                                 : VK_SAMPLE_COUNT_1_BIT;
     default_viewport_ = {0.0f,
@@ -464,7 +467,8 @@ class Sample {
         VK_IMAGE_TILING_OPTIMAL,
         /* usage = */
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-            VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+            VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         /* sharingMode = */
         VK_SHARING_MODE_EXCLUSIVE,
         /* queueFamilyIndexCount = */ 0,

@@ -223,11 +223,10 @@ int main_entry(const entry::entry_data* data) {
     };
 
     VkPipeline raw_pipeline;
-    LOG_EXPECT(
-        ==, data->log,
-        device->vkCreateGraphicsPipelines(device, app.pipeline_cache(), 1,
-                                          &create_info, nullptr, &raw_pipeline),
-        VK_SUCCESS);
+    LOG_EXPECT(==, data->log, device->vkCreateGraphicsPipelines(
+                                  device, app.pipeline_cache(), 1, &create_info,
+                                  nullptr, &raw_pipeline),
+               VK_SUCCESS);
     vulkan::VkPipeline pipeline(raw_pipeline, nullptr, &device);
 
     // Create image view.
@@ -254,11 +253,10 @@ int main_entry(const entry::entry_data* data) {
         },
     };
     ::VkImageView raw_image_view;
-    LOG_EXPECT(
-        ==, data->log,
-        app.device()->vkCreateImageView(app.device(), &image_view_create_info,
-                                        nullptr, &raw_image_view),
-        VK_SUCCESS);
+    LOG_EXPECT(==, data->log, app.device()->vkCreateImageView(
+                                  app.device(), &image_view_create_info,
+                                  nullptr, &raw_image_view),
+               VK_SUCCESS);
     vulkan::VkImageView image_view(raw_image_view, nullptr, &app.device());
 
     // Create framebuffer
@@ -294,11 +292,6 @@ int main_entry(const entry::entry_data* data) {
     };
     command_buffer->vkBeginCommandBuffer(command_buffer,
                                          &command_buffer_begin_info);
-    VkClearValue clear_value = {};
-    clear_value.color.float32[0] = 0.2;
-    clear_value.color.float32[1] = 0.2;
-    clear_value.color.float32[2] = 0.2;
-    clear_value.color.float32[3] = 0.2;
     VkRenderPassBeginInfo render_pass_begin_info{
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
         nullptr,                                   // pNext
@@ -310,8 +303,8 @@ int main_entry(const entry::entry_data* data) {
             {app.swapchain().width(),    // renderArea.extent.width
              app.swapchain().height()},  // renderArea.extent.height
         },
-        1,             // clearValueCount
-        &clear_value,  // pClearValues
+        0,        // clearValueCount
+        nullptr,  // pClearValues
     };
 
     command_buffer->vkCmdResetQueryPool(command_buffer, query_pool, 0, 2);

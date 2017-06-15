@@ -36,7 +36,7 @@ class AllocateAndFreeCommandBuffers(GapitTest):
         architecture = self.architecture
         for level in [VK_COMMAND_BUFFER_LEVEL_PRIMARY,
                       VK_COMMAND_BUFFER_LEVEL_SECONDARY]:
-            for count in [0, 1, MAX_COUNT]:
+            for count in [1, 2, MAX_COUNT]:
                 allocate = require(self.next_call_of(
                     "vkAllocateCommandBuffers"))
                 require_not_equal(0, allocate.int_device)

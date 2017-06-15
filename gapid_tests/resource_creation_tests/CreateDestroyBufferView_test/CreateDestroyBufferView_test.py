@@ -15,6 +15,7 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, GapitTest
 from gapit_test_framework import get_read_offset_function, get_write_offset_function
+from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, POINTER, HANDLE, DEVICE_SIZE
 from struct_offsets import ARRAY, CHAR
@@ -74,10 +75,11 @@ class ZeroOffsetWholeSizeBufferViewOfUniformBuffer(GapitTest):
         require_equal(device, destroy_buffer_view.int_device)
         require_equal(view.handle, destroy_buffer_view.int_bufferView)
 
-        destroy_null_buffer_view = require(self.next_call_of(
-            "vkDestroyBufferView"))
-        require_equal(device, destroy_buffer_view.int_device)
-        require_equal(0, destroy_null_buffer_view.int_bufferView)
+        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
+            destroy_null_buffer_view = require(self.next_call_of(
+                "vkDestroyBufferView"))
+            require_equal(device, destroy_buffer_view.int_device)
+            require_equal(0, destroy_null_buffer_view.int_bufferView)
 
 
 @gapit_test("CreateDestroyBufferView_test")
@@ -121,7 +123,8 @@ class NonZeroOffsetNonWholeSizeBufferViewOfStorageBuffer(GapitTest):
         require_equal(device, destroy_buffer_view.int_device)
         require_equal(view.handle, destroy_buffer_view.int_bufferView)
 
-        destroy_null_buffer_view = require(self.next_call_of(
-            "vkDestroyBufferView"))
-        require_equal(device, destroy_buffer_view.int_device)
-        require_equal(0, destroy_null_buffer_view.int_bufferView)
+        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
+            destroy_null_buffer_view = require(self.next_call_of(
+                "vkDestroyBufferView"))
+            require_equal(device, destroy_buffer_view.int_device)
+            require_equal(0, destroy_null_buffer_view.int_bufferView)

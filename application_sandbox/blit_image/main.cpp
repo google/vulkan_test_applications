@@ -53,7 +53,7 @@ class BlitImageSample : public sample_application::Sample<CubeFrameData> {
  public:
   BlitImageSample(const entry::entry_data* data)
       : data_(data),
-        Sample<CubeFrameData>(data->root_allocator, data, 1, 512, 1,
+        Sample<CubeFrameData>(data->root_allocator, data, 1, 512, 1, 1,
                               sample_application::SampleOptions()),
         cube_(data->root_allocator, data->log.get(), cube_data) {}
   virtual void InitializeApplicationData(
@@ -455,4 +455,5 @@ int main_entry(const entry::entry_data* data) {
   sample.WaitIdle();
 
   data->log->LogInfo("Application Shutdown");
+  return 0;
 }

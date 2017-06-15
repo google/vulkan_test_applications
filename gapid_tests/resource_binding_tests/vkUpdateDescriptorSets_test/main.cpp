@@ -17,6 +17,7 @@
 #include "support/log/log.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/known_device_infos.h"
+#include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
@@ -25,51 +26,34 @@ int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
 
   auto& allocator = data->root_allocator;
-  vulkan::LibraryWrapper wrapper(allocator, data->log.get());
-  vulkan::VkInstance instance(vulkan::CreateEmptyInstance(allocator, &wrapper));
-  vulkan::VkDevice device(vulkan::CreateDefaultDevice(allocator, instance));
+  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VkDevice& device = app.device();
 
   {  // 1. Zero writes and zero copies.
     device->vkUpdateDescriptorSets(device, 0, nullptr, 0, nullptr);
   }
 
   {  // 2. One write and zero copies.
-    VkDescriptorPoolSize pool_size = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2};
-    vulkan::VkDescriptorPool pool =
-        vulkan::CreateDescriptorPool(&device, 1, &pool_size, 1);
-    ::VkDescriptorPool raw_pool = pool.get_raw_object();
-
-    vulkan::VkDescriptorSetLayout layout = vulkan::CreateDescriptorSetLayout(
-        &device, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2);
-    ::VkDescriptorSetLayout raw_layout = layout.get_raw_object();
-
-    vulkan::VkDescriptorSet set =
-        vulkan::AllocateDescriptorSet(&device, raw_pool, raw_layout);
-    ::VkDescriptorSet raw_set = set.get_raw_object();
-
-    const VkBufferCreateInfo info = {
-        /* sType = */ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        /* pNext = */ nullptr,
-        /* flags = */ 0,
-        /* size = */ 1024,
-        /* usage = */ VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        /* sharingMode = */ VK_SHARING_MODE_EXCLUSIVE,
-        /* queueFamilyIndexCount = */ 0,
-        /* pQueueFamilyIndices = */ nullptr,
+    VkDescriptorSetLayoutBinding binding{
+        0,                                  // binding
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  // descriptorType
+        2,                                  // descriptorCount
+        VK_SHADER_STAGE_VERTEX_BIT,         // stageFlags
+        nullptr,                            // pImmutableSamplers
     };
+    auto set = app.AllocateDescriptorSet({binding});
 
-    ::VkBuffer raw_buffer;
-    device->vkCreateBuffer(device, &info, nullptr, &raw_buffer);
-    vulkan::VkBuffer(raw_buffer, nullptr, &device);
+    auto buffer = app.CreateAndBindDefaultExclusiveDeviceBuffer(
+        1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     const VkDescriptorBufferInfo bufinfo[2] = {
         {
-            /* buffer = */ raw_buffer,
+            /* buffer = */ *buffer,
             /* offset = */ 0,
             /* range = */ 512,
         },
         {
-            /* buffer = */ raw_buffer,
+            /* buffer = */ *buffer,
             /* offset = */ 512,
             /* range = */ 512,
         },
@@ -78,7 +62,7 @@ int main_entry(const entry::entry_data* data) {
     const VkWriteDescriptorSet write = {
         /* sType = */ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         /* pNext = */ nullptr,
-        /* dstSet = */ raw_set,
+        /* dstSet = */ set,
         /* dstBinding = */ 0,
         /* dstArrayElement = */ 0,
         /* descriptorCount = */ 2,
@@ -92,18 +76,14 @@ int main_entry(const entry::entry_data* data) {
   }
 
   {  // 3. Two writes and zero copies.
-    VkDescriptorPoolSize pool_size = {VK_DESCRIPTOR_TYPE_SAMPLER, 2};
-    vulkan::VkDescriptorPool pool =
-        vulkan::CreateDescriptorPool(&device, 1, &pool_size, 1);
-    ::VkDescriptorPool raw_pool = pool.get_raw_object();
-
-    vulkan::VkDescriptorSetLayout layout = vulkan::CreateDescriptorSetLayout(
-        &device, VK_DESCRIPTOR_TYPE_SAMPLER, 2);
-    ::VkDescriptorSetLayout raw_layout = layout.get_raw_object();
-
-    vulkan::VkDescriptorSet set =
-        vulkan::AllocateDescriptorSet(&device, raw_pool, raw_layout);
-    ::VkDescriptorSet raw_set = set.get_raw_object();
+    VkDescriptorSetLayoutBinding binding{
+        0,                             // binding
+        VK_DESCRIPTOR_TYPE_SAMPLER,    // descriptorType
+        2,                             // descriptorCount
+        VK_SHADER_STAGE_FRAGMENT_BIT,  // stageFlags
+        nullptr,                       // pImmutableSamplers
+    };
+    auto set = app.AllocateDescriptorSet({binding});
 
     vulkan::VkSampler sampler = vulkan::CreateDefaultSampler(&device);
     ::VkSampler raw_sampler = sampler.get_raw_object();
@@ -125,7 +105,7 @@ int main_entry(const entry::entry_data* data) {
         {
             /* sType = */ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             /* pNext = */ nullptr,
-            /* dstSet = */ raw_set,
+            /* dstSet = */ set,
             /* dstBinding = */ 0,
             /* dstArrayElement = */ 0,
             /* descriptorCount = */ 1,
@@ -137,7 +117,7 @@ int main_entry(const entry::entry_data* data) {
         {
             /* sType = */ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             /* pNext = */ nullptr,
-            /* dstSet = */ raw_set,
+            /* dstSet = */ set,
             /* dstBinding = */ 0,
             /* dstArrayElement = */ 1,
             /* descriptorCount = */ 1,
@@ -152,41 +132,119 @@ int main_entry(const entry::entry_data* data) {
   }
 
   {  // 4. Zero writes and two copies.
-    VkDescriptorPoolSize pool_size = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 6};
-    vulkan::VkDescriptorPool pool =
-        vulkan::CreateDescriptorPool(&device, 1, &pool_size, 2);
-    ::VkDescriptorPool raw_pool = pool.get_raw_object();
+    VkDescriptorSetLayoutBinding first_binding{
+        0,                                 // binding
+        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  // descriptorType
+        1,                                 // descriptorCount
+        VK_SHADER_STAGE_FRAGMENT_BIT,      // stageFlags
+        nullptr,                           // pImmutableSamplers
+    };
+    auto first_set = app.AllocateDescriptorSet({first_binding});
 
-    vulkan::VkDescriptorSetLayout layout[2] = {
-        // One descriptors bound to bind number 0.
-        vulkan::CreateDescriptorSetLayout(&device,
-                                          VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
-        // Five descriptors bound to bind number 0.
-        vulkan::CreateDescriptorSetLayout(&device,
-                                          VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 5),
+    VkDescriptorSetLayoutBinding second_binding{
+        0,                                 // binding
+        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  // descriptorType
+        5,                                 // descriptorCount
+        VK_SHADER_STAGE_FRAGMENT_BIT,      // stageFlags
+        nullptr,                           // pImmutableSamplers
+    };
+    auto second_set = app.AllocateDescriptorSet({second_binding});
+
+    VkImageCreateInfo image_create_info{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                                        nullptr,
+                                        0,
+                                        VK_IMAGE_TYPE_2D,
+                                        VK_FORMAT_R8G8B8A8_UNORM,
+                                        {4, 4, 1},
+                                        1,
+                                        1,
+                                        VK_SAMPLE_COUNT_1_BIT,
+                                        VK_IMAGE_TILING_OPTIMAL,
+                                        VK_IMAGE_USAGE_STORAGE_BIT,
+                                        VK_SHARING_MODE_EXCLUSIVE,
+                                        0,
+                                        nullptr,
+                                        VK_IMAGE_LAYOUT_UNDEFINED};
+    auto image = app.CreateAndBindImage(&image_create_info);
+    VkImageViewCreateInfo image_view_create_info{
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        nullptr,
+        0,
+        *image,
+        VK_IMAGE_VIEW_TYPE_2D,
+        VK_FORMAT_R8G8B8A8_UNORM,
+        {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+         VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+    };
+    ::VkImageView raw_image_view;
+    device->vkCreateImageView(device, &image_view_create_info, nullptr,
+                              &raw_image_view);
+    vulkan::VkImageView image_view(raw_image_view, nullptr,
+                                         &device);
+
+    const VkDescriptorImageInfo imginfo[3] = {
+        // One image info for the first descriptor set
+        {
+            /* sampler = */ VK_NULL_HANDLE,
+            /* imageView = */ image_view,
+            /* imageLayout = */ VK_IMAGE_LAYOUT_GENERAL,
+        },
+        // Two image infos for the second descriptor set
+        {
+            /* sampler = */ VK_NULL_HANDLE,
+            /* imageView = */ image_view,
+            /* imageLayout = */ VK_IMAGE_LAYOUT_GENERAL,
+        },
+        {
+            /* sampler = */ VK_NULL_HANDLE,
+            /* imageView = */ image_view,
+            /* imageLayout = */ VK_IMAGE_LAYOUT_GENERAL,
+        },
     };
 
-    ::VkDescriptorSetLayout raw_layout[2] = {
-        layout[0].get_raw_object(), layout[1].get_raw_object(),
+    // First, we need to write two descriptors to the descriptor set.
+    const VkWriteDescriptorSet writes[2] = {
+        // Write to first_set binding 0, array element 0.
+        {
+            /* sType = */ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            /* pNext = */ nullptr,
+            /* dstSet = */ first_set,
+            /* dstBinding = */ 0,
+            /* dstArrayElement = */ 0,
+            /* descriptorCount = */ 1,
+            /* descriptorType = */ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            /* pImageInfo = */ &imginfo[0],
+            /* pBufferInfo = */ nullptr,
+            /* pTexelBufferView = */ nullptr,
+        },
+        // Write to second_set binding 0, array element 1 and 2.
+        {
+            /* sType = */ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            /* pNext = */ nullptr,
+            /* dstSet = */ second_set,
+            /* dstBinding = */ 0,
+            /* dstArrayElement = */ 1,
+            /* descriptorCount = */ 2,
+            /* descriptorType = */ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            /* pImageInfo = */ &imginfo[1],
+            /* pBufferInfo = */ nullptr,
+            /* pTexelBufferView = */ nullptr,
+        },
     };
 
-    vulkan::VkDescriptorSet set[2] = {
-        vulkan::AllocateDescriptorSet(&device, raw_pool, raw_layout[0]),
-        vulkan::AllocateDescriptorSet(&device, raw_pool, raw_layout[1]),
-    };
-    ::VkDescriptorSet raw_set[2] = {
-        set[0].get_raw_object(), set[1].get_raw_object(),
-    };
+    device->vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
 
+    // Then we test copying descriptors in VkUpdateDescriptorSets
     const VkCopyDescriptorSet copies[2] = {
         // Copy the only descriptor from set[0] to set[1].
         {
             /* sType = */ VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
             /* pNext = */ nullptr,
-            /* srcSet = */ raw_set[0],
+            /* srcSet = */ first_set,
             /* srcBinding = */ 0,
             /* srcArrayElement = */ 0,
-            /* dstSet = */ raw_set[1],
+            /* dstSet = */ second_set,
             /* dstBinding = */ 0,
             /* dstArrayElement = */ 0,
             /* descriptorCount = */ 1,
@@ -195,10 +253,10 @@ int main_entry(const entry::entry_data* data) {
         {
             /* sType = */ VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
             /* pNext = */ nullptr,
-            /* srcSet = */ raw_set[1],
+            /* srcSet = */ second_set,
             /* srcBinding = */ 0,
             /* srcArrayElement = */ 1,
-            /* dstSet = */ raw_set[1],
+            /* dstSet = */ second_set,
             /* dstBinding = */ 0,
             /* dstArrayElement = */ 3,
             /* descriptorCount = */ 2,

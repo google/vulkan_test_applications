@@ -1,0 +1,6 @@
+[submodule "third_party/mathfu"]
+	path = third_party/mathfu
+	url = https://github.com/google/mathfu
+[submodule "third_party/vk_callback_swapchain"]
+	path = third_party/vk_callback_swapchain
+	url = https://github.com/google/vk_callback_swapchain

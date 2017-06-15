@@ -16,12 +16,16 @@
 # Everything else depends on sample_application
 add_subdirectory(sample_application_framework)
 
+set(ALL_SAMPLE_NAMES)
 add_custom_target(ALL_SAMPLES)
 
-function(add_vulkan_sample_application name)
+macro(add_vulkan_sample_application name)
     add_vulkan_executable(${name} ${ARGN})
     add_dependencies(ALL_SAMPLES ${name})
-endfunction()
+    set(T ${ALL_SAMPLE_NAMES})
+    list(APPEND T ${name})
+    set(ALL_SAMPLE_NAMES ${T} PARENT_SCOPE)
+endmacro()
 
 add_subdirectory(async_compute)
 add_subdirectory(blend_constants)
@@ -38,5 +42,11 @@ add_subdirectory(dispatch)
 add_subdirectory(dispatch_indirect)
 add_subdirectory(execute_commands)
 add_subdirectory(fill_buffer)
+add_subdirectory(set_event)
 add_subdirectory(textured_cube)
 add_subdirectory(wireframe)
+
+if (NOT ANDROID)
+    string(REPLACE ";" "\n" ALL_SAMPLE_NAMES "${ALL_SAMPLE_NAMES}")
+    write_file(${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/samples.txt ${ALL_SAMPLE_NAMES})
+endif()

@@ -12,7 +12,7 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest, get_read_offset_function
-import gapit_test_framework
+from gapit_test_framework import GapidUnsupportedException
 from struct_offsets import VulkanStruct, UINT32_T, SIZE_T, POINTER
 from struct_offsets import HANDLE, FLOAT, CHAR, ARRAY, DEVICE_SIZE, INT32_T
 from vulkan_constants import *
@@ -85,7 +85,12 @@ class CopyCompressedImageRegionToCompatibleImageRegion(GapitTest):
     def expect(self):
         """Check the arguments to vkCmdCopyImage"""
         architecture = self.architecture
-        copy_image = require(self.nth_call_of("vkCmdCopyImage", 2))
+        create_device = self.nth_call_of("vkCreateDevice", 2)
+        if create_device[0] is None:
+            raise GapidUnsupportedException(
+                "physical device feature: textureCompressionBC not supported")
+
+        copy_image = require(self.next_call_of("vkCmdCopyImage"))
 
         require_not_equal(0, copy_image.int_commandBuffer)
         require_not_equal(0, copy_image.int_srcImage)

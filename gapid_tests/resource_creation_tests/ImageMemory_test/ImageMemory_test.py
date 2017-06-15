@@ -16,7 +16,7 @@ from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest, get_write_offset_function
 from gapit_test_framework import get_read_offset_function
-import gapit_test_framework
+from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, POINTER, DEVICE_SIZE
 
@@ -90,6 +90,7 @@ class AllocateBindFreeMemory(GapitTest):
         require_not_equal(0, free_memory.int_memory)
         require_equal(0, free_memory.hex_pAllocator)
 
-        free_memory = require(self.next_call_of("vkFreeMemory"))
-        require_not_equal(0, free_memory.int_device)
-        require_equal(0, free_memory.int_memory)
+        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
+            free_memory = require(self.next_call_of("vkFreeMemory"))
+            require_not_equal(0, free_memory.int_device)
+            require_equal(0, free_memory.int_memory)

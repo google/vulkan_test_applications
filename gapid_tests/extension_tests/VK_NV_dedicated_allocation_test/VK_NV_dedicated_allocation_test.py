@@ -145,7 +145,7 @@ class NV_Dedicated_Allocation_Buffer(GapitTest):
                 "VK_NV_dedicated_allocation not supported")
 
         create_buffer = require(self.nth_call_of(
-            "vkCreateBuffer", 3))
+            "vkCreateBuffer", 4))
         buffer_create_info = VulkanStruct(
             architecture, BUFFER_CREATE_INFO,
             get_read_offset_function(create_buffer,
@@ -235,7 +235,7 @@ class NV_Dedicated_Allocation_Buffer_Non_Dedicated(GapitTest):
                 "VK_NV_dedicated_allocation not supported")
 
         create_buffer = require(self.nth_call_of(
-            "vkCreateBuffer", 3))
+            "vkCreateBuffer", 4))
         buffer_create_info = VulkanStruct(
             architecture, BUFFER_CREATE_INFO,
             get_read_offset_function(create_buffer,

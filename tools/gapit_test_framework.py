@@ -25,10 +25,12 @@ import shutil
 import subprocess
 import sys
 import traceback
+from distutils.version import StrictVersion
 
 from gapit_tester import run_on_single_apk
 from gapit_tester import RunArgs
-from gapit_trace_reader import get_architecture_from_trace_file, parse_trace_file, NamedAttributeError
+from gapit_trace_reader import get_device_and_architecture_info_from_trace_file
+from gapit_trace_reader import parse_trace_file, NamedAttributeError
 
 SUCCESS = 0
 FAILURE = 1
@@ -36,6 +38,9 @@ WARNING = 2
 SKIPPED = 3
 
 PIXEL_C = {"vendor_id": 0x10DE, "device_id": 0x92BA03D7}
+NVIDIA_K2200 = {"vendor_id": 0x10DE, "device_id": 0x13ba}
+
+UNKNOWN_OS, WINDOWS, OSX, LINUX, ANDROID = range(5)
 
 
 class GapitTestException(Exception):
@@ -170,6 +175,7 @@ class GapitTest(object):
     '''
 
     def __init__(self):
+        self.device = None
         self.architecture = None
         self.atom_generator = None
         self.warnings = []
@@ -224,6 +230,20 @@ class GapitTest(object):
         except StopIteration:
             return (None, "The next atom was not of type " + call_name)
 
+    def not_android_version(self, android_version_name):
+        """If the trace device info matches indicates that the application is
+        running on Android and the version name matches with the given version
+        name, emits a warning and returns False. Otherwise returns True."""
+        if (self.device.Configuration.OS.Kind == ANDROID and
+                StrictVersion(self.device.Configuration.OS.Name) <=
+                StrictVersion(android_version_name)):
+            call_site = traceback.format_list(traceback.extract_stack(limit=2))
+            self.warnings.append(
+                "Code block disabled due to known Android issue\n" + call_site[
+                    0])
+            return False
+        return True
+
     def not_device(self, device_properties, driver, device):
         """If the device_properties matches the given
         device, and the device_properties driver_version is less
@@ -256,15 +276,15 @@ class GapitTest(object):
         driver_version = little_endian_bytes_to_int(
             require(
                 device_properties.get_write_data(
-                    device_properties.hex_PProperties + 4, 4)))
+                    device_properties.hex_pProperties + 4, 4)))
         vendor_id = little_endian_bytes_to_int(
             require(
                 device_properties.get_write_data(
-                    device_properties.hex_PProperties + 2 * 4, 4)))
+                    device_properties.hex_pProperties + 2 * 4, 4)))
         device_id = little_endian_bytes_to_int(
             require(
                 device_properties.get_write_data(
-                    device_properties.hex_PProperties + 3 * 4, 4)))
+                    device_properties.hex_pProperties + 3 * 4, 4)))
         if (device["vendor_id"] == vendor_id and
                 device["device_id"] == device_id and driver_version <= driver):
             call_site = traceback.format_list(traceback.extract_stack(limit=2))
@@ -305,7 +325,8 @@ class GapitTest(object):
                 subprocess.check_call(gapit_args)
             else:
                 subprocess.check_call(
-                    gapit_args, stdout=open(os.devnull, 'wb'))
+                    gapit_args, stdout=open(os.devnull, 'wb'),
+                                stderr=open(os.devnull, 'wb'))
         except:
             return (FAILURE, "Could not generate trace file.")
         if verbose:
@@ -335,7 +356,7 @@ class GapitTest(object):
             if not success == SUCCESS:
                 return (success, error)
         test_name = program_name + "." + self.name()
-        self.architecture = get_architecture_from_trace_file(capture_name)
+        self.device, self.architecture = get_device_and_architecture_info_from_trace_file(capture_name)
         if self.architecture is None:
             return (FAILURE, "Failed to obtain device architecture info from trace")
         self.atom_generator = parse_trace_file(capture_name)

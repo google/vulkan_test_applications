@@ -17,6 +17,7 @@
 #include "support/log/log.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/known_device_infos.h"
+#include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
@@ -25,11 +26,10 @@ int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
 
   auto& allocator = data->root_allocator;
-  vulkan::LibraryWrapper wrapper(allocator, data->log.get());
-  vulkan::VkInstance instance(vulkan::CreateEmptyInstance(allocator, &wrapper));
-  vulkan::VkDevice device(vulkan::CreateDefaultDevice(allocator, instance));
 
   {  // 1. Sampler using normalized coordinates
+    vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+    vulkan::VkDevice& device = app.device();
     VkSamplerCreateInfo create_info{
         /* sType = */ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
         /* pNext = */ nullptr,
@@ -42,7 +42,7 @@ int main_entry(const entry::entry_data* data) {
         /* addressModeW = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
         /* mipLodBias = */ -1.f,
         /* anisotropyEnable = */ false,
-        /* maxAnisotropy = */ 4.f,
+        /* maxAnisotropy = */ 1.f,
         /* compareEnable = */ false,
         /* compareOp = */ VK_COMPARE_OP_ALWAYS,
         /* minLod = */ 1.f,
@@ -57,34 +57,49 @@ int main_entry(const entry::entry_data* data) {
   }
 
   {  // 2. Sampler using unnormalized coordinates
-    VkSamplerCreateInfo create_info{
-        /* sType = */ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        /* pNext = */ nullptr,
-        /* flags = */ 0,
-        /* magFilter = */ VK_FILTER_NEAREST,
-        /* minFilter = */ VK_FILTER_NEAREST,
-        /* mipmapMode = */ VK_SAMPLER_MIPMAP_MODE_NEAREST,
-        /* addressModeU = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-        /* addressModeV = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-        /* addressModeW = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-        /* mipLodBias = */ 0.f,
-        /* anisotropyEnable = */ false,
-        /* maxAnisotropy = */ 0.f,
-        /* compareEnable = */ false,
-        /* compareOp = */ VK_COMPARE_OP_LESS,
-        /* minLod = */ 0.f,
-        /* maxLod = */ 0.f,
-        /* borderColor = */ VK_BORDER_COLOR_INT_OPAQUE_WHITE,
-        /* unnormalizedCoordinates = */ true,
-    };
-    ::VkSampler sampler;
-    device->vkCreateSampler(device, &create_info, nullptr, &sampler);
-    data->log->LogInfo("  sampler: ", sampler);
-    device->vkDestroySampler(device, sampler, nullptr);
+    VkPhysicalDeviceFeatures requested_features = {0};
+    requested_features.samplerAnisotropy = VK_TRUE;
+    vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data,
+                                  {}, requested_features);
+    if (app.device().is_valid()) {
+      vulkan::VkDevice& device = app.device();
+      VkSamplerCreateInfo create_info{
+          /* sType = */ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+          /* pNext = */ nullptr,
+          /* flags = */ 0,
+          /* magFilter = */ VK_FILTER_NEAREST,
+          /* minFilter = */ VK_FILTER_NEAREST,
+          /* mipmapMode = */ VK_SAMPLER_MIPMAP_MODE_NEAREST,
+          /* addressModeU = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+          /* addressModeV = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+          /* addressModeW = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+          /* mipLodBias = */ 0.f,
+          /* anisotropyEnable = */ false,
+          /* maxAnisotropy = */ 0.f,
+          /* compareEnable = */ false,
+          /* compareOp = */ VK_COMPARE_OP_LESS,
+          /* minLod = */ 0.f,
+          /* maxLod = */ 0.f,
+          /* borderColor = */ VK_BORDER_COLOR_INT_OPAQUE_WHITE,
+          /* unnormalizedCoordinates = */ true,
+      };
+      ::VkSampler sampler;
+      device->vkCreateSampler(device, &create_info, nullptr, &sampler);
+      data->log->LogInfo("  sampler: ", sampler);
+      device->vkDestroySampler(device, sampler, nullptr);
+    } else {
+      data->log->LogInfo(
+          "Disabled test due to missing physical device feature: "
+          "samplerAnisotropy");
+    }
   }
 
   {  // 3. Destroy null sampler handle.
-    device->vkDestroySampler(device, (VkSampler)VK_NULL_HANDLE, nullptr);
+    vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+    vulkan::VkDevice& device = app.device();
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
+      device->vkDestroySampler(device, (VkSampler)VK_NULL_HANDLE, nullptr);
+    }
   }
 
   data->log->LogInfo("Application Shutdown");

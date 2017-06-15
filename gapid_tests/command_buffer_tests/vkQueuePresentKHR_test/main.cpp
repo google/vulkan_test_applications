@@ -50,13 +50,13 @@ int main_entry(const entry::entry_data* data) {
     // to be presented.
     vulkan::VkCommandBuffer cmd_buf = app.GetCommandBuffer();
     ::VkCommandBuffer raw_cmd_buf = cmd_buf.get_command_buffer();
-    SetImageLayout(
+    app.BeginCommandBuffer(&cmd_buf);
+    RecordImageLayoutTransition(
         raw_image_to_present, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
         VK_IMAGE_LAYOUT_UNDEFINED, reinterpret_cast<VkAccessFlags>(0u),
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-        &cmd_buf, &app.present_queue(), {}, {}, VK_NULL_HANDLE,
-        data->root_allocator);
-    app.present_queue()->vkQueueWaitIdle(app.present_queue());
+        &cmd_buf);
+    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf, &app.present_queue());
 
     VkCommandBufferBeginInfo info{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // sType
@@ -100,13 +100,13 @@ int main_entry(const entry::entry_data* data) {
 
     // Set the layout of the image to be presented from
     // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL to VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-    SetImageLayout(
+    app.BeginCommandBuffer(&cmd_buf);
+    RecordImageLayoutTransition(
         raw_image_to_present, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
         VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, reinterpret_cast<VkAccessFlags>(0u),
-        &cmd_buf, &app.present_queue(), {}, {}, VK_NULL_HANDLE,
-        data->root_allocator);
-    app.present_queue()->vkQueueWaitIdle(app.present_queue());
+        &cmd_buf);
+    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf, &app.present_queue());
 
 
     // Call vkQueuePresentKHR()

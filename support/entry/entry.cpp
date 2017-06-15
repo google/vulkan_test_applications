@@ -35,6 +35,7 @@ void dummy_function() {}
 #if defined __ANDROID__
 #include <android/window.h>
 #include <android_native_app_glue.h>
+#include <sys/system_properties.h>
 #include <unistd.h>
 
 struct AppData {
@@ -64,6 +65,11 @@ void android_main(android_app* app) {
   int32_t output_frame = OUTPUT_FRAME;
   const char* output_file = OUTPUT_FILE;
 
+  // Get the os version
+  char os_version_c_str[PROP_VALUE_MAX];
+  int os_version_length =
+      __system_property_get("ro.build.version.release", os_version_c_str);
+
   // Simply wait for 10 seconds, this is useful if we have to attach late.
   if (access("/sdcard/wait-for-debugger.txt", F_OK) != -1) {
     std::this_thread::sleep_for(std::chrono::seconds(10));
@@ -86,6 +92,7 @@ void android_main(android_app* app) {
     {
       entry::entry_data data{
           app->window,
+          os_version_length != 0 ? os_version_c_str : "",
           logging::GetLogger(&root_allocator),
           &root_allocator,
           static_cast<uint32_t>(width),
@@ -132,7 +139,7 @@ int main(int argc, char** argv) {
   int path_len = readlink("/proc/self/exe", file_path, 1024 * 1024 - 1);
   if (path_len != -1) {
     file_path[path_len] = '\0';
-    for (size_t i = path_len - 1; i >= 0; --i) {
+    for (ssize_t i = path_len - 1; i >= 0; --i) {
       // Cut off the exe name
       if (file_path[i] == '/') {
         file_path[i] = '\0';
@@ -176,13 +183,6 @@ int main(int argc, char** argv) {
       output_file = argv[i] + 13;
     }
   }
-
-#if HAVE_CALLBACK_SWAPCHAIN == 1
-  if (output_frame != -1) {
-    std::cerr << "Callback swapchain was not build -output-frame is not enabled"
-              << std::endl;
-  }
-#endif
 
   containers::Allocator root_allocator;
   xcb_connection_t* connection;

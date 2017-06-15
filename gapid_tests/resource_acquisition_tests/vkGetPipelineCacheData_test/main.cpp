@@ -49,16 +49,14 @@ int main_entry(const entry::entry_data* data) {
     };
 
     VkPipelineCache cache;
-    LOG_ASSERT(
-        ==, data->log,
-        device->vkCreatePipelineCache(device, &create_info, nullptr, &cache),
-        VK_SUCCESS);
+    LOG_ASSERT(==, data->log, device->vkCreatePipelineCache(
+                                  device, &create_info, nullptr, &cache),
+               VK_SUCCESS);
 
     // pData is null
     size_t cache_data_size = 0;
-    LOG_ASSERT(==, data->log,
-               device->vkGetPipelineCacheData(device, cache, &cache_data_size,
-                                              nullptr),
+    LOG_ASSERT(==, data->log, device->vkGetPipelineCacheData(
+                                  device, cache, &cache_data_size, nullptr),
                VK_SUCCESS);
 
     // pData is not null and pDataSize refer to the size of the cache data
@@ -79,8 +77,10 @@ int main_entry(const entry::entry_data* data) {
 
     device->vkDestroyPipelineCache(device, cache, nullptr);
 
-    device->vkDestroyPipelineCache(
-        device, static_cast<VkPipelineCache>(VK_NULL_HANDLE), nullptr);
+    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
+      device->vkDestroyPipelineCache(
+          device, static_cast<VkPipelineCache>(VK_NULL_HANDLE), nullptr);
+    }
   }
 
   {

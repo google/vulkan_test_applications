@@ -1,6 +1,5 @@
 build/
 build-*/
-build_*/
 
 # Vim swap
 [._]*.s[a-w][a-z]

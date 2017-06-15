@@ -59,7 +59,7 @@ class TexturedCubeSample
  public:
   TexturedCubeSample(const entry::entry_data* data)
       : data_(data),
-        Sample<TexturedCubeFrameData>(data->root_allocator, data, 1, 512, 1,
+        Sample<TexturedCubeFrameData>(data->root_allocator, data, 1, 512, 1, 1,
                                       sample_application::SampleOptions()),
         cube_(data->root_allocator, data->log.get(), cube_data),
         texture_(data->root_allocator, data->log.get(), texture_data) {}
@@ -176,7 +176,9 @@ class TexturedCubeSample
         Mat44::FromTranslationVector(mathfu::Vector<float, 3>{0.0, 0.0, -3.0});
   }
 
-  virtual void InitializationComplete() { texture_.InitializationComplete(); }
+  virtual void InitializationComplete() override {
+    texture_.InitializationComplete();
+  }
 
   virtual void InitializeFrameData(
       TexturedCubeFrameData* frame_data,
@@ -318,7 +320,7 @@ class TexturedCubeSample
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
   }
 
-  virtual void Update(float time_since_last_render) {
+  virtual void Update(float time_since_last_render) override {
     model_data_->data().transform =
         model_data_->data().transform *
         Mat44::FromRotationMatrix(
@@ -326,7 +328,7 @@ class TexturedCubeSample
             Mat44::RotationY(3.14 * time_since_last_render * 0.5));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
-                      TexturedCubeFrameData* frame_data) {
+                      TexturedCubeFrameData* frame_data) override {
     // Update our uniform buffers.
     camera_data_->UpdateBuffer(queue, frame_index);
     model_data_->UpdateBuffer(queue, frame_index);
@@ -381,4 +383,5 @@ int main_entry(const entry::entry_data* data) {
   sample.WaitIdle();
 
   data->log->LogInfo("Application Shutdown");
+  return 0;
 }
