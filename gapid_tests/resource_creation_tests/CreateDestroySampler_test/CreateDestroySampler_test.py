@@ -167,5 +167,5 @@ class DestroyNullSampler(GapitTest):
             self.nth_call_of("vkGetPhysicalDeviceProperties", 3))
 
         if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
-            destroy_sampler = require(self.nth_call_of("vkDestroySampler", 3))
+            destroy_sampler = require(self.next_call_of("vkDestroySampler"))
             require_equal(0, destroy_sampler.int_sampler)
