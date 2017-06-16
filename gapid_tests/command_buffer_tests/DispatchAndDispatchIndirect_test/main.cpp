@@ -35,7 +35,8 @@ std::vector<uint32_t> GetHostVisibleBufferData(
   buf->invalidate();
   uint32_t* p = reinterpret_cast<uint32_t*>(buf->base_address());
   std::vector<uint32_t> data;
-  data.reserve(buf->size() / sizeof(uint32_t));
+  data.reserve(static_cast<size_t>(
+    buf->size() / static_cast<VkDeviceSize>(sizeof(uint32_t))));
   std::for_each(p, p + buf->size() / sizeof(uint32_t),
                 [&data](uint32_t w) { data.push_back(w); });
   return data;

@@ -104,14 +104,17 @@ class CopyQueryPoolResultSample
 
     // Query before drawing anything to make sure the initial value of query
     // pool results are zero.
-    for (int i = 0; i < num_swapchain_images; i++) {
+    for (size_t i = 0; i < num_swapchain_images; i++) {
       (*initialization_buffer)
-          ->vkCmdResetQueryPool(*initialization_buffer, *query_pool_, i, 1);
+          ->vkCmdResetQueryPool(*initialization_buffer, *query_pool_,
+                                static_cast<uint32_t>(i), 1);
       (*initialization_buffer)
-          ->vkCmdBeginQuery(*initialization_buffer, *query_pool_, i,
+          ->vkCmdBeginQuery(*initialization_buffer, *query_pool_,
+                            static_cast<uint32_t>(i),
                             VkQueryControlFlagBits(0));
       (*initialization_buffer)
-          ->vkCmdEndQuery(*initialization_buffer, *query_pool_, i);
+          ->vkCmdEndQuery(*initialization_buffer, *query_pool_,
+                          static_cast<uint32_t>(i));
     }
 
     // Create a buffer to store the query results for each frame, and to be

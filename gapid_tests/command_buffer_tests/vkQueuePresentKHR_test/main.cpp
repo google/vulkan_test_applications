@@ -53,7 +53,7 @@ int main_entry(const entry::entry_data* data) {
     app.BeginCommandBuffer(&cmd_buf);
     RecordImageLayoutTransition(
         raw_image_to_present, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
-        VK_IMAGE_LAYOUT_UNDEFINED, reinterpret_cast<VkAccessFlags>(0u),
+        VK_IMAGE_LAYOUT_UNDEFINED, static_cast<VkAccessFlags>(0u),
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
         &cmd_buf);
     app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf, &app.present_queue());
@@ -66,10 +66,10 @@ int main_entry(const entry::entry_data* data) {
     };
     cmd_buf->vkBeginCommandBuffer(cmd_buf, &info);
     VkClearColorValue clear_color_value;
-    clear_color_value.float32[0] = 0.2;
-    clear_color_value.float32[1] = 0.2;
-    clear_color_value.float32[2] = 0.2;
-    clear_color_value.float32[3] = 0.2;
+    clear_color_value.float32[0] = 0.2f;
+    clear_color_value.float32[1] = 0.2f;
+    clear_color_value.float32[2] = 0.2f;
+    clear_color_value.float32[3] = 0.2f;
     VkImageSubresourceRange range{
         VK_IMAGE_ASPECT_COLOR_BIT,  // aspectMask;
         0,                          // baseMipLevel
@@ -104,7 +104,7 @@ int main_entry(const entry::entry_data* data) {
     RecordImageLayoutTransition(
         raw_image_to_present, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, reinterpret_cast<VkAccessFlags>(0u),
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, static_cast<VkAccessFlags>(0u),
         &cmd_buf);
     app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf, &app.present_queue());
 

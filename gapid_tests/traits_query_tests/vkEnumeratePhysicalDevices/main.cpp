@@ -28,18 +28,19 @@ int main_entry(const entry::entry_data* data) {
 
   uint32_t device_count = 0;
 
-  LOG_EXPECT(==, data->log, instance->vkEnumeratePhysicalDevices(
-                                instance, &device_count, nullptr),
-             VK_INCOMPLETE);
+  LOG_EXPECT(
+      ==, data->log,
+      instance->vkEnumeratePhysicalDevices(instance, &device_count, nullptr),
+      VK_INCOMPLETE);
   // Actually it does not seem to be well defined what
   // vkEnumeratePhysicalDevices should return here. Strictly speaking
   // VK_INCOMPLETE, but I imagine drivers will return VK_SUCCESS.
 
-  LOG_ASSERT(>, data->log, device_count, 0);
+  LOG_ASSERT(>, data->log, device_count, 0u);
   data->log->LogInfo("Device Count is ", device_count);
 
-  containers::vector<VkPhysicalDevice> physical_devices(device_count,
-                                                        data->root_allocator);
+  containers::vector<VkPhysicalDevice> physical_devices(data->root_allocator);
+  physical_devices.resize(device_count);
   LOG_ASSERT(==, data->log,
              instance->vkEnumeratePhysicalDevices(instance, &device_count,
                                                   physical_devices.data()),

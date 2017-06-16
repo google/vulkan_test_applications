@@ -46,7 +46,7 @@ int main_entry(const entry::entry_data* data) {
 
   instance->vkCreateXcbSurfaceKHR(instance, &create_info, nullptr, &surface);
 #elif defined _WIN32
-  VkWin32SurfaceCreateInfo create_info{
+  VkWin32SurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR, 0, 0,
       data->native_hinstance, data->native_window_handle};
 

@@ -20,6 +20,9 @@
 #include "vulkan_wrapper/library_wrapper.h"
 
 inline const char* BoolString(bool value) { return value ? "true" : "false"; }
+inline const char* BoolString(VkBool32 value) {
+  return value != 0 ? "true" : "false";
+}
 
 int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");

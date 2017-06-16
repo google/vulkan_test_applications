@@ -23,6 +23,7 @@
 #include "vulkan_wrapper/library_wrapper.h"
 
 #include <algorithm>
+#include <array>
 
 uint32_t fragment_shader[] =
 #include "hardcode_pos_triangle.frag.spv"
