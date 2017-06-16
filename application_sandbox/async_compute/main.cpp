@@ -102,8 +102,6 @@ class ASyncThreadRunner {
     if (!app_->async_compute_queue()) {
       return;
     }
-    // Poor man's semaphore
-    first_data_mutex_.lock();
 
     update_time_data_ = containers::make_unique<vulkan::BufferFrameData<Mat44>>(
         allocator_, app_, num_async_compute_buffers,
@@ -412,7 +410,8 @@ class ASyncThreadRunner {
       // The first time we put something in the mailbox,
       // this is set. So that the first time we can block for there
       // to be a valid value there.
-      first_data_mutex_.lock();
+      std::unique_lock<std::mutex> lock(first_data_mutex_);
+      first_data_cv_.wait(lock, [this] { return first_data_ready_; });
     }
 
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -483,9 +482,12 @@ class ASyncThreadRunner {
                                       &computation_fence.get_raw_object());
         // 2)
         PutBufferInMailbox(last_buffer);
-        if (!started) {
-          first_data_mutex_.unlock();
-          started = true;
+        if (!first_data_ready_) {
+          {
+            std::lock_guard<std::mutex> lg(first_data_mutex_);
+            first_data_ready_ = true;
+          }
+          first_data_cv_.notify_all();
         }
       } else {
         last_update_time_ = std::chrono::high_resolution_clock::now();
@@ -646,7 +648,6 @@ class ASyncThreadRunner {
   // The current buffer sitting in the output mailbox.
   int32_t mailbox_buffer_;
   bool first = true;
-  bool started = false;
   int current_frame = 0;
 
   // The number of times the simulation has run since the last log.
@@ -656,9 +657,10 @@ class ASyncThreadRunner {
 
   // Mutex to protect the mailbox and related buffers.
   std::mutex data_mutex_;
-  // Poor man's semaphore used to block the main thread until the first
-  // simulation has completed.
+  // This lock + cv + value becomes our sempahore
   std::mutex first_data_mutex_;
+  std::condition_variable first_data_cv_;
+  bool first_data_ready_ = false;
   // The thread that runs the simulation.
   std::thread runner_;
   vulkan::VulkanApplication* app_;

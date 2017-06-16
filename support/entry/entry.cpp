@@ -50,7 +50,7 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
   args->output_frame = OUTPUT_FRAME;
   args->output_file = OUTPUT_FILE;
 
-  for (size_t i = 0; i < argc; ++i) {
+  for (int i = 0; i < argc; ++i) {
     if (strncmp(argv[i], "-w=", 3) == 0) {
       args->window_width = atoi(argv[i] + 3);
     }

@@ -747,7 +747,7 @@ VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
 
   VkResult res = VK_SUCCESS;
   ::VkDeviceMemory device_memory;
-  size_t original_size = buffer_size;
+  VkDeviceSize original_size = buffer_size;
 
   const auto& memory_properties = device->physical_device_memory_properties();
 
