@@ -38,7 +38,7 @@ uint32_t torus_vertex_shader[] =
 uint32_t torus_fragment_shader[] =
 #include "wireframe.frag.spv"
     ;
-#include <unistd.h>
+
 struct WireframeFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
@@ -51,9 +51,8 @@ struct WireframeFrameData {
 class CopyQueryPoolResultSample
     : public sample_application::Sample<WireframeFrameData> {
  public:
-  CopyQueryPoolResultSample(
-      const entry::entry_data* data,
-      const VkPhysicalDeviceFeatures& requested_features)
+  CopyQueryPoolResultSample(const entry::entry_data* data,
+                            const VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
         Sample<WireframeFrameData>(data->root_allocator, data, 1, 512, 1, 1,
                                    sample_application::SampleOptions()
@@ -66,7 +65,7 @@ class CopyQueryPoolResultSample
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
-    num_frames_ = num_swapchain_images;
+    num_frames_ = static_cast<uint32_t>(num_swapchain_images);
 
     // For GAPID, when Mid-Execution Capture is applied, we need to reconstruct
     // the graphics state before starting tracing the following graphics
@@ -107,12 +106,15 @@ class CopyQueryPoolResultSample
     // pool results are zero.
     for (size_t i = 0; i < num_swapchain_images; i++) {
       (*initialization_buffer)
-          ->vkCmdResetQueryPool(*initialization_buffer, *query_pool_, i, 1);
+          ->vkCmdResetQueryPool(*initialization_buffer, *query_pool_,
+                                static_cast<uint32_t>(i), 1);
       (*initialization_buffer)
-          ->vkCmdBeginQuery(*initialization_buffer, *query_pool_, i,
+          ->vkCmdBeginQuery(*initialization_buffer, *query_pool_,
+                            static_cast<uint32_t>(i),
                             VkQueryControlFlagBits(0));
       (*initialization_buffer)
-          ->vkCmdEndQuery(*initialization_buffer, *query_pool_, i);
+          ->vkCmdEndQuery(*initialization_buffer, *query_pool_,
+                          static_cast<uint32_t>(i));
     }
 
     // Create a buffer to store the query results for each frame, and to be
@@ -121,12 +123,16 @@ class CopyQueryPoolResultSample
         vulkan::kMaxOffsetAlignment * num_swapchain_images;
 
     VkBufferCreateInfo query_pool_results_buf_create_info{
-        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, nullptr, 0,
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        nullptr,
+        0,
         query_pool_result_buf_size,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_SHARING_MODE_EXCLUSIVE, 0, nullptr};
+        VK_SHARING_MODE_EXCLUSIVE,
+        0,
+        nullptr};
     query_pool_results_buf_ =
         app()->CreateAndBindHostBuffer(&query_pool_results_buf_create_info);
     containers::vector<uint32_t> query_pool_init_values(
@@ -242,7 +248,7 @@ class CopyQueryPoolResultSample
         (float)app()->swapchain().width() / (float)app()->swapchain().height();
     camera_data_->data().projection_matrix =
         Mat44::FromScaleVector(Vector3{1.0f, -1.0f, 1.0f}) *
-        Mat44::Perspective(1.5708, aspect, 0.1f, 100.0f);
+        Mat44::Perspective(1.5708f, aspect, 0.1f, 100.0f);
 
     model_data_->data().transform =
         Mat44::FromTranslationVector(Vector3{0.0, 0.0, -3.0}) *
@@ -287,13 +293,13 @@ class CopyQueryPoolResultSample
         vulkan::kMaxOffsetAlignment,                // size
     };
     VkBufferMemoryBarrier to_use_query_results{
-        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
-        nullptr,                                  // pNext
-        VK_ACCESS_TRANSFER_WRITE_BIT,      // srcAccessMask
-        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,             // dstAccessMask
-        VK_QUEUE_FAMILY_IGNORED,                  // srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,                  // dstQueueFamilyIndex
-        *query_pool_results_buf_,                 // buffer
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,    // sType
+        nullptr,                                    // pNext
+        VK_ACCESS_TRANSFER_WRITE_BIT,               // srcAccessMask
+        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,        // dstAccessMask
+        VK_QUEUE_FAMILY_IGNORED,                    // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                    // dstQueueFamilyIndex
+        *query_pool_results_buf_,                   // buffer
         vulkan::kMaxOffsetAlignment * frame_index,  // offset
         vulkan::kMaxOffsetAlignment,                // size
     };
@@ -305,11 +311,12 @@ class CopyQueryPoolResultSample
 
     frame_data->torus_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator, app()->AllocateDescriptorSet({
-                                       torus_descriptor_set_layouts_[0],
-                                       torus_descriptor_set_layouts_[1],
-                                       torus_descriptor_set_layouts_[2],
-                                   }));
+            data_->root_allocator,
+            app()->AllocateDescriptorSet({
+                torus_descriptor_set_layouts_[0],
+                torus_descriptor_set_layouts_[1],
+                torus_descriptor_set_layouts_[2],
+            }));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -382,9 +389,9 @@ class CopyQueryPoolResultSample
     vulkan::VkCommandBuffer& cmdBuffer = (*frame_data->command_buffer_);
 
     VkClearValue clears[2];
-    vulkan::ZeroMemory(&clears[0]);
+    vulkan::MemoryClear(&clears[0]);
     clears[0].depthStencil.depth = 1.0f;
-    vulkan::ZeroMemory(&clears[1]);
+    vulkan::MemoryClear(&clears[1]);
 
     VkRenderPassBeginInfo pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
@@ -401,20 +408,22 @@ class CopyQueryPoolResultSample
     // Reset the query for this frame in the query pool and then begin query.
     LOG_ASSERT(<, data_->log, frame_index, query_pool_results_buf_->size());
     cmdBuffer->vkCmdCopyQueryPoolResults(
-        cmdBuffer, *query_pool_, frame_index, 1, *query_pool_results_buf_,
-        frame_index * vulkan::kMaxOffsetAlignment, sizeof(uint32_t),
-        VK_QUERY_RESULT_WAIT_BIT);
+        cmdBuffer, *query_pool_, static_cast<uint32_t>(frame_index),
+        static_cast<uint32_t>(1), *query_pool_results_buf_,
+        static_cast<VkDeviceSize>(frame_index * vulkan::kMaxOffsetAlignment),
+        static_cast<VkDeviceSize>(sizeof(uint32_t)), VK_QUERY_RESULT_WAIT_BIT);
     cmdBuffer->vkCmdPipelineBarrier(
         cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 1,
         &to_use_query_results, 0, nullptr);
-    cmdBuffer->vkCmdResetQueryPool(cmdBuffer, *query_pool_, frame_index, 1);
-    cmdBuffer->vkCmdBeginQuery(cmdBuffer, *query_pool_, frame_index,
+    cmdBuffer->vkCmdResetQueryPool(cmdBuffer, *query_pool_,
+                                   static_cast<uint32_t>(frame_index), 1);
+    cmdBuffer->vkCmdBeginQuery(cmdBuffer, *query_pool_,
+                               static_cast<uint32_t>(frame_index),
                                VkQueryControlFlagBits(0));
 
     cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);
-
 
     cmdBuffer->vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                  *torus_pipeline_);
@@ -427,12 +436,12 @@ class CopyQueryPoolResultSample
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
 
     // End query for this frame and get the result in the query result buffer
-    cmdBuffer->vkCmdEndQuery(cmdBuffer, *query_pool_, frame_index);
+    cmdBuffer->vkCmdEndQuery(cmdBuffer, *query_pool_,
+                             static_cast<uint32_t>(frame_index));
     cmdBuffer->vkCmdPipelineBarrier(
         cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1,
         &to_store_query_results, 0, nullptr);
-
 
     (*frame_data->command_buffer_)
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
@@ -442,8 +451,8 @@ class CopyQueryPoolResultSample
     model_data_->data().transform =
         model_data_->data().transform *
         Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14 * time_since_last_render * 0.1) *
-            Mat44::RotationY(3.14 * time_since_last_render * 0.1));
+            Mat44::RotationX(3.14f * time_since_last_render * 0.1f) *
+            Mat44::RotationY(3.14f * time_since_last_render * 0.1f));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       WireframeFrameData* frame_data) override {

@@ -33,7 +33,7 @@ class DynamicLibrary {
   // requested type.
   // Returns true if the function pointer could be correctly resolved.
   template <typename T, typename... Args>
-  bool Resolve(const char* name, T (*VKAPI_PTR* val)(Args...)) {
+  bool Resolve(const char* name, T(VKAPI_PTR** val)(Args...)) {
     *val = reinterpret_cast<T(VKAPI_PTR*)(Args...)>(ResolveFunction(name));
     return *val != nullptr;
   }

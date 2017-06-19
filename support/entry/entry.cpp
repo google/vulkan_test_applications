@@ -32,6 +32,47 @@ void dummy_function() {}
 }  // namespace internal
 }  // namespace entry
 
+#if defined __linux__ || defined _WIN32
+struct CommandLineArgs {
+  uint32_t window_width;
+  uint32_t window_height;
+  bool fixed_timestep;
+  bool prefer_separate_present;
+  int32_t output_frame;
+  const char* output_file;
+};
+
+void parse_args(CommandLineArgs* args, int argc, const char** argv) {
+  args->window_width = DEFAULT_WINDOW_WIDTH;
+  args->window_height = DEFAULT_WINDOW_HEIGHT;
+  args->fixed_timestep = FIXED_TIMESTEP;
+  args->prefer_separate_present = PREFER_SEPARATE_PRESENT;
+  args->output_frame = OUTPUT_FRAME;
+  args->output_file = OUTPUT_FILE;
+
+  for (int i = 0; i < argc; ++i) {
+    if (strncmp(argv[i], "-w=", 3) == 0) {
+      args->window_width = atoi(argv[i] + 3);
+    }
+    if (strncmp(argv[i], "-h=", 3) == 0) {
+      args->window_height = atoi(argv[i] + 3);
+    }
+    if (strncmp(argv[i], "-fixed", 6) == 0) {
+      args->fixed_timestep = true;
+    }
+    if (strncmp(argv[i], "-separate-present", 17) == 0) {
+      args->prefer_separate_present = true;
+    }
+    if (strncmp(argv[i], "-output-frame=", 14) == 0) {
+      args->output_frame = atoi(argv[i] + 14);
+    }
+    if (strncmp(argv[i], "-output-file=", 13) == 0) {
+      args->output_file = argv[i] + 13;
+    }
+  }
+}
+#endif
+
 #if defined __ANDROID__
 #include <android/window.h>
 #include <android_native_app_glue.h>
@@ -155,39 +196,13 @@ int main(int argc, char** argv) {
     }
     setenv("VK_LAYER_PATH", layer_path.c_str(), 1);
   }
-
-  uint32_t window_width = DEFAULT_WINDOW_WIDTH;
-  uint32_t window_height = DEFAULT_WINDOW_HEIGHT;
-  bool fixed_timestep = FIXED_TIMESTEP;
-  bool prefer_separate_present = PREFER_SEPARATE_PRESENT;
-  int32_t output_frame = OUTPUT_FRAME;
-  const char* output_file = OUTPUT_FILE;
-
-  for (size_t i = 0; i < argc; ++i) {
-    if (strncmp(argv[i], "-w=", 3) == 0) {
-      window_width = atoi(argv[i] + 3);
-    }
-    if (strncmp(argv[i], "-h=", 3) == 0) {
-      window_height = atoi(argv[i] + 3);
-    }
-    if (strncmp(argv[i], "-fixed", 6) == 0) {
-      fixed_timestep = true;
-    }
-    if (strncmp(argv[i], "-separate-present", 17) == 0) {
-      prefer_separate_present = true;
-    }
-    if (strncmp(argv[i], "-output-frame=", 14) == 0) {
-      output_frame = atoi(argv[i] + 14);
-    }
-    if (strncmp(argv[i], "-output-file=", 13) == 0) {
-      output_file = argv[i] + 13;
-    }
-  }
+  CommandLineArgs args;
+  parse_args(&args, argc, argv);
 
   containers::Allocator root_allocator;
   xcb_connection_t* connection;
   xcb_window_t window;
-  if (output_frame == -1) {
+  if (args.output_frame == -1) {
     connection = xcb_connect(NULL, NULL);
     const xcb_setup_t* setup = xcb_get_setup(connection);
     xcb_screen_iterator_t iter = xcb_setup_roots_iterator(setup);
@@ -195,7 +210,7 @@ int main(int argc, char** argv) {
 
     window = xcb_generate_id(connection);
     xcb_create_window(connection, XCB_COPY_FROM_PARENT, window, screen->root, 0,
-                      0, window_width, window_height, 1,
+                      0, args.window_width, args.window_height, 1,
                       XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, 0,
                       NULL);
 
@@ -206,14 +221,14 @@ int main(int argc, char** argv) {
   int return_value = 0;
 
   std::thread main_thread([&]() {
-    entry::entry_data data{
-        window,
-        connection,
-        logging::GetLogger(&root_allocator),
-        &root_allocator,
-        window_width,
-        window_height,
-        {fixed_timestep, prefer_separate_present, output_file, output_frame}};
+    entry::entry_data data{window,
+                           connection,
+                           logging::GetLogger(&root_allocator),
+                           &root_allocator,
+                           args.window_width,
+                           args.window_height,
+                           {args.fixed_timestep, args.prefer_separate_present,
+                            args.output_file, args.output_frame}};
     return_value = main_entry(&data);
   });
   main_thread.join();
@@ -223,8 +238,92 @@ int main(int argc, char** argv) {
   return return_value;
 }
 #elif defined _WIN32
-#error TODO(awoloszyn): Handle the win32 entry point.
-#error This means setting up a Win32 window, and passing it through the entry_data.
+
+void write_error(HANDLE handle, const char* message) {
+  DWORD written = 0;
+  WriteConsole(handle, message, static_cast<DWORD>(strlen(message)), &written,
+               nullptr);
+}
+
+int main(int argc, const char** argv) {
+  CommandLineArgs args;
+  parse_args(&args, argc, argv);
+  containers::Allocator root_allocator;
+  HINSTANCE instance;
+  HWND window_handle;
+  HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+  if (out_handle == INVALID_HANDLE_VALUE) {
+    AllocConsole();
+    out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (out_handle == INVALID_HANDLE_VALUE) {
+      return -1;
+    }
+  }
+
+  if (args.output_frame == -1) {
+    WNDCLASSEX window_class;
+    window_class.cbSize = sizeof(WNDCLASSEX);
+    window_class.style = CS_HREDRAW | CS_VREDRAW;
+    window_class.lpfnWndProc = &DefWindowProc;
+    window_class.cbClsExtra = 0;
+    window_class.cbWndExtra = 0;
+    window_class.hInstance = GetModuleHandle(NULL);
+    window_class.hIcon = NULL;
+    window_class.hCursor = NULL;
+    window_class.hbrBackground = NULL;
+    window_class.lpszMenuName = NULL;
+    window_class.lpszClassName = "Sample application";
+    window_class.hIconSm = NULL;
+    if (!RegisterClassEx(&window_class)) {
+      DWORD num_written = 0;
+      write_error(out_handle, "Could not register class");
+      return -1;
+    }
+
+    RECT rect = {LONG(0), LONG(0), LONG(args.window_width),
+                 LONG(args.window_height)};
+
+    AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
+
+    window_handle = CreateWindowEx(
+        0, "Sample application", "", WS_OVERLAPPEDWINDOW, rect.left, rect.right,
+        rect.right - rect.left, rect.bottom - rect.top, 0, 0,
+        GetModuleHandle(NULL), NULL);
+
+    if (!window_handle) {
+      write_error(out_handle, "Could not create window");
+    }
+
+    instance = reinterpret_cast<HINSTANCE>(
+        GetWindowLongPtr(window_handle, GWLP_HINSTANCE));
+    ShowWindow(window_handle, SW_SHOW);
+  }
+
+  int return_value = 0;
+
+  std::thread main_thread([&]() {
+    entry::entry_data data{instance,
+                           window_handle,
+                           logging::GetLogger(&root_allocator),
+                           &root_allocator,
+                           args.window_width,
+                           args.window_height,
+                           {args.fixed_timestep, args.prefer_separate_present,
+                            args.output_file, args.output_frame}};
+    return_value = main_entry(&data);
+  });
+
+  MSG msg;
+  while (window_handle && GetMessage(&msg, window_handle, 0, 0)) {
+    TranslateMessage(&msg);
+    DispatchMessage(&msg);
+  }
+  main_thread.join();
+  if (window_handle) {
+    DestroyWindow(window_handle);
+  }
+  return return_value;
+}
 #else
 #error Unsupported platform.
 #endif

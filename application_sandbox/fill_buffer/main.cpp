@@ -38,7 +38,7 @@ uint32_t cube_vertex_shader[] =
 uint32_t cube_fragment_shader[] =
 #include "fill.frag.spv"
     ;
-#include <unistd.h>
+
 struct FillFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkCommandBuffer> update_command_buffer_;
@@ -171,7 +171,7 @@ class FillSample : public sample_application::Sample<FillFrameData> {
         (float)app()->swapchain().width() / (float)app()->swapchain().height();
     camera_data_->data().projection_matrix =
         Mat44::FromScaleVector(Vector3{1.0f, -1.0f, 1.0f}) *
-        Mat44::Perspective(1.5708, aspect, 0.1f, 100.0f);
+        Mat44::Perspective(1.5708f, aspect, 0.1f, 100.0f);
 
     model_data_->data().transform =
         Mat44::FromTranslationVector(Vector3{0.0, 0.0, -3.0}) *
@@ -316,9 +316,9 @@ class FillSample : public sample_application::Sample<FillFrameData> {
     vulkan::VkCommandBuffer& cmdBuffer = (*frame_data->command_buffer_);
 
     VkClearValue clears[2];
-    vulkan::ZeroMemory(&clears[0]);
+    vulkan::MemoryClear(&clears[0]);
     clears[0].depthStencil.depth = 1.0f;
-    vulkan::ZeroMemory(&clears[1]);
+    vulkan::MemoryClear(&clears[1]);
 
     VkRenderPassBeginInfo pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
@@ -352,8 +352,8 @@ class FillSample : public sample_application::Sample<FillFrameData> {
     model_data_->data().transform =
         model_data_->data().transform *
         Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14 * time_since_last_render * 0.1) *
-            Mat44::RotationY(3.14 * time_since_last_render * 0.1));
+            Mat44::RotationX(3.14f * time_since_last_render * 0.1f) *
+            Mat44::RotationY(3.14f * time_since_last_render * 0.1f));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       FillFrameData* frame_data) override {

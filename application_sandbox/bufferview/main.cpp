@@ -154,10 +154,10 @@ class BufferViewSample : public sample_application::Sample<CubeFrameData> {
         (float)app()->swapchain().width() / (float)app()->swapchain().height();
     camera_data->data().projection_matrix =
         Mat44::FromScaleVector(mathfu::Vector<float, 3>{1.0f, -1.0f, 1.0f}) *
-        Mat44::Perspective(1.5708, aspect, 0.1f, 100.0f);
+        Mat44::Perspective(1.5708f, aspect, 0.1f, 100.0f);
 
-    model_data->data().transform =
-        Mat44::FromTranslationVector(mathfu::Vector<float, 3>{0.0, 0.0, -3.0});
+    model_data->data().transform = Mat44::FromTranslationVector(
+        mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
 
     alpha_data_->data().alpha = 1.0;
   }
@@ -190,11 +190,12 @@ class BufferViewSample : public sample_application::Sample<CubeFrameData> {
 
     frame_data->cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator, app()->AllocateDescriptorSet({
-                                       cube_descriptor_set_layouts_[0],
-                                       cube_descriptor_set_layouts_[1],
-                                       cube_descriptor_set_layouts_[2],
-                                   }));
+            data_->root_allocator,
+            app()->AllocateDescriptorSet({
+                cube_descriptor_set_layouts_[0],
+                cube_descriptor_set_layouts_[1],
+                cube_descriptor_set_layouts_[2],
+            }));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -267,7 +268,7 @@ class BufferViewSample : public sample_application::Sample<CubeFrameData> {
     vulkan::VkCommandBuffer& cmdBuffer = (*frame_data->command_buffer_);
 
     VkClearValue clear;
-    vulkan::ZeroMemory(&clear);
+    vulkan::MemoryClear(&clear);
 
     VkRenderPassBeginInfo pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
@@ -301,11 +302,12 @@ class BufferViewSample : public sample_application::Sample<CubeFrameData> {
     model_data->data().transform =
         model_data->data().transform *
         Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14 * time_since_last_render) *
-            Mat44::RotationY(3.14 * time_since_last_render * 0.5));
+            Mat44::RotationX(3.14f * time_since_last_render) *
+            Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
     alpha_data_->data().alpha =
-        alpha_data_->data().alpha > 2.0 ? 0.0 : alpha_data_->data().alpha +
-                                                    time_since_last_render / 2;
+        alpha_data_->data().alpha > 2.0
+            ? 0.0f
+            : alpha_data_->data().alpha + time_since_last_render / 2.0f;
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       CubeFrameData* frame_data) override {

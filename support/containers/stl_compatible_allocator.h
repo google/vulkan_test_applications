@@ -86,7 +86,7 @@ struct StlCompatibleAllocator {
 
  private:
   template <typename U>
-  friend class StlCompatibleAllocator;
+  friend struct StlCompatibleAllocator;
   Allocator* allocator_;
 };
 

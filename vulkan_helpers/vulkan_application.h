@@ -30,7 +30,7 @@
 #include "vulkan_wrapper/sub_objects.h"
 
 namespace vulkan {
-class VulkanModel;
+struct VulkanModel;
 struct AllocationToken;
 
 // This class represents a location in GPU memory for storing data.
@@ -492,8 +492,9 @@ class VulkanApplication {
   // VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, and by default there is no
   // inheritance info.
   void BeginCommandBuffer(
-      VkCommandBuffer* cmd_buf, VkCommandBufferUsageFlags usages =
-                                    VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+      VkCommandBuffer* cmd_buf,
+      VkCommandBufferUsageFlags usages =
+          VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
       const VkCommandBufferInheritanceInfo* pInheritanceInfo = nullptr) {
     VkCommandBufferBeginInfo begin_info{
         /* sType = */ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,

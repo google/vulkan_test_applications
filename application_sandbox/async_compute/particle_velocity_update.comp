@@ -16,7 +16,7 @@
 #version 430
 #include "particle_data_shared.h"
 
-layout (local_size_x = COMPUTE_SHADER_LOCAL_SIZE, local_size_y = 0, local_size_z = 1) in;
+layout (local_size_x = COMPUTE_SHADER_LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout (binding = 1) buffer SimulationData {
   simulation_data simulation[TOTAL_PARTICLES];

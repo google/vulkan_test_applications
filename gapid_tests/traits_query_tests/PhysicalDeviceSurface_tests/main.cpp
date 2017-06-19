@@ -42,15 +42,16 @@ int main_entry(const entry::entry_data* data) {
 
     for (size_t i = 0; i < properties.size(); ++i) {
       VkBool32 supported = false;
-      LOG_EXPECT(==, data->log, instance->vkGetPhysicalDeviceSurfaceSupportKHR(
-                                    device, i, surface, &supported),
+      LOG_EXPECT(==, data->log,
+                 instance->vkGetPhysicalDeviceSurfaceSupportKHR(
+                     device, i, surface, &supported),
                  VK_SUCCESS);
       if (supported) {
         data->log->LogInfo("  Supports surfaces on queue ", i);
       } else {
         data->log->LogInfo("  Does not support surfaces on queue ", i);
       }
-      device_supports |= supported;
+      device_supports |= (supported != 0);
     }
     if (device_supports) {
       VkSurfaceCapabilitiesKHR surface_caps;
@@ -66,14 +67,16 @@ int main_entry(const entry::entry_data* data) {
                          surface_caps.currentExtent.height, "]");
 
       uint32_t num_formats = 0;
-      LOG_EXPECT(==, data->log, instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
-                                    device, surface, &num_formats, nullptr),
+      LOG_EXPECT(==, data->log,
+                 instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
+                     device, surface, &num_formats, nullptr),
                  VK_SUCCESS);
 
-      LOG_EXPECT(>, data->log, num_formats, 0);
+      LOG_EXPECT(>, data->log, num_formats, 0u);
 
       containers::vector<VkSurfaceFormatKHR> surface_formats(
-          num_formats, data->root_allocator);
+          data->root_allocator);
+      surface_formats.resize(num_formats);
 
       LOG_EXPECT(==, data->log,
                  instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
@@ -101,8 +104,8 @@ int main_entry(const entry::entry_data* data) {
                      device, surface, &num_present_modes, nullptr),
                  VK_SUCCESS);
 
-      containers::vector<VkPresentModeKHR> present_modes(num_formats,
-                                                         data->root_allocator);
+      containers::vector<VkPresentModeKHR> present_modes(data->root_allocator);
+      present_modes.resize(num_formats);
 
       LOG_EXPECT(==, data->log,
                  instance->vkGetPhysicalDeviceSurfacePresentModesKHR(

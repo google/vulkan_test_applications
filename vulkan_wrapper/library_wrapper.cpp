@@ -20,7 +20,7 @@ namespace vulkan {
 LibraryWrapper::LibraryWrapper(containers::Allocator* allocator,
                                logging::Logger* logger)
     : logger_(logger) {
-  vulkan_lib_ = dynamic_loader::OpenLibrary(allocator, "libvulkan");
+  vulkan_lib_ = dynamic_loader::OpenLibrary(allocator, "vulkan");
   if (vulkan_lib_) {
     if (vulkan_lib_->is_valid()) {
       logger_->LogInfo("Successfully opened vulkan library");

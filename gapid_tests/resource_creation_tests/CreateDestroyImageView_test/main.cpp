@@ -47,7 +47,8 @@ int main_entry(const entry::entry_data* data) {
                device->vkGetSwapchainImagesKHR(device, swapchain, &num_images,
                                                nullptr),
                VK_SUCCESS);
-    containers::vector<::VkImage> images(num_images, allocator);
+    containers::vector<::VkImage> images(allocator);
+    images.resize(num_images);
     LOG_EXPECT(==, data->log,
                device->vkGetSwapchainImagesKHR(device, swapchain, &num_images,
                                                images.data()),

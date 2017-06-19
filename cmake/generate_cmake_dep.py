@@ -24,7 +24,7 @@ def main():
 
     with open(sys.argv[1]) as content_file:
         content = str(content_file.read())
-        content = content.split(":", 1)[1]
+        content = content.split(": ", 1)[1]
         content = content.replace("\n", " ")
         files = content.split(" ")
         target_file_contents = "set(FILE_DEPS\n"

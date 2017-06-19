@@ -69,7 +69,7 @@ VkInstance CreateDefaultInstance(containers::Allocator* allocator,
     VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
 #elif defined __linux__
     VK_KHR_XCB_SURFACE_EXTENSION_NAME,
-#elif defined __WIN32__
+#elif defined _WIN32
     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #endif
   };
@@ -116,7 +116,7 @@ VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
     VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
 #elif defined __linux__
     VK_KHR_XCB_SURFACE_EXTENSION_NAME,
-#elif defined __WIN32__
+#elif defined _WIN32
     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #endif
   };
@@ -128,12 +128,16 @@ VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
     wrapper->GetLogger()->LogInfo("    ", extension);
   }
 
-  VkInstanceCreateInfo info{
-      VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &app_info,
-      uint32_t(data->options.output_frame >= 0
-                   ? (sizeof(layers) / sizeof(layers[0]))
-                   : 0),
-      layers, (sizeof(extensions) / sizeof(extensions[0])), extensions};
+  VkInstanceCreateInfo info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+                            nullptr,
+                            0,
+                            &app_info,
+                            uint32_t(data->options.output_frame >= 0
+                                         ? (sizeof(layers) / sizeof(layers[0]))
+                                         : 0),
+                            layers,
+                            (sizeof(extensions) / sizeof(extensions[0])),
+                            extensions};
 
   ::VkInstance raw_instance;
   LOG_ASSERT(==, wrapper->GetLogger(),
@@ -148,8 +152,8 @@ containers::vector<VkPhysicalDevice> GetPhysicalDevices(
   uint32_t device_count = 0;
   instance->vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
 
-  containers::vector<VkPhysicalDevice> physical_devices(device_count,
-                                                        allocator);
+  containers::vector<VkPhysicalDevice> physical_devices(allocator);
+  physical_devices.resize(device_count);
   LOG_ASSERT(==, instance.GetLogger(),
              instance->vkEnumeratePhysicalDevices(instance, &device_count,
                                                   physical_devices.data()),
@@ -441,13 +445,12 @@ VkDevice CreateDeviceForSwapchain(
 
     uint32_t num_queue_infos = 1;
     VkDeviceQueueCreateInfo queue_infos[3];
-    queue_infos[0] = {
-        /* sType = */ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        /* pNext = */ nullptr,
-        /* flags = */ 0,
-        /* queueFamilyIndex = */ graphics_queue_family_index,
-        /* queueCount */ 1,
-        /* pQueuePriorities = */ &priority};
+    queue_infos[0] = {/* sType = */ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                      /* pNext = */ nullptr,
+                      /* flags = */ 0,
+                      /* queueFamilyIndex = */ graphics_queue_family_index,
+                      /* queueCount */ 1,
+                      /* pQueuePriorities = */ &priority};
     if (graphics_queue_family_index != present_queue_family_index) {
       queue_infos[num_queue_infos++] = {
           /* sType = */ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -561,10 +564,10 @@ VkSurfaceKHR CreateDefaultSurface(VkInstance* instance,
 
   (*instance)->vkCreateXcbSurfaceKHR(*instance, &create_info, nullptr,
                                      &surface);
-#elif defined __WIN32__
-  VkWin32SurfaceCreateInfo create_info{
+#elif defined _WIN32
+  VkWin32SurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR, 0, 0,
-      data->native_hinstance, data->nativE_window_handle};
+      data->native_hinstance, data->native_window_handle};
 
   (*instance)->vkCreateWin32SurfaceKHR(*instance, &create_info, nullptr,
                                        &surface);
@@ -589,9 +592,10 @@ VkCommandBuffer CreateCommandBuffer(VkCommandPool* pool,
       /* commandBufferCount = */ 1,
   };
   ::VkCommandBuffer raw_command_buffer;
-  LOG_ASSERT(==, device->GetLogger(), (*device)->vkAllocateCommandBuffers(
-                                          *device, &info, &raw_command_buffer),
-             VK_SUCCESS);
+  LOG_ASSERT(
+      ==, device->GetLogger(),
+      (*device)->vkAllocateCommandBuffers(*device, &info, &raw_command_buffer),
+      VK_SUCCESS);
   return vulkan::VkCommandBuffer(raw_command_buffer, pool, device);
 }
 
@@ -603,7 +607,8 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
                                       const entry::entry_data* data) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
-  containers::vector<VkSurfaceFormatKHR> surface_formats(1, allocator);
+  containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
+  surface_formats.resize(1);
 
   if (device->is_valid()) {
     const bool has_multiple_queues =
@@ -634,8 +639,9 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
         (*instance)->vkGetPhysicalDeviceSurfacePresentModesKHR(
             device->physical_device(), *surface, &num_present_modes, nullptr),
         VK_SUCCESS);
-    containers::vector<VkPresentModeKHR> present_modes(num_present_modes,
-                                                       allocator);
+    containers::vector<VkPresentModeKHR> present_modes(allocator);
+    present_modes.resize(num_present_modes);
+
     LOG_ASSERT(==, instance->GetLogger(),
                (*instance)->vkGetPhysicalDeviceSurfacePresentModesKHR(
                    device->physical_device(), *surface, &num_present_modes,
@@ -656,17 +662,20 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
       image_extent = VkExtent2D{data->width, data->height};
     }
 
+    uint32_t maxSwapchains =
+        std::max(surface_caps.maxImageCount, surface_caps.minImageCount + 1);
+
     VkSwapchainCreateInfoKHR swapchainCreateInfo{
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,  // sType
         nullptr,                                      // pNext
         0,                                            // flags
         *surface,                                     // surface
         std::min(surface_caps.minImageCount + 1,
-                 surface_caps.maxImageCount),  // minImageCount
-        surface_formats[0].format,             // surfaceFormat
-        surface_formats[0].colorSpace,         // colorSpace
-        image_extent,                          // imageExtent
-        1,                                     // imageArrayLayers
+                 maxSwapchains),        // minImageCount
+        surface_formats[0].format,      // surfaceFormat
+        surface_formats[0].colorSpace,  // colorSpace
+        image_extent,                   // imageExtent
+        1,                              // imageArrayLayers
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // imageUsage
         has_multiple_queues ? VK_SHARING_MODE_CONCURRENT
@@ -783,7 +792,8 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(
     containers::Allocator* allocator, VkDevice* device,
     std::initializer_list<VkDescriptorSetLayoutBinding> bindings) {
   containers::vector<VkDescriptorSetLayoutBinding> contiguous_bindings(
-      bindings.size(), allocator);
+      allocator);
+  contiguous_bindings.resize(bindings.size());
   auto binding = bindings.begin();
   for (size_t i = 0; i < bindings.size(); ++i, ++binding) {
     contiguous_bindings[i] = *binding;
@@ -844,9 +854,10 @@ VkDescriptorPool CreateDescriptorPool(VkDevice* device, uint32_t num_pool_size,
       /* pPoolSizes = */ pool_sizes};
 
   ::VkDescriptorPool raw_pool;
-  LOG_ASSERT(==, device->GetLogger(), (*device)->vkCreateDescriptorPool(
-                                          *device, &info, nullptr, &raw_pool),
-             VK_SUCCESS);
+  LOG_ASSERT(
+      ==, device->GetLogger(),
+      (*device)->vkCreateDescriptorPool(*device, &info, nullptr, &raw_pool),
+      VK_SUCCESS);
   return vulkan::VkDescriptorPool(raw_pool, nullptr, device);
 }
 
@@ -869,8 +880,9 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice* device,
   };
 
   ::VkDescriptorSetLayout raw_layout;
-  LOG_ASSERT(==, device->GetLogger(), (*device)->vkCreateDescriptorSetLayout(
-                                          *device, &info, nullptr, &raw_layout),
+  LOG_ASSERT(==, device->GetLogger(),
+             (*device)->vkCreateDescriptorSetLayout(*device, &info, nullptr,
+                                                    &raw_layout),
              VK_SUCCESS);
   return vulkan::VkDescriptorSetLayout(raw_layout, nullptr, device);
 }
@@ -885,9 +897,10 @@ VkDescriptorSet AllocateDescriptorSet(VkDevice* device, ::VkDescriptorPool pool,
       /* pSetLayouts = */ &layout,
   };
   ::VkDescriptorSet raw_set;
-  LOG_ASSERT(==, device->GetLogger(), (*device)->vkAllocateDescriptorSets(
-                                          *device, &alloc_info, &raw_set),
-             VK_SUCCESS);
+  LOG_ASSERT(
+      ==, device->GetLogger(),
+      (*device)->vkAllocateDescriptorSets(*device, &alloc_info, &raw_set),
+      VK_SUCCESS);
   return vulkan::VkDescriptorSet(raw_set, pool, device);
 }
 

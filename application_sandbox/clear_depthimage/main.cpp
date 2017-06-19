@@ -252,10 +252,10 @@ class ClearDepthImageSample
         (float)app()->swapchain().width() / (float)app()->swapchain().height();
     camera_data->data().projection_matrix =
         Mat44::FromScaleVector(mathfu::Vector<float, 3>{1.0f, -1.0f, 1.0f}) *
-        Mat44::Perspective(1.5708, aspect, 0.1f, 100.0f);
+        Mat44::Perspective(1.5708f, aspect, 0.1f, 100.0f);
 
-    model_data->data().transform =
-        Mat44::FromTranslationVector(mathfu::Vector<float, 3>{0.0, 0.0, -3.0});
+    model_data->data().transform = Mat44::FromTranslationVector(
+        mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
   }
 
   virtual void InitializeFrameData(
@@ -417,8 +417,8 @@ class ClearDepthImageSample
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
         &cmdBuffer);
     VkClearDepthStencilValue clear_depth{
-        0.93,  // depth
-        1,     // stencil
+        0.93f,  // depth
+        1,      // stencil
     };
     VkImageSubresourceRange clear_range{
         VK_IMAGE_ASPECT_DEPTH_BIT,  // aspectMask
@@ -438,7 +438,7 @@ class ClearDepthImageSample
 
     // Render the cube
     VkClearValue clears[2];
-    vulkan::ZeroMemory(&clears[1]);  // clear the color attachment
+    vulkan::MemoryClear(&clears[1]);  // clear the color attachment
 
     VkRenderPassBeginInfo pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
@@ -502,8 +502,8 @@ class ClearDepthImageSample
     model_data->data().transform =
         model_data->data().transform *
         Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14 * time_since_last_render) *
-            Mat44::RotationY(3.14 * time_since_last_render * 0.5));
+            Mat44::RotationX(3.14f * time_since_last_render) *
+            Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       CubeDepthFrameData* frame_data) override {

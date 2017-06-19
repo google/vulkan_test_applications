@@ -42,8 +42,8 @@ VkDescriptorPool DescriptorSet::CreateDescriptorPool(
     pool_sizes.push_back({static_cast<VkDescriptorType>(p.first), p.second});
   }
 
-  return vulkan::CreateDescriptorPool(device, pool_sizes.size(),
-                                      pool_sizes.data(), 1);
+  return vulkan::CreateDescriptorPool(
+      device, static_cast<uint32_t>(pool_sizes.size()), pool_sizes.data(), 1);
 }
 
 DescriptorSet::DescriptorSet(
@@ -189,8 +189,9 @@ VulkanApplication::VulkanApplication(
         &device_, log_, requirements.memoryTypeBits, property_flags[i]);
     *device_memories[i] = containers::make_unique<VulkanArena>(
         allocator_, allocator_, log_, device_memory_sizes[i], memory_index,
-        &device_, property_flags[i] & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+        &device_,
+        (property_flags[i] & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) != 0);
   }
 
   // Same idea as above, but for image memory.
@@ -224,9 +225,10 @@ VulkanApplication::VulkanApplication(
         VK_IMAGE_LAYOUT_UNDEFINED,            // initialLayout
     };
     ::VkImage image;
-    LOG_ASSERT(==, log_, device_->vkCreateImage(device_, &image_create_info,
-                                                nullptr, &image),
-               VK_SUCCESS);
+    LOG_ASSERT(
+        ==, log_,
+        device_->vkCreateImage(device_, &image_create_info, nullptr, &image),
+        VK_SUCCESS);
     VkMemoryRequirements requirements;
     device_->vkGetImageMemoryRequirements(device_, image, &requirements);
     device_->vkDestroyImage(device_, image, nullptr);
@@ -745,7 +747,7 @@ VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
 
   VkResult res = VK_SUCCESS;
   ::VkDeviceMemory device_memory;
-  size_t original_size = buffer_size;
+  VkDeviceSize original_size = buffer_size;
 
   const auto& memory_properties = device->physical_device_memory_properties();
 
@@ -762,7 +764,8 @@ VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
                    " bytes of "
                    "device memory. Attempting to allocate ",
                    static_cast<size_t>(buffer_size * 0.75), " bytes instead");
-      buffer_size *= 0.75;
+      buffer_size =
+          static_cast<VkDeviceSize>(static_cast<float>(buffer_size) * 0.75f);
       allocate_info.allocationSize = buffer_size;
     }
 
@@ -972,17 +975,17 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(containers::Allocator* allocator,
       layout_(*layout),
       contained_stages_(0),
       pipeline_(VK_NULL_HANDLE, nullptr, &application->device()) {
-  ZeroMemory(&vertex_input_state_);
-  ZeroMemory(&input_assembly_state_);
-  ZeroMemory(&tessellation_state_);
-  ZeroMemory(&viewport_state_);
-  ZeroMemory(&rasterization_state_);
-  ZeroMemory(&multisample_state_);
-  ZeroMemory(&depth_stencil_state_);
-  ZeroMemory(&color_blend_state_);
-  ZeroMemory(&dynamic_state_);
-  ZeroMemory(&viewport_);
-  ZeroMemory(&scissor_);
+  MemoryClear(&vertex_input_state_);
+  MemoryClear(&input_assembly_state_);
+  MemoryClear(&tessellation_state_);
+  MemoryClear(&viewport_state_);
+  MemoryClear(&rasterization_state_);
+  MemoryClear(&multisample_state_);
+  MemoryClear(&depth_stencil_state_);
+  MemoryClear(&color_blend_state_);
+  MemoryClear(&dynamic_state_);
+  MemoryClear(&viewport_);
+  MemoryClear(&scissor_);
 
   dynamic_states_.resize(2);
   dynamic_states_[0] = VK_DYNAMIC_STATE_VIEWPORT;
@@ -1161,7 +1164,8 @@ void VulkanGraphicsPipeline::Commit() {
     dynamic_state_.pDynamicStates = dynamic_states_.data();
   }
 
-  color_blend_state_.attachmentCount = attachments_.size();
+  color_blend_state_.attachmentCount =
+      static_cast<uint32_t>(attachments_.size());
   color_blend_state_.pAttachments = attachments_.data();
 
   VkGraphicsPipelineCreateInfo create_info{

@@ -30,8 +30,8 @@ int main_entry(const entry::entry_data* data) {
   uint32_t num_layers = 0;
   LOG_EXPECT(==, data->log, VK_SUCCESS,
              wrapper.vkEnumerateInstanceLayerProperties(&num_layers, nullptr));
-  containers::vector<VkLayerProperties> layer_properties(num_layers,
-                                                         data->root_allocator);
+  containers::vector<VkLayerProperties> layer_properties(data->root_allocator);
+  layer_properties.resize(num_layers);
 
   if (num_layers > 1) {
     uint32_t num_reduced_layers = num_layers - 1;
@@ -51,7 +51,8 @@ int main_entry(const entry::entry_data* data) {
                  nullptr, &num_extension_properties, nullptr));
 
   containers::vector<VkExtensionProperties> extension_properties(
-      num_extension_properties, data->root_allocator);
+      data->root_allocator);
+  extension_properties.resize(num_extension_properties);
 
   if (num_extension_properties > 1) {
     uint32_t num_reduced_extension_properties = num_extension_properties - 1;

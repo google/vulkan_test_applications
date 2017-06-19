@@ -250,7 +250,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
     float aspect = (float)width / (float)height;
     camera_data_->data().projection_matrix =
         Mat44::FromScaleVector(mathfu::Vector<float, 3>{1.0f, -1.0f, 1.0f}) *
-        Mat44::Perspective(1.5708, aspect, 0.1f, 100.0f);
+        Mat44::Perspective(1.5708f, aspect, 0.1f, 100.0f);
 
     model_data_->data().transform =
         Mat44::FromTranslationVector(mathfu::Vector<float, 3>{2.0, 2.0, -3.0});
@@ -303,8 +303,9 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
 
     frame_data->read_depth_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator, app()->AllocateDescriptorSet(
-                                       {depth_read_pipeline_layout_bindings_}));
+            data_->root_allocator,
+            app()->AllocateDescriptorSet(
+                {depth_read_pipeline_layout_bindings_}));
     VkDescriptorImageInfo image_info = {
         VK_NULL_HANDLE,                                  // sampler
         depth_view(frame_data),                          // imageView
@@ -347,7 +348,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
 
     VkClearValue clears[2];
     clears[0].depthStencil.depth = 1.0f;
-    vulkan::ZeroMemory(&clears[1]);
+    vulkan::MemoryClear(&clears[1]);
     clears[1].color.float32[0] = 1.0f;
 
     VkRenderPassBeginInfo pass_begin = {
@@ -392,8 +393,8 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
     model_data_->data().transform =
         model_data_->data().transform *
         Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14 * time_since_last_render) *
-            Mat44::RotationY(3.14 * time_since_last_render * 0.5));
+            Mat44::RotationX(3.14f * time_since_last_render) *
+            Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       DepthFrameData* frame_data) override {
@@ -421,8 +422,8 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
  private:
   struct CameraData {
     bool operator==(const CameraData& other) {
-      for (size_t i = 0; i < 4; ++i) {
-        for (size_t j = 0; j < 4; ++j) {
+      for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
           if (projection_matrix(i, j) != other.projection_matrix(i, j)) {
             return false;
           }
@@ -435,8 +436,8 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
 
   struct ModelData {
     bool operator==(const ModelData& other) {
-      for (size_t i = 0; i < 4; ++i) {
-        for (size_t j = 0; j < 4; ++j) {
+      for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
           if (transform(i, j) != other.transform(i, j)) {
             return false;
           }

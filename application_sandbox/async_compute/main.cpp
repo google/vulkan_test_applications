@@ -102,8 +102,6 @@ class ASyncThreadRunner {
     if (!app_->async_compute_queue()) {
       return;
     }
-    // Poor man's semaphore
-    first_data_mutex_.lock();
 
     update_time_data_ = containers::make_unique<vulkan::BufferFrameData<Mat44>>(
         allocator_, app_, num_async_compute_buffers,
@@ -188,12 +186,13 @@ class ASyncThreadRunner {
 
     srand(0);
     // Fill this SSBO with random initial positions.
-    containers::vector<simulation_data> fill_data(TOTAL_PARTICLES, allocator_);
+    containers::vector<simulation_data> fill_data(allocator_);
+    fill_data.resize(TOTAL_PARTICLES);
     for (auto& particle : fill_data) {
       float distance =
           static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
       float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-      angle = angle * 3.1415 * 2;
+      angle = angle * 3.1415f * 2.0f;
       float x = sin(angle);
       float y = cos(angle);
 
@@ -232,15 +231,16 @@ class ASyncThreadRunner {
           queue_family_indices                     // pQueueFamilyIndices
       };
 
-      data_.push_back(PrivateAsyncData{
-          vulkan::CreateFence(&app_->device()),
-          app_->CreateAndBindDeviceBuffer(&create_info),
-          app_->GetCommandBuffer(), app_->GetCommandBuffer(),
-          containers::make_unique<vulkan::DescriptorSet>(
-              allocator_, app_->AllocateDescriptorSet(
-                              {compute_descriptor_set_layouts_[0],
-                               compute_descriptor_set_layouts_[1],
-                               compute_descriptor_set_layouts_[2]}))});
+      data_.push_back(
+          PrivateAsyncData{vulkan::CreateFence(&app_->device()),
+                           app_->CreateAndBindDeviceBuffer(&create_info),
+                           app_->GetCommandBuffer(), app_->GetCommandBuffer(),
+                           containers::make_unique<vulkan::DescriptorSet>(
+                               allocator_,
+                               app_->AllocateDescriptorSet(
+                                   {compute_descriptor_set_layouts_[0],
+                                    compute_descriptor_set_layouts_[1],
+                                    compute_descriptor_set_layouts_[2]}))});
       auto& dat = data_.back();
       VkDescriptorBufferInfo buffer_infos[3] = {
           {
@@ -345,7 +345,7 @@ class ASyncThreadRunner {
           nullptr);
 
       command_buffer->vkEndCommandBuffer(command_buffer);
-      ready_buffers_.push_back(i);
+      ready_buffers_.push_back(static_cast<uint32_t>(i));
 
       // Wake command buffer
       auto& wake_command_buffer = dat.wake_command_buffer_;
@@ -410,7 +410,8 @@ class ASyncThreadRunner {
       // The first time we put something in the mailbox,
       // this is set. So that the first time we can block for there
       // to be a valid value there.
-      first_data_mutex_.lock();
+      std::unique_lock<std::mutex> lock(first_data_mutex_);
+      first_data_cv_.wait(lock, [this] { return first_data_ready_; });
     }
 
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -481,9 +482,12 @@ class ASyncThreadRunner {
                                       &computation_fence.get_raw_object());
         // 2)
         PutBufferInMailbox(last_buffer);
-        if (!started) {
-          first_data_mutex_.unlock();
-          started = true;
+        if (!first_data_ready_) {
+          {
+            std::lock_guard<std::mutex> lg(first_data_mutex_);
+            first_data_ready_ = true;
+          }
+          first_data_cv_.notify_all();
         }
       } else {
         last_update_time_ = std::chrono::high_resolution_clock::now();
@@ -521,7 +525,7 @@ class ASyncThreadRunner {
         simulation_count_ = 0;
       }
       simulation_count_++;
-      update_time_data_->data()[0] = current_frame++;
+      update_time_data_->data()[0] = static_cast<float>(current_frame++);
       update_time_data_->data()[1] = elapsed_time.count();
       if (current_frame >= TOTAL_PARTICLES) {
         current_frame = 0;
@@ -572,8 +576,9 @@ class ASyncThreadRunner {
     while (!returned_buffers_.empty()) {
       if (VK_SUCCESS !=
           app_->device()->vkGetFenceStatus(
-              app_->device(), data_[returned_buffers_.front()]
-                                  .return_fence_.get_raw_object())) {
+              app_->device(),
+              data_[returned_buffers_.front()]
+                  .return_fence_.get_raw_object())) {
         break;
       }
       app_->device()->vkResetFences(
@@ -643,7 +648,6 @@ class ASyncThreadRunner {
   // The current buffer sitting in the output mailbox.
   int32_t mailbox_buffer_;
   bool first = true;
-  bool started = false;
   int current_frame = 0;
 
   // The number of times the simulation has run since the last log.
@@ -653,9 +657,10 @@ class ASyncThreadRunner {
 
   // Mutex to protect the mailbox and related buffers.
   std::mutex data_mutex_;
-  // Poor man's semaphore used to block the main thread until the first
-  // simulation has completed.
+  // This lock + cv + value becomes our sempahore
   std::mutex first_data_mutex_;
+  std::condition_variable first_data_cv_;
+  bool first_data_ready_ = false;
   // The thread that runs the simulation.
   std::thread runner_;
   vulkan::VulkanApplication* app_;
@@ -808,11 +813,12 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
 
     frame_data->particle_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator, app()->AllocateDescriptorSet(
-                                       {particle_descriptor_set_layouts_[0],
-                                        particle_descriptor_set_layouts_[1],
-                                        particle_descriptor_set_layouts_[2],
-                                        particle_descriptor_set_layouts_[3]}));
+            data_->root_allocator,
+            app()->AllocateDescriptorSet(
+                {particle_descriptor_set_layouts_[0],
+                 particle_descriptor_set_layouts_[1],
+                 particle_descriptor_set_layouts_[2],
+                 particle_descriptor_set_layouts_[3]}));
 
     ::VkImageView raw_view = color_view(frame_data);
 
@@ -952,7 +958,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
     vulkan::VkCommandBuffer& cmdBuffer = (*data->command_buffer_);
 
     VkClearValue clear;
-    vulkan::ZeroMemory(&clear);
+    vulkan::MemoryClear(&clear);
     clear.color.float32[3] = 1.0f;
 
     if (swapped_buffer) {

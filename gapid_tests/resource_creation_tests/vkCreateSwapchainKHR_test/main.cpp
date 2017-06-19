@@ -17,7 +17,6 @@
 #include "support/log/log.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/known_device_infos.h"
-#include "vulkan_helpers/known_device_infos.h"
 #include "vulkan_helpers/structs.h"
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
@@ -46,24 +45,27 @@ int main_entry(const entry::entry_data* data) {
                  device.physical_device(), surface, &num_formats, nullptr),
              VK_SUCCESS);
 
-  containers::vector<VkSurfaceFormatKHR> surface_formats(num_formats,
-                                                         data->root_allocator);
-  LOG_ASSERT(==, data->log, instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
-                                device.physical_device(), surface, &num_formats,
-                                surface_formats.data()),
+  containers::vector<VkSurfaceFormatKHR> surface_formats(data->root_allocator);
+  surface_formats.resize(num_formats);
+  LOG_ASSERT(==, data->log,
+             instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
+                 device.physical_device(), surface, &num_formats,
+                 surface_formats.data()),
              VK_SUCCESS);
 
   uint32_t num_present_modes = 0;
 
-  LOG_ASSERT(==, data->log, instance->vkGetPhysicalDeviceSurfacePresentModesKHR(
-                                device.physical_device(), surface,
-                                &num_present_modes, nullptr),
-             VK_SUCCESS);
-  containers::vector<VkPresentModeKHR> present_modes(num_present_modes,
-                                                     data->root_allocator);
-  LOG_ASSERT(==, data->log, instance->vkGetPhysicalDeviceSurfacePresentModesKHR(
-                                device.physical_device(), surface,
-                                &num_present_modes, present_modes.data()),
+  LOG_ASSERT(
+      ==, data->log,
+      instance->vkGetPhysicalDeviceSurfacePresentModesKHR(
+          device.physical_device(), surface, &num_present_modes, nullptr),
+      VK_SUCCESS);
+  containers::vector<VkPresentModeKHR> present_modes(data->root_allocator);
+  present_modes.resize(num_present_modes);
+  LOG_ASSERT(==, data->log,
+             instance->vkGetPhysicalDeviceSurfacePresentModesKHR(
+                 device.physical_device(), surface, &num_present_modes,
+                 present_modes.data()),
              VK_SUCCESS);
 
   data->log->LogInfo("Created device for rendering to a swapchain");
