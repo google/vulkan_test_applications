@@ -40,6 +40,17 @@ class InternalDynamicLibrary : public DynamicLibrary {
     }
   }
 
+  InternalDynamicLibrary(const InternalDynamicLibrary&) = delete;
+  InternalDynamicLibrary(InternalDynamicLibrary&&) = delete;
+
+  InternalDynamicLibrary& operator=(const InternalDynamicLibrary other) =
+      delete;
+  InternalDynamicLibrary& operator=(InternalDynamicLibrary&& other) {
+    this->lib_ = other.lib_;
+    other.lib_ = nullptr;
+    return *this;
+  }
+
   void* ResolveFunction(const char* function_name) override {
     return dlsym(lib_, function_name);
   }
@@ -55,8 +66,7 @@ class InternalDynamicLibrary : public DynamicLibrary {
 containers::unique_ptr<DynamicLibrary> OpenLibrary(
     containers::Allocator* allocator, const char* name) {
   containers::unique_ptr<InternalDynamicLibrary> lib(
-      containers::make_unique<InternalDynamicLibrary>(
-          allocator, InternalDynamicLibrary(name)));
+      containers::make_unique<InternalDynamicLibrary>(allocator, name));
   if (!lib->is_valid()) {
     return nullptr;
   }
