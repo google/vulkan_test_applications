@@ -176,7 +176,7 @@ static char file_path[1024 * 1024] = {};
 // It maps it onto the screen and passes it on to the main_entry function.
 // -w=X will set the window width to X
 // -h=Y will set the window height to Y
-int main(int argc, char** argv) {
+int main(int argc, const char** argv) {
   int path_len = readlink("/proc/self/exe", file_path, 1024 * 1024 - 1);
   if (path_len != -1) {
     file_path[path_len] = '\0';

@@ -18,6 +18,8 @@
 
 #include "support/containers/allocator.h"
 
+#include <limits>
+
 namespace containers {
 
 // This allocator implements the allocator interface
@@ -83,6 +85,12 @@ struct StlCompatibleAllocator {
   // Returns the internal allocator. This is useful to get at the allocation
   // information.
   const Allocator* get_internal() const { return allocator_; }
+
+  // Returns the maximum theoretically possible number of T stored in this
+  // allocator.
+  size_type max_size() const {
+    return std::numeric_limits<size_type>::max() / sizeof(value_type);
+  }
 
  private:
   template <typename U>
