@@ -71,6 +71,17 @@ class InternalDynamicLibrary : public DynamicLibrary {
     }
   }
 
+  InternalDynamicLibrary(const InternalDynamicLibrary&) = delete;
+  InternalDynamicLibrary(InternalDynamicLibrary&&) = delete;
+
+  InternalDynamicLibrary& operator=(const InternalDynamicLibrary other) =
+      delete;
+  InternalDynamicLibrary& operator=(InternalDynamicLibrary&& other) {
+    this->lib_ = other.lib_;
+    other.lib_ = nullptr;
+    return *this;
+  }
+
   void* ResolveFunction(const char* function_name) override {
     return dlsym(lib_, function_name);
   }
