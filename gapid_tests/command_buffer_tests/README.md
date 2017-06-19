@@ -14,6 +14,7 @@ command buffers.
 - [SetDepthBias_test](SetDepthBias_test/README.md)
 - [SetLineWidthAndBlendConstants_test](SetLineWidthAndBlendConstants_test/README.md)
 - [SetStencilMask_test](SetStencilMask_test/README.md)
+- [vkCmdSetStencilReference_test](vkCmdSetStencilReference_test/README.md)
 - [SetViewportAndScissor_test](SetViewportAndScissor_test/README.md)
 - [vkCmdBindDescriptorSets_test](vkCmdBindDescriptorSets_test/README.md)
 - [vkCmdBindIndexBuffer_test](vkCmdBindIndexBuffer_test/README.md)
