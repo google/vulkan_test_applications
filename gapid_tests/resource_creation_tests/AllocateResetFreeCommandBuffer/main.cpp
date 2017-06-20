@@ -39,7 +39,7 @@ int main_entry(const entry::entry_data* data) {
   uint32_t reset_flag_index = reset_flags.size() - 1;
 
   containers::vector<::VkCommandBuffer> command_buffers(allocator);
-  command_buffers.reserve(max_count);
+  command_buffers.resize(max_count);
   for (VkCommandBufferLevel level :
        vulkan::AllVkCommandBufferLevels(allocator)) {
     for (uint32_t count : {uint32_t(1), uint32_t(2), max_count}) {

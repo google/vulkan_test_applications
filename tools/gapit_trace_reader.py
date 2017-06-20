@@ -411,9 +411,11 @@ def next_line(proc):
         line = proc.stdout.readline()
         if line == '\n':
             continue
+        if line == '\r\n':
+            continue
         if re.match(r'\d\d?:\d\d?:\d\d?\.\d*.* <gapi\w>', line):
             continue
-        return line.strip()
+        return line.strip("\r\n").strip()
 
 
 def get_device_and_architecture_info_from_trace_file(filename):
@@ -438,7 +440,7 @@ def get_device_and_architecture_info_from_trace_file(filename):
             if line == '':
                 return None
         # append the ending '}'
-        return_str += line
+        return_str += line.strip() + "\n"
         return return_str
 
     device = None

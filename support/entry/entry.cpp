@@ -277,7 +277,7 @@ int main(int argc, const char** argv) {
         GetEnvironmentVariableA("VK_LAYER_PATH", layer_path, 1024 * 1024 - 1);
     std::string lp = layer_path;
     if (d > 0 && !lp.empty()) {
-      lp = lp + ":" + file_path;
+      lp = lp + ";" + file_path;
     } else {
       lp = file_path;
     }
