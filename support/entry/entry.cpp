@@ -129,7 +129,7 @@ void android_main(android_app* app) {
     int32_t height = output_frame >= 0 ? DEFAULT_WINDOW_HEIGHT
                                        : ANativeWindow_getHeight(app->window);
 
-    containers::Allocator root_allocator;
+    containers::LeakCheckAllocator root_allocator;
     {
       entry::entry_data data{
           app->window,
@@ -199,7 +199,7 @@ int main(int argc, const char** argv) {
   CommandLineArgs args;
   parse_args(&args, argc, argv);
 
-  containers::Allocator root_allocator;
+  containers::LeakCheckAllocator root_allocator;
   xcb_connection_t* connection;
   xcb_window_t window;
   if (args.output_frame == -1) {
@@ -245,12 +245,15 @@ void write_error(HANDLE handle, const char* message) {
                nullptr);
 }
 
+static char file_path[1024 * 1024] = {};
+static char layer_path[1024 * 1024] = {};
 int main(int argc, const char** argv) {
   CommandLineArgs args;
   parse_args(&args, argc, argv);
-  containers::Allocator root_allocator;
-  HINSTANCE instance;
-  HWND window_handle;
+
+  containers::LeakCheckAllocator root_allocator;
+  HINSTANCE instance = 0;
+  HWND window_handle = 0;
   HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
   if (out_handle == INVALID_HANDLE_VALUE) {
     AllocConsole();
@@ -258,6 +261,27 @@ int main(int argc, const char** argv) {
     if (out_handle == INVALID_HANDLE_VALUE) {
       return -1;
     }
+  }
+
+  DWORD path_len = GetModuleFileNameA(NULL, file_path, 1024 * 1024 - 1);
+  if (path_len != -1) {
+    file_path[path_len] = '\0';
+    for (DWORD i = path_len - 1; i >= 0; --i) {
+      // Cut off the exe name
+      if (file_path[i] == '/' || file_path[i] == '\\') {
+        file_path[i] = '\0';
+        break;
+      }
+    }
+    DWORD d =
+        GetEnvironmentVariableA("VK_LAYER_PATH", layer_path, 1024 * 1024 - 1);
+    std::string lp = layer_path;
+    if (d > 0 && !lp.empty()) {
+      lp = lp + ":" + file_path;
+    } else {
+      lp = file_path;
+    }
+    SetEnvironmentVariableA("VK_LAYER_PATH", lp.c_str());
   }
 
   if (args.output_frame == -1) {
