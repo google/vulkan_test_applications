@@ -304,14 +304,13 @@ int main(int argc, const char** argv) {
       return -1;
     }
 
-    RECT rect = {LONG(0), LONG(0), LONG(args.window_width),
-                 LONG(args.window_height)};
+    RECT rect = {0, 0, LONG(args.window_width), LONG(args.window_height)};
 
     AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
 
     window_handle = CreateWindowEx(
-        0, "Sample application", "", WS_OVERLAPPEDWINDOW, rect.left, rect.right,
-        rect.right - rect.left, rect.bottom - rect.top, 0, 0,
+        0, "Sample application", "", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+        CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, 0, 0,
         GetModuleHandle(NULL), NULL);
 
     if (!window_handle) {
