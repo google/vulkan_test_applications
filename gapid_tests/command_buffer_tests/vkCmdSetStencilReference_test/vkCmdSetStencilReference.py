@@ -17,7 +17,7 @@ from vulkan_constants import *
 
 
 @gapit_test("vkCmdSetStencilReference_test")
-class SetStencilCompareMask(GapitTest):
+class SetStencilReference(GapitTest):
 
     def expect(self):
         first_set_stencil = require(self.next_call_of("vkCmdSetStencilReference"))

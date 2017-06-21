@@ -569,9 +569,8 @@ void VulkanApplication::FillHostVisibleBuffer(Buffer* buffer, const void* data,
     return;
   }
   const char* d = reinterpret_cast<const char*>(data);
-  for (size_t i = 0; i < buffer->size() && i < data_size; i++) {
-    p[i] = d[i];
-  }
+  size_t size = buffer->size() < data_size ? buffer->size() : data_size;
+  memcpy(p+buffer_offset, d, size);
   buffer->flush();
   if (command_buffer) {
     VkBufferMemoryBarrier buf_barrier{

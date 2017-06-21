@@ -90,8 +90,8 @@ class BufferFrameData {
           size()};
 
       update_commands_.back()->vkCmdPipelineBarrier(
-          update_commands_.back(), VK_PIPELINE_STAGE_TRANSFER_BIT,
-          VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 1, &barrier, 0,
+          update_commands_.back(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+          VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
       VkBufferCopy region{aligned_data_size * i, aligned_data_size * i, size()};
 
@@ -99,7 +99,7 @@ class BufferFrameData {
           update_commands_.back(), *host_buffer_, *buffer_, 1, &region);
 
       barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-      barrier.srcAccessMask = VK_ACCESS_UNIFORM_READ_BIT;
+      barrier.dstAccessMask = VK_ACCESS_UNIFORM_READ_BIT;
       update_commands_.back()->vkCmdPipelineBarrier(
           update_commands_.back(), VK_PIPELINE_STAGE_TRANSFER_BIT,
           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 1, &barrier, 0,
