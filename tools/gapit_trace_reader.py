@@ -17,6 +17,7 @@
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -475,6 +476,7 @@ def get_device_and_architecture_info_from_trace_file(filename):
         if (device is not None) and (architecture is not None):
             break
         line = next_line(proc)
+    proc.kill()
     return device, architecture
 
 
@@ -487,7 +489,7 @@ def parse_trace_file(filename):
     proc = subprocess.Popen(
         ['gapit', '-log-level', 'Fatal', 'dump',
             '-observations-data', '-raw', filename],
-        stdout=subprocess.PIPE)
+        stdout=subprocess.PIPE, stderr=open(os.devnull, 'wb'))
 
     # This parsing routine is basically a state machine
     # The very first several lines of the process is un-necessary
@@ -531,7 +533,7 @@ def parse_trace_file(filename):
         line = next_line(proc)
     if atom:
         yield atom
-
+    proc.kill()
 import time
 
 

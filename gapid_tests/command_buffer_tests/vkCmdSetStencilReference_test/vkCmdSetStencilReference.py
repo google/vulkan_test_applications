@@ -20,20 +20,23 @@ from vulkan_constants import *
 class SetStencilCompareMask(GapitTest):
 
     def expect(self):
-        first_set_stencil = require(self.next_call_of("vkCmdSetStencilReference"))
+        first_set_stencil = require(
+            self.next_call_of("vkCmdSetStencilReference"))
         require_not_equal(0, first_set_stencil.int_commandBuffer)
         require_equal(VK_STENCIL_FACE_FRONT_BIT,
                       first_set_stencil.int_faceMask)
-        require_equal(0, first_set_stencil.int_compareMask)
+        require_equal(0, first_set_stencil.int_reference)
 
-        second_set_stencil = require(self.next_call_of("vkCmdSetStencilReference"))
+        second_set_stencil = require(
+            self.next_call_of("vkCmdSetStencilReference"))
         require_not_equal(0, second_set_stencil.int_commandBuffer)
         require_equal(VK_STENCIL_FACE_BACK_BIT,
                       second_set_stencil.int_faceMask)
-        require_equal(10, second_set_stencil.int_compareMask)
+        require_equal(10, second_set_stencil.int_reference)
 
-        third_set_stencil = require(self.next_call_of("vkCmdSetStencilReference"))
+        third_set_stencil = require(
+            self.next_call_of("vkCmdSetStencilReference"))
         require_not_equal(0, third_set_stencil.int_commandBuffer)
         require_equal(VK_STENCIL_FRONT_AND_BACK,
                       third_set_stencil.int_faceMask)
-        require_equal(0xFFFFFFFF, third_set_stencil.int_compareMask)
+        require_equal(0xFFFFFFFF, third_set_stencil.int_reference)

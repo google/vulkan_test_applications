@@ -90,7 +90,7 @@ vulkan::VulkanGraphicsPipeline CreatePipeline(
           nullptr                           // pPreserveAttachments
       }},                                   // SubpassDescriptions
       {}                                    // SubpassDependencies
-      );
+  );
 
   vulkan::VulkanGraphicsPipeline pipeline =
       app.CreateGraphicsPipeline(&pipeline_layout, &render_pass, 0);
@@ -118,24 +118,30 @@ int main_entry(const entry::entry_data* data) {
 
   {
     // Test vkCmdSetStencilCompareMask
-    vulkan::VkCommandBuffer cmd_buf= app.GetCommandBuffer();
+    vulkan::VkCommandBuffer cmd_buf = app.GetCommandBuffer();
     app.BeginCommandBuffer(&cmd_buf);
-    cmd_buf->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    cmd_buf->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                               pipeline);
     cmd_buf->vkCmdSetStencilCompareMask(cmd_buf, VK_STENCIL_FACE_FRONT_BIT, 0u);
-    cmd_buf->vkCmdSetStencilCompareMask(cmd_buf, VK_STENCIL_FACE_FRONT_BIT, 10u);
-    cmd_buf->vkCmdSetStencilCompareMask(cmd_buf, VK_STENCIL_FRONT_AND_BACK, 0xFFFFFFFFU);
-    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf, &app.render_queue());
+    cmd_buf->vkCmdSetStencilCompareMask(cmd_buf, VK_STENCIL_FACE_BACK_BIT, 10u);
+    cmd_buf->vkCmdSetStencilCompareMask(cmd_buf, VK_STENCIL_FRONT_AND_BACK,
+                                        0xFFFFFFFFU);
+    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf,
+                                                     &app.render_queue());
   }
 
   {
     // Test vkCmdSetStencilWriteMask
-    vulkan::VkCommandBuffer cmd_buf= app.GetCommandBuffer();
+    vulkan::VkCommandBuffer cmd_buf = app.GetCommandBuffer();
     app.BeginCommandBuffer(&cmd_buf);
-    cmd_buf->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    cmd_buf->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                               pipeline);
     cmd_buf->vkCmdSetStencilWriteMask(cmd_buf, VK_STENCIL_FACE_FRONT_BIT, 0u);
-    cmd_buf->vkCmdSetStencilWriteMask(cmd_buf, VK_STENCIL_FACE_FRONT_BIT, 10u);
-    cmd_buf->vkCmdSetStencilWriteMask(cmd_buf, VK_STENCIL_FRONT_AND_BACK, 0xFFFFFFFFU);
-    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf, &app.render_queue());
+    cmd_buf->vkCmdSetStencilWriteMask(cmd_buf, VK_STENCIL_FACE_BACK_BIT, 10u);
+    cmd_buf->vkCmdSetStencilWriteMask(cmd_buf, VK_STENCIL_FRONT_AND_BACK,
+                                      0xFFFFFFFFU);
+    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf,
+                                                     &app.render_queue());
   }
 
   data->log->LogInfo("Application Shutdown");

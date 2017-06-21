@@ -11,7 +11,7 @@
 
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
-from gapit_test_framework import GapitTest
+from gapit_test_framework import GapitTest, ANDROID
 from vulkan_constants import *
 
 
@@ -21,8 +21,13 @@ class SurfaceCreateTest(GapitTest):
     def expect(self):
         """Expect that the applicationInfoPointer is null for the first
          vkCreateInstance"""
+
+        if self.device.Configuration.OS.Kind != ANDROID:
+            return
+
         architecture = self.architecture
-        create_surface = require(self.next_call_of("vkCreateAndroidSurfaceKHR"))
+        create_surface = require(
+            self.next_call_of("vkCreateAndroidSurfaceKHR"))
 
         # Make sure the parameters are valid
         require_not_equal(create_surface.int_instance, 0)
