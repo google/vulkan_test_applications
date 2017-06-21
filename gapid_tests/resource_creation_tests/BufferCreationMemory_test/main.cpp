@@ -58,10 +58,6 @@ int main_entry(const entry::entry_data* data) {
     data->log->LogInfo("   TypeBits  :", requirements.memoryTypeBits);
   }
 
-  if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
-    device->vkDestroyBuffer(device, (VkBuffer)VK_NULL_HANDLE, nullptr);
-  }
-
   data->log->LogInfo("Application Shutdown");
   return 0;
 }

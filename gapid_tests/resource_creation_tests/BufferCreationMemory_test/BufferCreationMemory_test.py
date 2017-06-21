@@ -13,7 +13,6 @@ from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest, get_read_offset_function
 from gapit_test_framework import get_write_offset_function
-from gapit_test_framework import NVIDIA_K2200
 from struct_offsets import VulkanStruct, UINT32_T, DEVICE_SIZE, SIZE_T, POINTER
 from struct_offsets import HANDLE, FLOAT, CHAR, ARRAY
 from vulkan_constants import *
@@ -85,10 +84,3 @@ class BufferCreationDestroy(GapitTest):
         require_equal(destroy_buffer.int_device,
                       get_buffer_memory_requirements.int_device)
         require_equal(written_buffer, destroy_buffer.int_buffer)
-
-        # Our second vkDestroySwapchain should have been called with
-        # VK_NULL_HANDLE
-        if (self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200)):
-            destroy_buffer = require(self.next_call_of("vkDestroyBuffer"))
-            require_not_equal(0, destroy_buffer.int_device)
-            require_equal(0, destroy_buffer.int_buffer)

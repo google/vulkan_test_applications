@@ -137,11 +137,6 @@ int main_entry(const entry::entry_data* data) {
     device->vkDestroyFramebuffer(device, framebuffer, nullptr);
   }
 
-  if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
-    device->vkDestroyFramebuffer(
-        device, static_cast<VkFramebuffer>(VK_NULL_HANDLE), nullptr);
-  }
-
   data->log->LogInfo("Application Shutdown");
   return 0;
 }

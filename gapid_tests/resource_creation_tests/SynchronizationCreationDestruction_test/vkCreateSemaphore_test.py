@@ -12,7 +12,6 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest
-from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 
 
@@ -61,10 +60,3 @@ class SemaphoreCreateDestroyTest(GapitTest):
         require_equal(
             little_endian_bytes_to_int(returned_semaphore),
             destroy_semaphore.int_semaphore)
-
-        # Our second destroy_semaphore should have been called with
-        # VK_NULL_HANDLE
-        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
-            destroy_semaphore_null = require(
-                self.next_call_of("vkDestroySemaphore"))
-            require_equal(0, destroy_semaphore_null.int_semaphore)

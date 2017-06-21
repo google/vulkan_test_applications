@@ -76,11 +76,6 @@ int main_entry(const entry::entry_data* data) {
                uint8_t(VK_PIPELINE_CACHE_HEADER_VERSION_ONE));
 
     device->vkDestroyPipelineCache(device, cache, nullptr);
-
-    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
-      device->vkDestroyPipelineCache(
-          device, static_cast<VkPipelineCache>(VK_NULL_HANDLE), nullptr);
-    }
   }
 
   {

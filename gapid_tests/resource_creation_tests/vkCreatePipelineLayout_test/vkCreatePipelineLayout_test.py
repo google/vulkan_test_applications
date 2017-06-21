@@ -12,7 +12,6 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest, get_read_offset_function
-from gapit_test_framework import NVIDIA_K2200
 from struct_offsets import VulkanStruct, UINT32_T, SIZE_T, POINTER
 from struct_offsets import HANDLE, FLOAT, CHAR, ARRAY
 from vulkan_constants import *
@@ -151,7 +150,7 @@ class TwoLayouts(GapitTest):
 
         _ = require(create_pipeline.get_read_data(
             pipeline_layout_create_info.pSetLayouts +
-                NON_DISPATCHABLE_HANDLE_SIZE,
+            NON_DISPATCHABLE_HANDLE_SIZE,
             NON_DISPATCHABLE_HANDLE_SIZE
         ))
 
@@ -164,7 +163,7 @@ class TwoLayouts(GapitTest):
         set_layout2 = little_endian_bytes_to_int(require(
             create_pipeline.get_read_data(
                 pipeline_layout_create_info.pSetLayouts +
-                    NON_DISPATCHABLE_HANDLE_SIZE,
+                NON_DISPATCHABLE_HANDLE_SIZE,
                 NON_DISPATCHABLE_HANDLE_SIZE)))
         require_not_equal(VK_NULL_HANDLE, set_layout2)
 
@@ -173,18 +172,3 @@ class TwoLayouts(GapitTest):
         require_equal(created_pipeline, destroy_pipeline.int_pipelineLayout)
         require_equal(create_pipeline.int_device, destroy_pipeline.int_device)
         require_equal(0, destroy_pipeline.hex_pAllocator)
-
-
-@gapit_test("vkCreatePipelineLayout_test")
-class NullDestroy(GapitTest):
-
-    def expect(self):
-        device_properties = require(
-            self.next_call_of("vkGetPhysicalDeviceProperties"))
-
-        if (self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200)):
-            destroy_pipeline = require(
-                self.nth_call_of("vkDestroyPipelineLayout", 4))
-            require_equal(0, destroy_pipeline.int_pipelineLayout)
-            require_not_equal(0, destroy_pipeline.int_device)
-            require_equal(0, destroy_pipeline.hex_pAllocator)

@@ -12,7 +12,6 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest, get_read_offset_function
-from gapit_test_framework import NVIDIA_K2200
 from struct_offsets import *
 from vulkan_constants import *
 
@@ -41,7 +40,7 @@ class CreateDestroyWaitTest(GapitTest):
 
         create_info = VulkanStruct(architecture,
                                    FENCE_CREATE_INFO, get_read_offset_function(
-                                   create_fence, create_fence.hex_pCreateInfo))
+                                       create_fence, create_fence.hex_pCreateInfo))
 
         require_equal(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, create_info.sType)
         require_equal(0, create_info.pNext)
@@ -97,18 +96,3 @@ class GetFenceStatus(GapitTest):
         require(self.next_call_of("vkCreateFence"))
         fourth_get_status = require(self.next_call_of("vkGetFenceStatus"))
         require_equal(VK_SUCCESS, (fourth_get_status.return_val))
-
-
-@gapit_test("Fence_test")
-class DestroyEmpty(GapitTest):
-
-    def expect(self):
-
-        device_properties = require(
-            self.next_call_of("vkGetPhysicalDeviceProperties"))
-
-        if self.not_device(device_properties, 0x5DD08000, NVIDIA_K2200):
-            destroy_fence = require(self.nth_call_of("vkDestroyFence", 4))
-            require_not_equal(0, destroy_fence.int_device)
-            require_equal(0, destroy_fence.int_fence)
-            require_equal(0, destroy_fence.hex_pAllocator)

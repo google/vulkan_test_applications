@@ -83,18 +83,6 @@ int main_entry(const entry::entry_data* data) {
     device->vkFreeDescriptorSets(device, raw_pool, kNumSets, sets);
   }
 
-  {  // 3. Destroy null descriptor set handles.
-    VkDescriptorPoolSize pool_size = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1};
-    vulkan::VkDescriptorPool pool =
-        CreateDescriptorPool(&device, 1, &pool_size, 1);
-    ::VkDescriptorPool raw_pool = pool.get_raw_object();
-
-    ::VkDescriptorSet sets[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
-    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
-      device->vkFreeDescriptorSets(device, raw_pool, 2, sets);
-    }
-  }
-
   data->log->LogInfo("Application Shutdown");
   return 0;
 }

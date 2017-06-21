@@ -86,10 +86,6 @@ int main_entry(const entry::entry_data* data) {
                VK_SUCCESS);
 
     device->vkDestroyImageView(device, image_view, nullptr);
-
-    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
-      device->vkDestroyImageView(device, (VkImageView)VK_NULL_HANDLE, nullptr);
-    }
   }
 
   data->log->LogInfo("Application Shutdown");

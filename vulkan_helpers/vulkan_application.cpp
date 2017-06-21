@@ -225,10 +225,9 @@ VulkanApplication::VulkanApplication(
         VK_IMAGE_LAYOUT_UNDEFINED,            // initialLayout
     };
     ::VkImage image;
-    LOG_ASSERT(
-        ==, log_,
-        device_->vkCreateImage(device_, &image_create_info, nullptr, &image),
-        VK_SUCCESS);
+    LOG_ASSERT(==, log_, device_->vkCreateImage(device_, &image_create_info,
+                                                nullptr, &image),
+               VK_SUCCESS);
     VkMemoryRequirements requirements;
     device_->vkGetImageMemoryRequirements(device_, image, &requirements);
     device_->vkDestroyImage(device_, image, nullptr);
@@ -899,9 +898,9 @@ AllocationToken* VulkanArena::AllocateMemory(::VkDeviceSize size,
     }
     token->prev = new_token;
     new_token->next = token;
-	if (first_block_ == token) {
-		first_block_ = new_token;
-	}
+    if (first_block_ == token) {
+      first_block_ = new_token;
+    }
   } else {
     // token happens to now be an empty block. So let's not put it back.
     if (token->next) {
@@ -925,8 +924,10 @@ AllocationToken* VulkanArena::AllocateMemory(::VkDeviceSize size,
 }
 
 void VulkanArena::FreeMemory(AllocationToken* token) {
-	// First try to coalesce this with its previous block.
+  bool atAll = false;
+  // First try to coalesce this with its previous block.
   while (token->prev && !token->prev->in_use) {
+    atAll = true;
     // Take the previous token out of the map, and merge it with this one.
     AllocationToken* prev_token = token->prev;
     prev_token->allocationSize += token->allocationSize;
@@ -942,6 +943,7 @@ void VulkanArena::FreeMemory(AllocationToken* token) {
   }
   // Now try to coalesce this with any subsequent blocks.
   while (token->next && !token->next->in_use) {
+    atAll = true;
     // Take the previous token out of the map, and merge it with this one.
     AllocationToken* next_token = token->next;
     token->allocationSize += next_token->allocationSize;

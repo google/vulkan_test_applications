@@ -117,12 +117,6 @@ int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Vendor ID: ", device.vendor_id());
   data->log->LogInfo("driver version: ", device.driver_version());
 
-  if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000) &&
-      NOT_ANDROID_VERSION(data, "7.1.1")) {
-    device->vkDestroySwapchainKHR(device, (VkSwapchainKHR)VK_NULL_HANDLE,
-                                  nullptr);
-  }
-
   data->log->LogInfo("Application Shutdown");
   return 0;
 }

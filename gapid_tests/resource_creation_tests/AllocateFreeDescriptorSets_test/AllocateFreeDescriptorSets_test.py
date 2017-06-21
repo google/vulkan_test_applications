@@ -16,7 +16,6 @@ from gapit_test_framework import gapit_test, GapitTest, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, HANDLE, POINTER
-from gapit_test_framework import NVIDIA_K2200
 
 DESCRIPTOR_SET_ALLOCATE_INFO_ELEMENTS = [
     ("sType", UINT32_T),
@@ -189,14 +188,3 @@ class FreeNullDescriptorSets(GapitTest):
         """3. Free null descriptor sets."""
         device_properties = require(
             self.next_call_of("vkGetPhysicalDeviceProperties"))
-
-        if (self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200)):
-            free_descriptor_set = require(
-                self.nth_call_of("vkFreeDescriptorSets", 3))
-            p_sets = free_descriptor_set.hex_pDescriptorSets
-            for i in range(2):
-                actual_set = little_endian_bytes_to_int(
-                    require(free_descriptor_set.get_read_data(
-                        p_sets + NON_DISPATCHABLE_HANDLE_SIZE * i,
-                        NON_DISPATCHABLE_HANDLE_SIZE)))
-                require_equal(0, actual_set)
