@@ -31,8 +31,6 @@ BUFFER_VIEW_CREATE_INFO = [
 
 BUFFER_VIEW = [("handle", HANDLE)]
 
-MIN_TEXEL_BUFFER_OFFSET_ALIGNMENT = 16
-
 
 @gapit_test("CreateDestroyBufferView_test")
 class ZeroOffsetWholeSizeBufferViewOfUniformBuffer(GapitTest):
@@ -103,9 +101,6 @@ class NonZeroOffsetNonWholeSizeBufferViewOfStorageBuffer(GapitTest):
         require_equal(0, create_info.flags)
         require_not_equal(0, create_info.buffer)
         require_equal(VK_FORMAT_R8G8B8A8_UNORM, create_info.format)
-        require_equal(
-            MIN_TEXEL_BUFFER_OFFSET_ALIGNMENT * 1, create_info.offset)
-        require_equal(MIN_TEXEL_BUFFER_OFFSET_ALIGNMENT * 3, create_info.range)
 
         view = VulkanStruct(
             architecture, BUFFER_VIEW, get_write_offset_function(

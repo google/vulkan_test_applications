@@ -54,7 +54,7 @@ class FlushMappedMemoryRangesNonZeroOffsetNotWholeSize(GapitTest):
         # The flushed data starts at mapped offset + 256
         flushed_data_ptr = little_endian_bytes_to_int(require(
             map_memory.get_write_data(map_memory.hex_ppData,
-                                      architecture.int_integerSize))) + 256
+                                      architecture.int_sizeSize))) + 256
 
         # Check arguments
         flush_mapped_memory_ranges = require(self.nth_call_of(
@@ -107,7 +107,7 @@ class InvalidateMappedMemoryRangesZeroOffsetWholeSize(GapitTest):
         # flushed data starts at mapped offset + 256
         invalidate_data_ptr = little_endian_bytes_to_int(require(
             map_memory.get_write_data(map_memory.hex_ppData,
-                                      architecture.int_integerSize))) + 256
+                                      architecture.int_sizeSize))) + 256
 
         # Check arguments
         invalidate_mapped_memory_ranges = require(self.nth_call_of(
@@ -158,7 +158,7 @@ class FlushMappedMemoryRangesZeroOffsetWholeSize(GapitTest):
         # The flushed data starts at mapped offset
         flushed_data_ptr = little_endian_bytes_to_int(require(
             map_memory.get_write_data(map_memory.hex_ppData,
-                                      architecture.int_integerSize)))
+                                      architecture.int_sizeSize)))
 
         # Check arguments
         flush_mapped_memory_ranges = require(self.nth_call_of(
@@ -211,7 +211,7 @@ class InvalidateMappedMemoryRangesNonZeroOffsetNotWholeSize(GapitTest):
         # flushed data starts at mapped offset + 256
         invalidate_data_ptr = little_endian_bytes_to_int(require(
             map_memory.get_write_data(map_memory.hex_ppData,
-                                      architecture.int_integerSize))) + 256
+                                      architecture.int_sizeSize))) + 256
 
         # Check arguments
         invalidate_mapped_memory_ranges = require(self.nth_call_of(

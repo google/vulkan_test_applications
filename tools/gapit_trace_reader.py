@@ -22,6 +22,7 @@ import subprocess
 import sys
 from collections import namedtuple
 
+
 class Observation(object):
 
     '''A single observation.
@@ -428,7 +429,8 @@ def get_device_and_architecture_info_from_trace_file(filename):
         info header is parsed successfully, otherwise returns None
     '''
     proc = subprocess.Popen(
-        ['gapit', '-log-level', 'Fatal', 'dump', '-showabiinfo', '-showdeviceinfo', filename],
+        ['gapit', '-log-level', 'Fatal', 'dump',
+            '-showabiinfo', '-showdeviceinfo', filename],
         stdout=subprocess.PIPE)
 
     def get_json_str():
