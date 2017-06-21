@@ -100,13 +100,6 @@ class BeginColorAttachmentRenderPass(GapitTest):
         require_equal(0, begin_render_pass_info.clearValueCount)
         require_equal(0, begin_render_pass_info.pClearValues)
 
-        clear_values = VulkanStruct(
-            architecture, CLEAR_COLOR_UNORM_VALUE, get_read_offset_function(
-                begin_render_pass, begin_render_pass_info.pClearValues))
-        # 0.2f == 0x3e4ccccd
-        expected_color_clear_value = [0x3e4ccccd for i in range(4)]
-        require_equal(expected_color_clear_value, clear_values.color_float32)
-
         end_render_pass = require(self.next_call_of("vkCmdEndRenderPass"))
         require_equal(begin_render_pass.int_commandBuffer,
                       end_render_pass.int_commandBuffer)
