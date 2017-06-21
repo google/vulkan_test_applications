@@ -810,7 +810,7 @@ VulkanArena::~VulkanArena() {
   if (base_address_) {
     (*unmap_memory_function_)(device_, memory_);
   }
-  allocator_->free(first_block_, sizeof(AllocationToken));
+  allocator_->destroy(first_block_);
 }
 
 // The maximum value for nonCoherentAtomSize from the vulkan spec.
@@ -899,6 +899,9 @@ AllocationToken* VulkanArena::AllocateMemory(::VkDeviceSize size,
     }
     token->prev = new_token;
     new_token->next = token;
+	if (first_block_ == token) {
+		first_block_ = new_token;
+	}
   } else {
     // token happens to now be an empty block. So let's not put it back.
     if (token->next) {
@@ -911,7 +914,7 @@ AllocationToken* VulkanArena::AllocateMemory(::VkDeviceSize size,
       first_block_ = new_token;
     }
 
-    allocator_->free(token, sizeof(AllocationToken));
+    allocator_->destroy(token);
   }
   *memory = memory_;
   *offset = total_offset;
@@ -922,7 +925,7 @@ AllocationToken* VulkanArena::AllocateMemory(::VkDeviceSize size,
 }
 
 void VulkanArena::FreeMemory(AllocationToken* token) {
-  // First try to coalesce this with its previous block.
+	// First try to coalesce this with its previous block.
   while (token->prev && !token->prev->in_use) {
     // Take the previous token out of the map, and merge it with this one.
     AllocationToken* prev_token = token->prev;
@@ -934,7 +937,7 @@ void VulkanArena::FreeMemory(AllocationToken* token) {
     // Remove the previous block from freeblocks_,
     // we have now merged with it.
     freeblocks_.erase(prev_token->map_location);
-    allocator_->free(token, sizeof(AllocationToken));
+    allocator_->destroy(token);
     token = prev_token;
   }
   // Now try to coalesce this with any subsequent blocks.
@@ -949,7 +952,7 @@ void VulkanArena::FreeMemory(AllocationToken* token) {
     // Remove the next block from freeblocks_,
     // we have now merged with it.
     freeblocks_.erase(next_token->map_location);
-    allocator_->free(next_token, sizeof(AllocationToken));
+    allocator_->destroy(next_token);
   }
   // This block is no longer being used.
   token->in_use = false;
