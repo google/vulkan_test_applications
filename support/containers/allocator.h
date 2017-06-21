@@ -90,7 +90,7 @@ struct LeakCheckAllocator : public Allocator {
 
 #define RELEASE_ASSERT(x)                              \
   do {                                                 \
-    if (!x) {                                          \
+    if (!(x)) {                                          \
       *reinterpret_cast<volatile int*>(size_t(0)) = 4; \
     }                                                  \
   } while (false)
