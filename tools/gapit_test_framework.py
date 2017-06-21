@@ -362,35 +362,38 @@ class GapitTest(object):
         if self.architecture is None:
             return (FAILURE, "Failed to obtain device architecture info from trace")
         self.atom_generator = parse_trace_file(capture_name)
+
+        def clear_atoms(status, message):
+            # Empty out all of the atoms in the generator, this way gapit can be
+            # killed.
+            for x in self.atom_generator:
+                pass
+            return (status, message)
         print "[ " + "RUN".ljust(10) + " ] " + test_name
         try:
             getattr(self, "expect")()
         except GapidUnsupportedException as error:
             print "[ " + "SKIPPED".rjust(10) + " ] " + test_name
             print "     " + error.message
-            return (SKIPPED, error.message)
+            return clear_atoms(SKIPPED, error.message)
         except GapitTestException as error:
             print "[ " + "FAILED".rjust(10) + " ] " + test_name
             print "     " + error.message
-            return (FAILURE, error.message)
+            return clear_atoms(FAILURE, error.message)
         except NamedAttributeError as error:
             exc_type, exc_value, exc_tb = sys.exc_info()
             print "[ " + "FAILED".rjust(10) + " ] " + test_name
             call_site = traceback.format_exception(
                 exc_type, exc_value, exc_tb, limit=2)
             print "    " + error.message + call_site[1]
-            return (FAILURE, error.message)
+            return clear_atoms(FAILURE, error.message)
         return_val = WARNING if len(self.warnings) > 0 else SUCCESS
         if return_val == WARNING:
             print "[ " + "WARNING".rjust(10) + " ]"
             for warning in self.warnings:
                 print warning
         print "[ " + "OK".rjust(10) + " ] " + test_name
-        # Empty out all of the atoms in the generator, this way gapit can be
-        # killed.
-        for x in self.atom_generator:
-            pass
-        return (return_val, None)
+        return clear_atoms(return_val, None)
 
 
 def gapit_test(gapit_test_name):
