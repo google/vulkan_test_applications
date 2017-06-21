@@ -114,7 +114,13 @@ class TestManager(object):
                 gapit_args.extend(['-log-level', 'Debug'])
             gapit_args.extend(['trace', '-out',
                                capture_name, '-local-app', host_name])
-            gapit_args.extend(['-local-args', '-w=1000 -h=1000'])
+            # On Ubuntu 14.04 with Nvidia K2200, driver: 375.66, an window of
+            # size 1000 x 1000 may hang the device with sample:
+            # 'copy_querypool_results' and 'wireframe'. However the same size
+            # window does not hang when run on Ubuntu 14.04 with Nvidia driver:
+            # 375.39. This might be a driver bug.
+            # TODO: Test with 1000 x 1000 on latest Nvidia driver again.
+            gapit_args.extend(['-local-args', '-w=1024 -h=1024'])
             gapit_args.extend([
                 "-observe-frames", "1", "-capture-frames", "10"])
             if mid_execution:

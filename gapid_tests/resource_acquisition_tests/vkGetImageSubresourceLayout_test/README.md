@@ -14,5 +14,5 @@ According to the Vulkan spec:
 - The `aspectMask` member of `pSubresource` **must** only have a single bit set
 
 These tests should test the following cases:
-- [ ] `pSubresource` and `pLayout` of pointers to valid `VkImageSubresource`
+- [x] `pSubresource` and `pLayout` of pointers to valid `VkImageSubresource`
   and `VkSubresourceLayout` struct
