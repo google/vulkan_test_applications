@@ -16,7 +16,6 @@ from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, GapitTest
 from gapit_test_framework import get_read_offset_function, get_write_offset_function
 from gapit_test_framework import GapidUnsupportedException
-from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, POINTER, HANDLE, DEVICE_SIZE
 from struct_offsets import ARRAY, CHAR
@@ -72,12 +71,6 @@ class OneQueryOcclusionQueryPool(GapitTest):
         require_equal(device, destroy_query_pool.int_device)
         require_equal(view.handle, destroy_query_pool.int_queryPool)
 
-        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
-            destroy_null_query_pool = require(self.next_call_of(
-                "vkDestroyQueryPool"))
-            require_equal(device, destroy_query_pool.int_device)
-            require_equal(0, destroy_null_query_pool.int_queryPool)
-
 
 @gapit_test("CreateDestroyQueryPool_test")
 class SevenQueriesTimeStampQueryPool(GapitTest):
@@ -118,12 +111,6 @@ class SevenQueriesTimeStampQueryPool(GapitTest):
         require_equal(device, destroy_query_pool.int_device)
         require_equal(view.handle, destroy_query_pool.int_queryPool)
 
-        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
-            destroy_null_query_pool = require(self.next_call_of(
-                "vkDestroyQueryPool"))
-            require_equal(device, destroy_query_pool.int_device)
-            require_equal(0, destroy_null_query_pool.int_queryPool)
-
 
 @gapit_test("CreateDestroyQueryPool_test")
 class FourQueriesPipelineStatisticsQueryPool(GapitTest):
@@ -161,7 +148,7 @@ class FourQueriesPipelineStatisticsQueryPool(GapitTest):
         require_equal(4, create_info.queryCount)
         require_equal(
             VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT,
-                      create_info.pipelineStatistics)
+            create_info.pipelineStatistics)
 
         view = VulkanStruct(
             architecture, QUERY_POOL, get_write_offset_function(
@@ -171,9 +158,3 @@ class FourQueriesPipelineStatisticsQueryPool(GapitTest):
         destroy_query_pool = require(self.next_call_of("vkDestroyQueryPool"))
         require_equal(device, destroy_query_pool.int_device)
         require_equal(view.handle, destroy_query_pool.int_queryPool)
-
-        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
-            destroy_null_query_pool = require(self.next_call_of(
-                "vkDestroyQueryPool"))
-            require_equal(device, destroy_query_pool.int_device)
-            require_equal(0, destroy_null_query_pool.int_queryPool)

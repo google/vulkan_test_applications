@@ -16,7 +16,6 @@ from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_true, require_false
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest
-from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, FLOAT, POINTER
 
@@ -156,16 +155,3 @@ class UnnormalizedCoordinates(GapitTest):
         require_true(info.unnormalizedCoordinates)
 
         check_destroy_sampler(self, device, sampler)
-
-
-@gapit_test("CreateDestroySampler_test")
-class DestroyNullSampler(GapitTest):
-
-    def expect(self):
-        """3. Destroys a null sampler handle."""
-        device_properties = require(
-            self.nth_call_of("vkGetPhysicalDeviceProperties", 3))
-
-        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
-            destroy_sampler = require(self.next_call_of("vkDestroySampler"))
-            require_equal(0, destroy_sampler.int_sampler)

@@ -12,7 +12,6 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest, get_read_offset_function
-from gapit_test_framework import NVIDIA_K2200
 from struct_offsets import VulkanStruct, UINT32_T, SIZE_T, POINTER
 from struct_offsets import HANDLE, FLOAT, CHAR, ARRAY
 from vulkan_constants import *
@@ -52,11 +51,3 @@ class ShaderModuleTest(GapitTest):
 
         require_not_equal(0, destroy_shader_module.int_device)
         require_not_equal(0, destroy_shader_module.int_shaderModule)
-
-        # Our second vkDestroySwapchain should have been called with
-        # VK_NULL_HANDLE
-        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
-            destroy_shader_module = require(
-                self.next_call_of("vkDestroyShaderModule"))
-            require_not_equal(0, destroy_shader_module.int_device)
-            require_equal(0, destroy_shader_module.int_shaderModule)

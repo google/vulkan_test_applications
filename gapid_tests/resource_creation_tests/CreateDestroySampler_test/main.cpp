@@ -94,14 +94,6 @@ int main_entry(const entry::entry_data* data) {
     }
   }
 
-  {  // 3. Destroy null sampler handle.
-    vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
-    vulkan::VkDevice& device = app.device();
-    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
-      device->vkDestroySampler(device, (VkSampler)VK_NULL_HANDLE, nullptr);
-    }
-  }
-
   data->log->LogInfo("Application Shutdown");
   return 0;
 }

@@ -49,11 +49,6 @@ int main_entry(const entry::entry_data* data) {
                                             &shader_module),
                VK_SUCCESS);
     device->vkDestroyShaderModule(device, shader_module, nullptr);
-
-    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
-      device->vkDestroyShaderModule(
-          device, static_cast<VkShaderModule>(VK_NULL_HANDLE), nullptr);
-    }
   }
 
   data->log->LogInfo("Application Shutdown");

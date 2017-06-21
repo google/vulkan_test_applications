@@ -13,19 +13,8 @@
 # limitations under the License.
 #
 
-add_custom_target(GAPID_TESTS)
-
-function(add_gapid_test name)
-    add_vulkan_executable(${name} ${ARGN})
-    add_dependencies(GAPID_TESTS ${name})
-endfunction()
-
-add_subdirectory(command_buffer_tests)
-add_subdirectory(extension_tests)
-add_subdirectory(initialization_tests)
-add_subdirectory(null_destruction_tests)
-add_subdirectory(resource_acquisition_tests)
-add_subdirectory(resource_binding_tests)
-add_subdirectory(resource_creation_tests)
-add_subdirectory(synchronization_tests)
-add_subdirectory(traits_query_tests)
+add_gapid_test(vkDestroyNullHandles_test
+  SOURCES main.cpp
+  LIBS
+    vulkan_helpers
+)

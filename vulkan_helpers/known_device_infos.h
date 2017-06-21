@@ -30,6 +30,7 @@ struct DeviceInfo {
 
 extern const DeviceInfo PixelC;
 extern const DeviceInfo NvidiaK2200;
+extern const DeviceInfo Nvidia965M;
 }
 
 namespace {

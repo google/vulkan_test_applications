@@ -39,6 +39,7 @@ SKIPPED = 3
 
 PIXEL_C = {"vendor_id": 0x10DE, "device_id": 0x92BA03D7}
 NVIDIA_K2200 = {"vendor_id": 0x10DE, "device_id": 0x13ba}
+NVIDIA_965M = {"vendor_id": 0x10DE, "device_id": 0x1427}
 
 UNKNOWN_OS, WINDOWS, OSX, LINUX, ANDROID = range(5)
 
@@ -326,7 +327,7 @@ class GapitTest(object):
             else:
                 subprocess.check_call(
                     gapit_args, stdout=open(os.devnull, 'wb'),
-                                stderr=open(os.devnull, 'wb'))
+                    stderr=open(os.devnull, 'wb'))
         except:
             return (FAILURE, "Could not generate trace file.")
         if verbose:
@@ -356,7 +357,8 @@ class GapitTest(object):
             if not success == SUCCESS:
                 return (success, error)
         test_name = program_name + "." + self.name()
-        self.device, self.architecture = get_device_and_architecture_info_from_trace_file(capture_name)
+        self.device, self.architecture = get_device_and_architecture_info_from_trace_file(
+            capture_name)
         if self.architecture is None:
             return (FAILURE, "Failed to obtain device architecture info from trace")
         self.atom_generator = parse_trace_file(capture_name)

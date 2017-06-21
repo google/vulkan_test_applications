@@ -42,9 +42,6 @@ int main_entry(const entry::entry_data* data) {
                                          nullptr, &query_pool),
                VK_SUCCESS);
     device->vkDestroyQueryPool(device, query_pool, nullptr);
-    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
-      device->vkDestroyQueryPool(device, (VkQueryPool)VK_NULL_HANDLE, nullptr);
-    }
   }
 
   {
@@ -67,10 +64,6 @@ int main_entry(const entry::entry_data* data) {
                                          nullptr, &query_pool),
                VK_SUCCESS);
     device->vkDestroyQueryPool(device, query_pool, nullptr);
-
-    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
-      device->vkDestroyQueryPool(device, (VkQueryPool)VK_NULL_HANDLE, nullptr);
-    }
   }
 
   {
@@ -101,11 +94,6 @@ int main_entry(const entry::entry_data* data) {
                                            nullptr, &query_pool),
                  VK_SUCCESS);
       device->vkDestroyQueryPool(device, query_pool, nullptr);
-      if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200,
-                     0x5bce4000)) {
-        device->vkDestroyQueryPool(device, (VkQueryPool)VK_NULL_HANDLE,
-                                   nullptr);
-      }
     } else {
       data->log->LogInfo(
           "Disabled test due to missing physical device feature: "

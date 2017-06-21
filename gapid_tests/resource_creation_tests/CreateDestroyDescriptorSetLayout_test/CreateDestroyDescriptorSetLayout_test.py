@@ -15,7 +15,6 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest
-from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, FLOAT, POINTER
 
@@ -141,7 +140,8 @@ class ZeroBindings(GapitTest):
         require_equal(info.bindingCount, 0)
         require_equal(info.pBindings, 0)
 
-        check_destroy_descriptor_set_layout(self, device, descriptor_set_layout)
+        check_destroy_descriptor_set_layout(
+            self, device, descriptor_set_layout)
 
 
 @gapit_test("CreateDestroyDescriptorSetLayout_test")
@@ -175,7 +175,8 @@ class ThreeBindings(GapitTest):
         # The 2nd binding.
         binding = get_binding(create_descriptor_set_layout, arch, info, 1)
         require_equal(binding.binding, 2)
-        require_equal(binding.descriptorType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+        require_equal(binding.descriptorType,
+                      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
         require_equal(binding.descriptorCount, 1)
         require_equal(binding.stageFlags, VK_SHADER_STAGE_VERTEX_BIT)
         require_equal(binding.pImmutableSamplers, 0)
@@ -183,12 +184,14 @@ class ThreeBindings(GapitTest):
         # The 3rd binding.
         binding = get_binding(create_descriptor_set_layout, arch, info, 2)
         require_equal(binding.binding, 5)
-        require_equal(binding.descriptorType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+        require_equal(binding.descriptorType,
+                      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
         require_equal(binding.descriptorCount, 0)
         require_equal(binding.stageFlags, 0xdeadbeef)
         require_equal(binding.pImmutableSamplers, 0)
 
-        check_destroy_descriptor_set_layout(self, device, descriptor_set_layout)
+        check_destroy_descriptor_set_layout(
+            self, device, descriptor_set_layout)
 
 
 @gapit_test("CreateDestroyDescriptorSetLayout_test")
@@ -238,19 +241,5 @@ class TwoBindingsWithSamplers(GapitTest):
                                         binding, i)
             require_equal(expected_samplers[i], sampler)
 
-        check_destroy_descriptor_set_layout(self, device, descriptor_set_layout)
-
-
-@gapit_test("CreateDestroyDescriptorSetLayout_test")
-class DestroyNullDescriptorSetLayout(GapitTest):
-
-    def expect(self):
-        """4. Destroys a null descriptor set layout handle."""
-        device_properties = require(self.next_call_of(
-            "vkGetPhysicalDeviceProperties"))
-
-        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
-            destroy_descriptor_set_layout = require(self.nth_call_of(
-                "vkDestroyDescriptorSetLayout", 4))
-            require_equal(0,
-                          destroy_descriptor_set_layout.int_descriptorSetLayout)
+        check_destroy_descriptor_set_layout(
+            self, device, descriptor_set_layout)

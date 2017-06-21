@@ -15,7 +15,6 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest
-from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, POINTER
 
@@ -159,17 +158,3 @@ class WithFlagMoreDescriptorTypes(GapitTest):
 
         check_reset_descriptor_pool(self, device, descriptor_pool)
         check_destroy_descriptor_pool(self, device, descriptor_pool)
-
-
-@gapit_test("CreateResetDestroyDescriptorPool_test")
-class DestroyNullDescriptorPool(GapitTest):
-
-    def expect(self):
-        """3. Destroys a null descriptor pool handle."""
-        device_properties = require(
-            self.next_call_of("vkGetPhysicalDeviceProperties"))
-
-        if self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
-            destroy_descriptor_pool = require(
-                self.nth_call_of("vkDestroyDescriptorPool", 3))
-            require_equal(0, destroy_descriptor_pool.int_descriptorPool)

@@ -50,8 +50,9 @@ int main_entry(const entry::entry_data* data) {
   {
     // Single layout
     vulkan::VkDescriptorSetLayout layout = vulkan::CreateDescriptorSetLayout(
-        data->root_allocator, &device, {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                         1, VK_SHADER_STAGE_ALL, nullptr}});
+        data->root_allocator, &device,
+        {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL,
+          nullptr}});
     VkDescriptorSetLayout raw_layouts[1] = {layout};
     VkPipelineLayoutCreateInfo create_info{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,  // sType
@@ -72,11 +73,13 @@ int main_entry(const entry::entry_data* data) {
   {
     // Two layouts
     vulkan::VkDescriptorSetLayout layout = vulkan::CreateDescriptorSetLayout(
-        data->root_allocator, &device, {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                         1, VK_SHADER_STAGE_ALL, nullptr}});
+        data->root_allocator, &device,
+        {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL,
+          nullptr}});
     vulkan::VkDescriptorSetLayout layout2 = vulkan::CreateDescriptorSetLayout(
-        data->root_allocator, &device, {{0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                         1, VK_SHADER_STAGE_ALL, nullptr}});
+        data->root_allocator, &device,
+        {{0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_ALL,
+          nullptr}});
     VkDescriptorSetLayout raw_layouts[2] = {layout, layout2};
 
     VkPipelineLayoutCreateInfo create_info{
@@ -93,14 +96,6 @@ int main_entry(const entry::entry_data* data) {
                device->vkCreatePipelineLayout(device, &create_info, nullptr,
                                               &raw_pipeline_layout));
     device->vkDestroyPipelineLayout(device, raw_pipeline_layout, nullptr);
-  }
-
-  {
-    // Empty destroy
-    if (NOT_DEVICE(data->log.get(), device, vulkan::NvidiaK2200, 0x5bce4000)) {
-      device->vkDestroyPipelineLayout(
-          device, static_cast<VkPipelineLayout>(VK_NULL_HANDLE), nullptr);
-    }
   }
 
   data->log->LogInfo("Application Shutdown");

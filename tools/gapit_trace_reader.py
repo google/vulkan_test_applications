@@ -308,7 +308,7 @@ def parse_atom_line(line):
 
     This is expected to be first line of a new atom
     '''
-    match = re.match(r'\[(\d+)\] ([a-zA-Z]*)\((.*)\)(?: → (.*))?', line)
+    match = re.match(r'\[(\d+)\] ([a-zA-Z0-9]*)\((.*)\)(?: → (.*))?', line)
     if not match:
         print 'failed line:: "{}"'.format(line)
     number = int(match.group(1))

@@ -16,7 +16,6 @@ from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest
 from gapit_test_framework import get_read_offset_function
-from gapit_test_framework import NVIDIA_K2200
 from vulkan_constants import *
 from struct_offsets import VulkanStruct, UINT32_T, POINTER, HANDLE, BOOL32
 
@@ -92,11 +91,6 @@ def check_destroy_image_view(test, device, image_view, device_properties):
     destroy_image_view = require(test.next_call_of("vkDestroyImageView"))
     require_equal(device, destroy_image_view.int_device)
     require_equal(image_view, destroy_image_view.int_imageView)
-    # Our second vkDestroyImageView should have been called with
-    # VK_NULL_HANDLE
-    if test.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200):
-        destroy_image_view_2 = require(test.next_call_of("vkDestroyImageView"))
-        require_equal(0, destroy_image_view_2.int_imageView)
 
 
 def get_image_view_create_info(create_image_view, architecture):
