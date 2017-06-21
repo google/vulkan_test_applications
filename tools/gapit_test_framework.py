@@ -386,6 +386,10 @@ class GapitTest(object):
             for warning in self.warnings:
                 print warning
         print "[ " + "OK".rjust(10) + " ] " + test_name
+        # Empty out all of the atoms in the generator, this way gapit can be
+        # killed.
+        for x in self.atom_generator:
+            pass
         return (return_val, None)
 
 

@@ -20,19 +20,22 @@ from vulkan_constants import *
 class SetStencilCompareMask(GapitTest):
 
     def expect(self):
-        first_set_stencil = require(self.next_call_of("vkCmdSetStencilCompareMask"))
+        first_set_stencil = require(
+            self.next_call_of("vkCmdSetStencilCompareMask"))
         require_not_equal(0, first_set_stencil.int_commandBuffer)
         require_equal(VK_STENCIL_FACE_FRONT_BIT,
                       first_set_stencil.int_faceMask)
         require_equal(0, first_set_stencil.int_compareMask)
 
-        second_set_stencil = require(self.next_call_of("vkCmdSetStencilCompareMask"))
+        second_set_stencil = require(
+            self.next_call_of("vkCmdSetStencilCompareMask"))
         require_not_equal(0, second_set_stencil.int_commandBuffer)
         require_equal(VK_STENCIL_FACE_BACK_BIT,
                       second_set_stencil.int_faceMask)
         require_equal(10, second_set_stencil.int_compareMask)
 
-        third_set_stencil = require(self.next_call_of("vkCmdSetStencilCompareMask"))
+        third_set_stencil = require(
+            self.next_call_of("vkCmdSetStencilCompareMask"))
         require_not_equal(0, third_set_stencil.int_commandBuffer)
         require_equal(VK_STENCIL_FRONT_AND_BACK,
                       third_set_stencil.int_faceMask)
@@ -43,20 +46,23 @@ class SetStencilCompareMask(GapitTest):
 class SetStencilWriteMask(GapitTest):
 
     def expect(self):
-        first_set_stencil = require(self.next_call_of("vkCmdSetStencilWriteMask"))
+        first_set_stencil = require(
+            self.next_call_of("vkCmdSetStencilWriteMask"))
         require_not_equal(0, first_set_stencil.int_commandBuffer)
         require_equal(VK_STENCIL_FACE_FRONT_BIT,
                       first_set_stencil.int_faceMask)
-        require_equal(0, first_set_stencil.int_compareMask)
+        require_equal(0, first_set_stencil.int_writeMask)
 
-        second_set_stencil = require(self.next_call_of("vkCmdSetStencilWriteMask"))
+        second_set_stencil = require(
+            self.next_call_of("vkCmdSetStencilWriteMask"))
         require_not_equal(0, second_set_stencil.int_commandBuffer)
         require_equal(VK_STENCIL_FACE_BACK_BIT,
                       second_set_stencil.int_faceMask)
-        require_equal(10, second_set_stencil.int_compareMask)
+        require_equal(10, second_set_stencil.int_writeMask)
 
-        third_set_stencil = require(self.next_call_of("vkCmdSetStencilWriteMask"))
+        third_set_stencil = require(
+            self.next_call_of("vkCmdSetStencilWriteMask"))
         require_not_equal(0, third_set_stencil.int_commandBuffer)
         require_equal(VK_STENCIL_FRONT_AND_BACK,
                       third_set_stencil.int_faceMask)
-        require_equal(0xFFFFFFFF, third_set_stencil.int_compareMask)
+        require_equal(0xFFFFFFFF, third_set_stencil.int_writeMask)

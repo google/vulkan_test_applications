@@ -87,7 +87,7 @@ def run_on_single_apk(apk, args):
     android.adb(['shell', 'am', 'force-stop', apk_info.package_name], args)
     if not args.keep:
         android.adb(['uninstall', apk_info.package_name], args)
-
+    gapit.kill()
     return return_value
 
 

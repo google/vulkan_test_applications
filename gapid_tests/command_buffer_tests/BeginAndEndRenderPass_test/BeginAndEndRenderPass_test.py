@@ -98,7 +98,7 @@ class BeginColorAttachmentRenderPass(GapitTest):
         require_equal(0, begin_render_pass_info.renderArea_offset_x)
         require_equal(0, begin_render_pass_info.renderArea_offset_y)
         require_equal(0, begin_render_pass_info.clearValueCount)
-        require_not_equal(0, begin_render_pass_info.pClearValues)
+        require_equal(0, begin_render_pass_info.pClearValues)
 
         clear_values = VulkanStruct(
             architecture, CLEAR_COLOR_UNORM_VALUE, get_read_offset_function(
