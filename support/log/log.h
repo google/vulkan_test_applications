@@ -65,6 +65,8 @@ namespace logging {
 // We will have to assume that the STL is doing the right thing here.
 class Logger {
  public:
+   virtual ~Logger() {}
+
   // Logs a set of values to the error stream of the logger.
   template <typename... Args>
   void LogError(Args... args) {

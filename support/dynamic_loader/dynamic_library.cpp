@@ -33,7 +33,7 @@ class InternalDynamicLibrary : public DynamicLibrary {
     lib_ = LoadLibrary(lib_with_extension.c_str());
   }
 
-  ~InternalDynamicLibrary() {
+  ~InternalDynamicLibrary() override {
     if (is_valid()) {
       CloseHandle(lib_);
     }
@@ -65,7 +65,7 @@ class InternalDynamicLibrary : public DynamicLibrary {
     lib_ = dlopen(lib_with_extension.c_str(), RTLD_LAZY);
   }
 
-  ~InternalDynamicLibrary() {
+  ~InternalDynamicLibrary() override {
     if (is_valid()) {
       dlclose(lib_);
     }

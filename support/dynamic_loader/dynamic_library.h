@@ -26,6 +26,8 @@ namespace dynamic_loader {
 // This wraps a system-specific loaded dynamic library.
 class DynamicLibrary {
  public:
+   virtual ~DynamicLibrary() {};
+
   // This resolves a pointer from the opened dynamic library.
   // It automatically casts it to a function pointer of the passed
   // in pointer type.
