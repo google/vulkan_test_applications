@@ -16,6 +16,20 @@
 include(CMakeParseArguments)
 find_package(PythonInterp)
 
+list(LENGTH CMAKE_CONFIGURATION_TYPES num_elements)
+if (num_elements GREATER 1)
+  set(IS_MULTICONFIG ON)
+  SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
+endif()
+
+macro(setup_folders target)
+  if(IS_MULTICONFIG)
+    file(RELATIVE_PATH relative_offset ${VulkanTestApplications_SOURCE_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TARGET ${target} PROPERTY FOLDER ${relative_offset})
+  endif()
+endmacro()
+
 set(CONFIGURABLE_ANDROID_SOURCES
   ${VulkanTestApplications_SOURCE_DIR}/cmake/android_project_template/build.gradle
   ${VulkanTestApplications_SOURCE_DIR}/cmake/android_project_template/gradle.properties
@@ -155,6 +169,7 @@ function(add_vulkan_executable target)
     endif()
     add_executable(${target} ${ADDITIONAL_ARGS}
       ${EXE_SOURCES} ${EXE_UNPARSED_ARGS})
+    setup_folders(${target})
     mathfu_configure_flags(${target})
     if (EXE_LIBS)
       target_link_libraries(${target} PRIVATE ${EXE_LIBS})
@@ -278,6 +293,7 @@ function(_add_vulkan_library target)
     set_target_properties(${target} PROPERTIES LIB_DEPS "${LIB_LIBS}")
   else()
     add_library(${target} ${LIB_TYPE} ${LIB_SOURCES})
+    setup_folders(${target})
     mathfu_configure_flags(${target})
     target_link_libraries(${target} PRIVATE ${LIB_LIBS})
     if (EXE_SHADERS)
@@ -333,6 +349,7 @@ function(add_model_library target)
     endforeach()
     add_custom_target(${target}
       DEPENDS ${output_files})
+    setup_folders(${target})
     set_target_properties(${target} PROPERTIES MODEL_OUT_FILES
       "${output_files}")
     set_target_properties(${target} PROPERTIES MODEL_LIB_DIR
@@ -414,6 +431,7 @@ function(add_shader_library target)
     endforeach()
     add_custom_target(${target}
       DEPENDS ${output_files})
+    setup_folders(${target})
     set_target_properties(${target} PROPERTIES SHADER_OUT_FILES
       "${output_files}")
     set_target_properties(${target} PROPERTIES SHADER_LIB_DIR
@@ -457,6 +475,7 @@ function(add_texture_library target)
     endforeach()
     add_custom_target(${target}
       DEPENDS ${output_files})
+    setup_folders(${target})
     set_target_properties(${target} PROPERTIES TEXTURE_OUT_FILES
       "${output_files}")
     set_target_properties(${target} PROPERTIES TEXTURE_LIB_DIR
