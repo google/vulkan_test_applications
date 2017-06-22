@@ -73,13 +73,13 @@ int main_entry(const entry::entry_data* data) {
     LOG_EXPECT(==, data->log, layout.offset, 0);
 
     // size
-    LOG_EXPECT(==, data->log, layout.size, 4 *32 * 32);
+    LOG_EXPECT(==, data->log, layout.size, 4 * 32 * 32);
 
     // rowPitch
     LOG_EXPECT(==, data->log, layout.rowPitch, 4 * 32);
 
     // arrayPitch
-    LOG_EXPECT(==, data->log, layout.arrayPitch, 4 * 32 * 32);
+    // arrayPitch is undefined.
 
     // depthPitch
     LOG_EXPECT(==, data->log, layout.depthPitch, 4 * 32 * 32);

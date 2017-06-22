@@ -57,5 +57,5 @@ class GetImageSubResourceLayout(GapitTest):
         require_equal(0, layout.offset)
         require_equal(4 * 32 * 32, layout.size)
         require_equal(4 * 32, layout.rowPitch)
-        require_equal(4 * 32 * 32, layout.arrayPitch)
+        # ArrayPitch is undefined
         require_equal(4 * 32 * 32, layout.depthPitch)
