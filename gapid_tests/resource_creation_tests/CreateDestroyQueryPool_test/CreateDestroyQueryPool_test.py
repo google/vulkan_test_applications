@@ -112,7 +112,7 @@ class SevenQueriesTimeStampQueryPool(GapitTest):
         require_equal(view.handle, destroy_query_pool.int_queryPool)
 
 
-@gapit_test("CreateDestroyQueryPool_test")
+@gapit_test("QueryPipelineStats_test")
 class FourQueriesPipelineStatisticsQueryPool(GapitTest):
 
     def expect(self):
@@ -124,7 +124,7 @@ class FourQueriesPipelineStatisticsQueryPool(GapitTest):
         device_properties = require(self.next_call_of(
             "vkGetPhysicalDeviceProperties"))
 
-        create_device = self.nth_call_of("vkCreateDevice", 3)
+        create_device = self.nth_call_of("vkCreateDevice", 1)
         if create_device[0] is None:
             raise GapidUnsupportedException(
                 "physical device feature: pipelineStatistics not supported")

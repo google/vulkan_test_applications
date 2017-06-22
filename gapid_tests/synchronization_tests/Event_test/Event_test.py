@@ -56,12 +56,19 @@ def GetMappedLocation(test):
     return pData
 
 
+def GetStart(test, index):
+    while index > 0:
+        get_device_proc = require(test.next_call_of("vkGetDeviceProcAddr"))
+        if get_device_proc.pName == "TAG":
+            index -= 1
+
+
 @gapit_test("Event_test")
 class BasicHostSideCommandTest(GapitTest):
 
     def expect(self):
         architecture = self.architecture
-        require(self.nth_call_of("vkCreateInstance", 1))
+        GetStart(self, 1)
         create_event = require(self.next_call_of("vkCreateEvent"))
         device = create_event.int_device
         first_status = require(self.next_call_of("vkGetEventStatus"))
@@ -109,8 +116,8 @@ class BasicHostSideCommandTest(GapitTest):
 class SingleThreadTest(GapitTest):
 
     def expect(self):
-        require(self.nth_call_of("vkCreateInstance", 2))
         pData = GetMappedLocation(self)
+        GetStart(self, 2)
         require(self.next_call_of("vkAllocateCommandBuffers"))
         require(self.next_call_of("vkCreateBuffer"))
         require(self.next_call_of("vkCreateBuffer"))
@@ -164,8 +171,8 @@ class SingleThreadTest(GapitTest):
 class MultipleThreadTest(GapitTest):
 
     def expect(self):
-        require(self.nth_call_of("vkCreateInstance", 3))
         pData = GetMappedLocation(self)
+        GetStart(self, 3)
         require(self.next_call_of("vkAllocateCommandBuffers"))
         require(self.next_call_of("vkCreateBuffer"))
         require(self.next_call_of("vkCreateBuffer"))
@@ -258,10 +265,12 @@ class MemoryBarrierTest(GapitTest):
 
     def expect(self):
         architecture = self.architecture
-        require(self.nth_call_of("vkCreateInstance", 4))
+        GetStart(self, 4)
         require(self.next_call_of("vkAllocateCommandBuffers"))
-        src_buf = GetCreatedBuffer(require(self.next_call_of("vkCreateBuffer")))
-        dst_buf = GetCreatedBuffer(require(self.next_call_of("vkCreateBuffer")))
+        src_buf = GetCreatedBuffer(
+            require(self.next_call_of("vkCreateBuffer")))
+        dst_buf = GetCreatedBuffer(
+            require(self.next_call_of("vkCreateBuffer")))
         img = GetCreatedImage(require(self.next_call_of("vkCreateImage")))
         event = GetCreatedEvent(architecture,
                                 require(self.next_call_of("vkCreateEvent")))

@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-add_gapid_test(FlushAndInvalidateMappedMemoryRanges_test
+add_gapid_test(FlushAndInvalidateRanges_test
   SOURCES main.cpp
   LIBS
     vulkan_helpers

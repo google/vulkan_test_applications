@@ -32,7 +32,7 @@ MAPPED_MEMORY_RANGE = [
 ]
 
 
-@gapit_test("FlushAndInvalidateMappedMemoryRanges_test")
+@gapit_test("FlushAndInvalidateRanges_test")
 class FlushMappedMemoryRangesNonZeroOffsetNotWholeSize(GapitTest):
 
     def expect(self):
@@ -81,7 +81,7 @@ class FlushMappedMemoryRangesNonZeroOffsetNotWholeSize(GapitTest):
         require_equal(EXPECTED_MEMORY_DATA, memory_data.data)
 
 
-@gapit_test("FlushAndInvalidateMappedMemoryRanges_test")
+@gapit_test("FlushAndInvalidateRanges_test")
 class InvalidateMappedMemoryRangesZeroOffsetWholeSize(GapitTest):
 
     def expect(self):
@@ -134,7 +134,7 @@ class InvalidateMappedMemoryRangesZeroOffsetWholeSize(GapitTest):
         require_equal(EXPECTED_MEMORY_DATA, memory_data.data)
 
 
-@gapit_test("FlushAndInvalidateMappedMemoryRanges_test")
+@gapit_test("FlushAndInvalidateRanges_test")
 class FlushMappedMemoryRangesZeroOffsetWholeSize(GapitTest):
 
     def expect(self):
@@ -185,7 +185,7 @@ class FlushMappedMemoryRangesZeroOffsetWholeSize(GapitTest):
         require_equal(EXPECTED_MEMORY_DATA, memory_data.data)
 
 
-@gapit_test("FlushAndInvalidateMappedMemoryRanges_test")
+@gapit_test("FlushAndInvalidateRanges_test")
 class InvalidateMappedMemoryRangesNonZeroOffsetNotWholeSize(GapitTest):
 
     def expect(self):

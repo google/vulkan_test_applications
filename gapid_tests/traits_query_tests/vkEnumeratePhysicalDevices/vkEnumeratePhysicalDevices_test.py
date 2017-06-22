@@ -12,7 +12,7 @@
 from gapit_test_framework import gapit_test, require, require_equal
 from gapit_test_framework import require_not_equal, little_endian_bytes_to_int
 from gapit_test_framework import GapitTest, get_read_offset_function
-from gapit_test_framework import get_write_offset_function
+from gapit_test_framework import get_write_offset_function, WINDOWS
 import gapit_test_framework
 from struct_offsets import VulkanStruct, POINTER, HANDLE, ARRAY
 from vulkan_constants import *
@@ -60,6 +60,11 @@ class EnumeratePhysicalDevices(GapitTest):
         for handle in physical_devices.handles:
             require_not_equal(0, handle)
 
+        # The windows loader + some drivers do very odd things here.
+        # They change around the calls to EnumeratePhyiscalDevices
+        # in order to handle multiple devices.
+        if self.device.Configuration.OS.Kind == WINDOWS:
+            return
         # The third call is made with non-NULL pPhysicalDevices, while the physical
         # device count is one less than the actual count. Command should return
         # with VK_INCOMPLETE

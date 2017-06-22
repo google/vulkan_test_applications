@@ -89,17 +89,15 @@ void RunInTwoThreads(std::function<void(std::function<void()>)> run_first,
 }
 
 struct CommonHandles {
-  CommonHandles(const entry::entry_data* data)
-      : app(data->root_allocator, data->log.get(), data),
-        device(app.device()),
-        queue(app.render_queue()),
-        cmd_buf(app.GetCommandBuffer()),
-        src_buf(app.CreateAndBindDefaultExclusiveCoherentBuffer(
+  CommonHandles(const entry::entry_data* data, vulkan::VulkanApplication* app)
+      : device(app->device()),
+        queue(app->render_queue()),
+        cmd_buf(app->GetCommandBuffer()),
+        src_buf(app->CreateAndBindDefaultExclusiveCoherentBuffer(
             sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT)),
-        dst_buf(app.CreateAndBindDefaultExclusiveDeviceBuffer(
+        dst_buf(app->CreateAndBindDefaultExclusiveDeviceBuffer(
             sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT)) {}
 
-  vulkan::VulkanApplication app;
   vulkan::VkDevice& device;
   vulkan::VkQueue& queue;
   vulkan::VkCommandBuffer cmd_buf;
@@ -110,10 +108,12 @@ struct CommonHandles {
 
 int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
-
+  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
   // Basic test of vkSetEvent, vkResetEvent and vkGetEventStatus
   {
-    CommonHandles t(data);
+    // Use "TAG" in the trace to figure out where we are supposed to be
+    app.device().getProcAddrFunction()(app.device(), "TAG");
+    CommonHandles t(data, &app);
 
     auto event = vulkan::CreateEvent(&t.device);
     LOG_EXPECT(==, data->log, VK_EVENT_RESET,
@@ -131,19 +131,20 @@ int main_entry(const entry::entry_data* data) {
 
   // Single thread
   {
-    CommonHandles t(data);
+    app.device().getProcAddrFunction()(app.device(), "TAG");
+    CommonHandles t(data, &app);
 
     auto event_x = vulkan::CreateEvent(&t.device);
     auto event_y = vulkan::CreateEvent(&t.device);
 
     // submit -> update -> set -> wait idle
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x00000000;
-    t.app.BeginCommandBuffer(&t.cmd_buf);
+    app.BeginCommandBuffer(&t.cmd_buf);
     AddCmdWaitEvents(&t.cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
-    t.app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
-                                    VkFence(VK_NULL_HANDLE));
+    app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
+                                  VkFence(VK_NULL_HANDLE));
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x11111111;
     t.device->vkSetEvent(t.device, event_x);
     t.queue->vkQueueWaitIdle(t.queue);
@@ -151,18 +152,18 @@ int main_entry(const entry::entry_data* data) {
 
     // update -> set -> submit -> wait idle
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x22222222;
-    t.app.BeginCommandBuffer(&t.cmd_buf);
+    app.BeginCommandBuffer(&t.cmd_buf);
     t.device->vkSetEvent(t.device, event_x);
     AddCmdWaitEvents(&t.cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
-    t.app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
-                                    VkFence(VK_NULL_HANDLE));
+    app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
+                                  VkFence(VK_NULL_HANDLE));
     t.queue->vkQueueWaitIdle(t.queue);
     t.device->vkResetEvent(t.device, event_x);
 
     // update -> submit:[cmdSetEvent (multiple),  ... , cmdWaitEvents]
-    t.app.BeginCommandBuffer(&t.cmd_buf);
+    app.BeginCommandBuffer(&t.cmd_buf);
     t.cmd_buf->vkCmdSetEvent(t.cmd_buf, event_x,
                              VK_PIPELINE_STAGE_TRANSFER_BIT);
     t.cmd_buf->vkCmdSetEvent(t.cmd_buf, event_y,
@@ -172,45 +173,46 @@ int main_entry(const entry::entry_data* data) {
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x33333333;
-    t.app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&t.cmd_buf, &t.queue);
+    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&t.cmd_buf, &t.queue);
     t.device->vkResetEvent(t.device, event_x);
     t.device->vkResetEvent(t.device, event_y);
 
     // update -> submit:[cmdSetEvent] -> submit:[cmdWaitEvents, ...]
-    t.app.BeginCommandBuffer(&t.cmd_buf);
+    app.BeginCommandBuffer(&t.cmd_buf);
     t.cmd_buf->vkCmdSetEvent(t.cmd_buf, event_x,
                              VK_PIPELINE_STAGE_TRANSFER_BIT);
-    t.app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
-                                    ::VkFence(VK_NULL_HANDLE));
-    auto another_cmd_buf = t.app.GetCommandBuffer();
-    t.app.BeginCommandBuffer(&another_cmd_buf);
+    app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
+                                  ::VkFence(VK_NULL_HANDLE));
+    auto another_cmd_buf = app.GetCommandBuffer();
+    app.BeginCommandBuffer(&another_cmd_buf);
     AddCmdWaitEvents(&another_cmd_buf, {event_x},
                      VK_PIPELINE_STAGE_TRANSFER_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&another_cmd_buf, *t.src_buf, *t.dst_buf);
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x44444444;
-    t.app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&another_cmd_buf,
-                                                       &t.queue);
+    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&another_cmd_buf,
+                                                     &t.queue);
     t.device->vkResetEvent(t.device, event_x);
   }
 
   // Multiple thread, host sends signal to the event waiting in a t.queue
   {
-    CommonHandles t(data);
+    app.device().getProcAddrFunction()(app.device(), "TAG");
+    CommonHandles t(data, &app);
     auto event_x = vulkan::CreateEvent(&t.device);
     auto event_y = vulkan::CreateEvent(&t.device);
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x00000000;
 
     // Thread 1: submit [vkCmdWaitEvents] ->        -> t.queue wait idle
     // Thread 2:                            setEvent
-    t.app.BeginCommandBuffer(&t.cmd_buf);
+    app.BeginCommandBuffer(&t.cmd_buf);
     AddCmdWaitEvents(&t.cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
     std::function<void(std::function<void()>)> run_first =
         [&](std::function<void()> start_second_thread) {
-          t.app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
-                                          VkFence(VK_NULL_HANDLE));
+          app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
+                                        VkFence(VK_NULL_HANDLE));
           start_second_thread();
           t.queue->vkQueueWaitIdle(t.queue);
         };
@@ -224,7 +226,7 @@ int main_entry(const entry::entry_data* data) {
     // Thread 1: submit [vkCmdWaitEvents (multiple events)] ->    -> t.queue
     // idle
     // Thread 2:                                           setEvent(s)
-    t.app.BeginCommandBuffer(&t.cmd_buf);
+    app.BeginCommandBuffer(&t.cmd_buf);
     AddCmdWaitEvents(&t.cmd_buf, {event_x, event_y}, VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
@@ -244,22 +246,22 @@ int main_entry(const entry::entry_data* data) {
     run_first = [&](std::function<void()> start_second_thread) {
       vulkan::VkSemaphore semaphore = vulkan::CreateSemaphore(&t.device);
       VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-      t.app.BeginCommandBuffer(&t.cmd_buf);
+      app.BeginCommandBuffer(&t.cmd_buf);
       AddCmdWaitEvents(&t.cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
                        VK_PIPELINE_STAGE_TRANSFER_BIT);
       AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
       t.cmd_buf->vkCmdResetEvent(t.cmd_buf, event_x,
                                  VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
-      t.app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {},
-                                      {semaphore.get_raw_object()}, fence);
-      auto another_cmd_buf = t.app.GetCommandBuffer();
-      t.app.BeginCommandBuffer(&another_cmd_buf);
+      app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {},
+                                    {semaphore.get_raw_object()}, fence);
+      auto another_cmd_buf = app.GetCommandBuffer();
+      app.BeginCommandBuffer(&another_cmd_buf);
       AddCmdWaitEvents(&another_cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
                        VK_PIPELINE_STAGE_TRANSFER_BIT);
       AddCmdCopyBuffer(&another_cmd_buf, *t.src_buf, *t.dst_buf);
-      t.app.EndAndSubmitCommandBuffer(
-          &another_cmd_buf, &t.queue, {semaphore.get_raw_object()},
-          {wait_stage}, {}, ::VkFence(VK_NULL_HANDLE));
+      app.EndAndSubmitCommandBuffer(&another_cmd_buf, &t.queue,
+                                    {semaphore.get_raw_object()}, {wait_stage},
+                                    {}, ::VkFence(VK_NULL_HANDLE));
       start_second_thread();
       t.queue->vkQueueWaitIdle(t.queue);
     };
@@ -276,15 +278,15 @@ int main_entry(const entry::entry_data* data) {
 
     // Thread 1: submit [wait x, wait y, copy]          -> idle
     // Thread 2:                         set y -> set x
-    t.app.BeginCommandBuffer(&t.cmd_buf);
+    app.BeginCommandBuffer(&t.cmd_buf);
     AddCmdWaitEvents(&t.cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
     AddCmdWaitEvents(&t.cmd_buf, {event_y}, VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
     run_first = [&](std::function<void()> start_second_thread) {
-      t.app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
-                                      ::VkFence(VK_NULL_HANDLE));
+      app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
+                                    ::VkFence(VK_NULL_HANDLE));
       start_second_thread();
       t.queue->vkQueueWaitIdle(t.queue);
     };
@@ -301,9 +303,10 @@ int main_entry(const entry::entry_data* data) {
 
   // Test for memory barriers carried with vkCmdWaitEvents
   {
-    CommonHandles t(data);
+    app.device().getProcAddrFunction()(app.device(), "TAG");
+    CommonHandles t(data, &app);
     vulkan::VkImage img = vulkan::CreateDefault2DColorImage(
-        &t.device, t.app.swapchain().width(), t.app.swapchain().height());
+        &t.device, app.swapchain().width(), app.swapchain().height());
     auto event_x = vulkan::CreateEvent(&t.device);
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x00000000;
 
@@ -352,15 +355,15 @@ int main_entry(const entry::entry_data* data) {
         rng,                                       // subresourceRange
     };
 
-    t.app.BeginCommandBuffer(&t.cmd_buf);
+    app.BeginCommandBuffer(&t.cmd_buf);
     t.cmd_buf->vkCmdWaitEvents(
         t.cmd_buf, 1, &event_x.get_raw_object(), VK_PIPELINE_STAGE_HOST_BIT,
         VK_PIPELINE_STAGE_TRANSFER_BIT, 1, &memory_barrier, 2, buffer_barriers,
         1, &image_barrier);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
     auto run_first = [&](std::function<void()> start_second_thread) {
-      t.app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
-                                      ::VkFence(0));
+      app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
+                                    ::VkFence(0));
       start_second_thread();
       t.queue->vkQueueWaitIdle(t.queue);
     };

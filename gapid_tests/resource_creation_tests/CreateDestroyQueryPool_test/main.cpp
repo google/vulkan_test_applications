@@ -21,12 +21,12 @@
 
 int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
+  vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+                                        data);
 
   {
     // 1. A query pool with queryCount of value 1, queryType of value
     // VK_QUERY_TYPE_OCCLUSION.
-    vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
-                                          data);
     vulkan::VkDevice& device = application.device();
     VkQueryPoolCreateInfo query_pool_create_info = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,  // sType
@@ -47,8 +47,6 @@ int main_entry(const entry::entry_data* data) {
   {
     // 2. A query pool with queryCount of value 7, queryType of value
     // VK_QUERY_TYPE_TIMESTAMP.
-    vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
-                                          data);
     vulkan::VkDevice& device = application.device();
     VkQueryPoolCreateInfo query_pool_create_info = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,  // sType
@@ -64,41 +62,6 @@ int main_entry(const entry::entry_data* data) {
                                          nullptr, &query_pool),
                VK_SUCCESS);
     device->vkDestroyQueryPool(device, query_pool, nullptr);
-  }
-
-  {
-    // 3. A query pool with queryCount of value 4, queryType of value
-    // VK_QUERY_TYPE_PIPELINE_STATISTICS, and pipelineStatistics of value
-    // VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT.
-
-    // Create a new device with pipeline statistics feature enabled from the
-    // same physical device.
-    VkPhysicalDeviceFeatures request_features = {0};
-    request_features.pipelineStatisticsQuery = VK_TRUE;
-    vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
-                                          data, {}, request_features);
-    if (application.device().is_valid()) {
-      vulkan::VkDevice& device = application.device();
-      VkQueryPoolCreateInfo query_pool_create_info = {
-          VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,  // sType
-          nullptr,                                   // pNext
-          0,                                         // flags
-          VK_QUERY_TYPE_PIPELINE_STATISTICS,         // queryType
-          4,                                         // queryCount
-          VkQueryPipelineStatisticFlags(
-              VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT),  // pipelineStatistics
-      };
-      ::VkQueryPool query_pool;
-      LOG_EXPECT(==, data->log,
-                 device->vkCreateQueryPool(device, &query_pool_create_info,
-                                           nullptr, &query_pool),
-                 VK_SUCCESS);
-      device->vkDestroyQueryPool(device, query_pool, nullptr);
-    } else {
-      data->log->LogInfo(
-          "Disabled test due to missing physical device feature: "
-          "pipelineStatisticsQuery");
-    }
   }
   data->log->LogInfo("Application Shutdown");
   return 0;

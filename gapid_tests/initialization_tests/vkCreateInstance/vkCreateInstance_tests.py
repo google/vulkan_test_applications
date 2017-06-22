@@ -15,7 +15,7 @@ from gapit_test_framework import GapitTest
 from vulkan_constants import *
 
 
-@gapit_test("vkCreateInstance_test")
+@gapit_test("vkCreateInstance_NullApp_test")
 class NullApplicationInfoTest(GapitTest):
 
     def expect(self):
@@ -40,7 +40,7 @@ class NullApplicationInfoTest(GapitTest):
         require_equal(little_endian_bytes_to_int(applicationInfoPointer), 0)
 
 
-@gapit_test("vkCreateInstance_test")
+@gapit_test("vkCreateInstance_NonNullApp_test")
 class NonNullApplicationInfoTest(GapitTest):
 
     def expect(self):
@@ -48,7 +48,7 @@ class NonNullApplicationInfoTest(GapitTest):
          vkCreateInstance, and that it contains some of the expected data."""
         architecture = self.architecture
 
-        create_instance = require(self.nth_call_of("vkCreateInstance", 2))
+        create_instance = require(self.nth_call_of("vkCreateInstance", 1))
         require_not_equal(create_instance.hex_pCreateInfo, 0)
 
         create_info_memory = require(
@@ -62,7 +62,8 @@ class NonNullApplicationInfoTest(GapitTest):
             create_instance.get_read_data(create_instance.hex_pCreateInfo +
                                           architecture.int_pointerSize * 3,
                                           architecture.int_pointerSize))
-        require_not_equal(little_endian_bytes_to_int(applicationInfoPointer), 0)
+        require_not_equal(little_endian_bytes_to_int(
+            applicationInfoPointer), 0)
         # The 2nd pointer(3rd element) in VkApplicationInfo should be the string
         # Application
         application_info_application_name_ptr = require(

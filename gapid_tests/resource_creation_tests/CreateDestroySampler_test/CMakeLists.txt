@@ -18,3 +18,9 @@ add_gapid_test(CreateDestroySampler_test
   LIBS
     vulkan_helpers
 )
+
+add_gapid_test(UnnormalizedSampler_test
+  SOURCES unnormalized.cpp
+  LIBS
+    vulkan_helpers
+)

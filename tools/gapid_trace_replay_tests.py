@@ -63,18 +63,18 @@ class TestManager(object):
         with open(os.path.join(self.root_directory, "samples.txt"), 'r') as f:
             for test_name in f:
                 if (include_matcher.match(test_name) and
-                   exclude_matcher.match(test_name) is None):
+                        exclude_matcher.match(test_name) is None):
                     self.add_test(test_name.strip(), test_name.strip(), False)
                 mec_test_name = test_name.strip() + ".mid_execution"
                 if (include_matcher.match(mec_test_name) and
-                   exclude_matcher.match(mec_test_name) is None):
+                        exclude_matcher.match(mec_test_name) is None):
                     self.add_test(
                         mec_test_name, test_name.strip(), True)
 
     def print_test_names(self, file_handle):
         """Prints out to the given file handle a list of all tests."""
         for test in sorted(self.tests.keys()):
-                file_handle.write(test + "\n")
+            file_handle.write(test + "\n")
 
     def add_test(self, test_name, test_executable, mid_execution):
         """Adds a test case to the manager from the given apk"""
@@ -265,7 +265,7 @@ associated binaries. It will build its tests from there.
         manager.print_test_names(sys.stdout)
         return 0
     else:
-        temp_directory = tempfile.mkdtemp("-GAPID_VIDEO")
+        temp_directory = tempfile.mkdtemp("", "GAPID_VIDEO-")
         print "Running tests in {}".format(temp_directory)
         manager.run_all_tests(temp_directory)
         if not args.keep:

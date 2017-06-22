@@ -13,8 +13,14 @@
 # limitations under the License.
 #
 
-add_gapid_test(vkCreateInstance_test
-  SOURCES main.cpp
+add_gapid_test(vkCreateInstance_NullApp_test
+  SOURCES null_create_info.cpp
+  LIBS
+    vulkan_wrapper
+)
+
+add_gapid_test(vkCreateInstance_NonNullApp_test
+  SOURCES non_null_create_info.cpp
   LIBS
     vulkan_wrapper
 )

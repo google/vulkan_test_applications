@@ -113,6 +113,8 @@ int main_entry(const entry::entry_data* data) {
         instance->vkEnumerateDeviceExtensionProperties(
             physical_device, nullptr, &num_extension_properties, nullptr));
 
+    extension_properties.resize(num_extension_properties);
+
     if (num_extension_properties > 1) {
       uint32_t num_reduced_extension_properties = num_extension_properties - 1;
       LOG_EXPECT(
@@ -122,7 +124,6 @@ int main_entry(const entry::entry_data* data) {
               extension_properties.data()));
     }
 
-    extension_properties.resize(num_extension_properties);
     LOG_EXPECT(==, data->log, VK_SUCCESS,
                instance->vkEnumerateDeviceExtensionProperties(
                    physical_device, nullptr, &num_extension_properties,

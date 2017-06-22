@@ -42,13 +42,13 @@ class SetLineWidthOnePointZero(GapitTest):
         require_equal(1.0, set_line_width.float_lineWidth)
 
 
-@gapit_test("SetLineWidthAndBlendConstants_test")
+@gapit_test("SetLineWidthWideLines_test")
 class SetLineWidthTwoPointZero(GapitTest):
 
     def expect(self):
         """The second call to vkCmdSetLineWidth should have line width value: 2.0
         """
-        create_device = self.nth_call_of("vkCreateDevice", 3)
+        create_device = self.nth_call_of("vkCreateDevice", 1)
         if create_device[0] is None:
             raise GapidUnsupportedException(
                 "physical device feature: wideLine not supported")

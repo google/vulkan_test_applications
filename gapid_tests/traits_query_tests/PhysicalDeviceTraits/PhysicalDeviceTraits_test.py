@@ -95,11 +95,13 @@ def GetPhysicalDevices(test, architecture):
     # second call to enumerate physical devices
     second_enumerate_physical_devices = require(test.next_call_of(
         "vkEnumeratePhysicalDevices"))
-    require_equal(VK_SUCCESS, int(second_enumerate_physical_devices.return_val))
+    require_equal(VK_SUCCESS, int(
+        second_enumerate_physical_devices.return_val))
     require_not_equal(0, second_enumerate_physical_devices.int_instance)
     require_not_equal(
         0, second_enumerate_physical_devices.hex_pPhysicalDeviceCount)
-    require_not_equal(0, second_enumerate_physical_devices.hex_pPhysicalDevices)
+    require_not_equal(
+        0, second_enumerate_physical_devices.hex_pPhysicalDevices)
     require_not_equal(0, num_phy_devices)
     PHYSICAL_DEVICES = [("physicalDevices", ARRAY, num_phy_devices, POINTER)]
     returned_physical_devices = VulkanStruct(
@@ -122,7 +124,13 @@ class GetPhysicalDeviceFeatures(GapitTest):
         for pd in physical_devices:
             get_features = require(self.next_call_of(
                 "vkGetPhysicalDeviceFeatures"))
-            require_equal(pd, get_features.int_physicalDevice)
+            # Some layers make extra calls
+            #  into VkEnumeratePhysicalDevices and re-order the calls.
+            # This means that the order of physical devices might not
+            # be the same as expected. So just make sure that
+            # the call at least contains ONE of the physical devices
+            require_equal(
+                True, get_features.int_physicalDevice in physical_devices)
             require_not_equal(0, get_features.hex_pFeatures)
             VulkanStruct(arch, PHYSICAL_DEVICE_FEATURES,
                          get_write_offset_function(get_features,
@@ -142,7 +150,8 @@ class GetPhysicalDeviceMemoryProperties(GapitTest):
         for pd in physical_devices:
             get_memory_properties = require(self.next_call_of(
                 "vkGetPhysicalDeviceMemoryProperties"))
-            require_equal(pd, get_memory_properties.int_physicalDevice)
+            require_equal(
+                True, get_memory_properties.int_physicalDevice in physical_devices)
             require_not_equal(0, get_memory_properties.hex_pMemoryProperties)
             # TODO: Check the existance of the memory property struct
 
@@ -160,6 +169,7 @@ class GetPhysicalDeviceProperties(GapitTest):
         for pd in physical_devices:
             get_device_properties = require(self.next_call_of(
                 "vkGetPhysicalDeviceProperties"))
-            require_equal(pd, get_device_properties.int_physicalDevice)
+            require_equal(
+                True, get_device_properties.int_physicalDevice in physical_devices)
             require_not_equal(0, get_device_properties.hex_pProperties)
             # TODO: Check the existance of the property struct

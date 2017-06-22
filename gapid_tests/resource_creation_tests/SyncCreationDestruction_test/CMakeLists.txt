@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-add_gapid_test(SynchronizationCreationDestruction_test
+add_gapid_test(SyncCreationDestruction_test
   SOURCES main.cpp
   LIBS
     vulkan_helpers
