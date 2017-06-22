@@ -20,3 +20,12 @@ add_gapid_test(SetLineWidthAndBlendConstants_test
   SHADERS
     shader_library
 )
+
+
+add_gapid_test(SetLineWidthWideLines_test
+  SOURCES wide_lines.cpp
+  LIBS
+    vulkan_helpers
+  SHADERS
+    shader_library
+)

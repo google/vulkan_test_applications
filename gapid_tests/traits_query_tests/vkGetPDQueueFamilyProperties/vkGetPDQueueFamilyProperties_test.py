@@ -46,11 +46,13 @@ def GetPhysicalDevices(test, architecture):
     # second call to enumerate physical devices
     second_enumerate_physical_devices = require(test.next_call_of(
         "vkEnumeratePhysicalDevices"))
-    require_equal(VK_SUCCESS, int(second_enumerate_physical_devices.return_val))
+    require_equal(VK_SUCCESS, int(
+        second_enumerate_physical_devices.return_val))
     require_not_equal(0, second_enumerate_physical_devices.int_instance)
     require_not_equal(
         0, second_enumerate_physical_devices.hex_pPhysicalDeviceCount)
-    require_not_equal(0, second_enumerate_physical_devices.hex_pPhysicalDevices)
+    require_not_equal(
+        0, second_enumerate_physical_devices.hex_pPhysicalDevices)
     require_not_equal(0, num_phy_devices)
     PHYSICAL_DEVICES = [("physicalDevices", ARRAY, num_phy_devices, POINTER)]
     returned_physical_devices = VulkanStruct(
@@ -60,7 +62,7 @@ def GetPhysicalDevices(test, architecture):
     return returned_physical_devices.physicalDevices
 
 
-@gapit_test("vkGetPhysicalDeviceQueueFamilyProperties_test")
+@gapit_test("vkGetPDQueueFamilyProperties_test")
 class GetPhysicalDeviceQueueFamilyProperties(GapitTest):
 
     def expect(self):
@@ -72,7 +74,8 @@ class GetPhysicalDeviceQueueFamilyProperties(GapitTest):
         for pd in physical_devices:
             get_properties = require(self.next_call_of(
                 "vkGetPhysicalDeviceQueueFamilyProperties"))
-            require_equal(pd, get_properties.int_physicalDevice)
+            require_equal(
+                True, get_properties.int_physicalDevice in physical_devices)
             require_not_equal(0, get_properties.hex_pQueueFamilyPropertyCount)
             require_equal(0, get_properties.hex_pQueueFamilyProperties)
             observation_num_properties = little_endian_bytes_to_int(
@@ -85,7 +88,8 @@ class GetPhysicalDeviceQueueFamilyProperties(GapitTest):
         for pd in physical_devices:
             get_properties = require(self.next_call_of(
                 "vkGetPhysicalDeviceQueueFamilyProperties"))
-            require_equal(pd, get_properties.int_physicalDevice)
+            require_equal(
+                True, get_properties.int_physicalDevice in physical_devices)
             require_not_equal(0, get_properties.hex_pQueueFamilyPropertyCount)
             require_not_equal(0, get_properties.hex_pQueueFamilyProperties)
             observation_num_properties = little_endian_bytes_to_int(
@@ -100,7 +104,8 @@ class GetPhysicalDeviceQueueFamilyProperties(GapitTest):
                 continue
             get_properties = require(self.next_call_of(
                 "vkGetPhysicalDeviceQueueFamilyProperties"))
-            require_equal(pd, get_properties.int_physicalDevice)
+            require_equal(
+                True, get_properties.int_physicalDevice in physical_devices)
             require_not_equal(0, get_properties.hex_pQueueFamilyPropertyCount)
             require_not_equal(0, get_properties.hex_pQueueFamilyProperties)
             # Check the count
@@ -124,7 +129,8 @@ class GetPhysicalDeviceQueueFamilyProperties(GapitTest):
         for pd in physical_devices:
             get_properties = require(self.next_call_of(
                 "vkGetPhysicalDeviceQueueFamilyProperties"))
-            require_equal(pd, get_properties.int_physicalDevice)
+            require_equal(
+                True, get_properties.int_physicalDevice in physical_devices)
             require_not_equal(0, get_properties.hex_pQueueFamilyPropertyCount)
             require_not_equal(0, get_properties.hex_pQueueFamilyProperties)
             # Check the count
@@ -147,7 +153,8 @@ class GetPhysicalDeviceQueueFamilyProperties(GapitTest):
         for pd in physical_devices:
             get_properties = require(self.next_call_of(
                 "vkGetPhysicalDeviceQueueFamilyProperties"))
-            require_equal(pd, get_properties.int_physicalDevice)
+            require_equal(
+                True, get_properties.int_physicalDevice in physical_devices)
             require_not_equal(0, get_properties.hex_pQueueFamilyPropertyCount)
             require_not_equal(0, get_properties.hex_pQueueFamilyProperties)
             # Check the count

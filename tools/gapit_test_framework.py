@@ -575,7 +575,7 @@ from a build.
         manager.print_test_names(sys.stdout)
         return 0
     else:
-        test_directory = tempfile.mkdtemp("-GAPID")
+        test_directory = tempfile.mkdtemp("", "GAPID-")
         print "Running tests in {}".format(test_directory)
         manager.run_all_tests(test_directory)
         shutil.rmtree(test_directory)

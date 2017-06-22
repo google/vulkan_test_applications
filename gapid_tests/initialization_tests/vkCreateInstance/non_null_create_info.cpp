@@ -20,26 +20,8 @@
 
 int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
+
   vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
-
-  {
-    // Test a nullptr pApplicationInfo
-    VkInstanceCreateInfo info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                              nullptr,
-                              0,
-                              nullptr,
-                              0,
-                              nullptr,
-                              0,
-                              nullptr};
-
-    VkInstance raw_instance;
-    wrapper.vkCreateInstance(&info, nullptr, &raw_instance);
-    // vulkan::VkInstance will handle destroying the instance
-    vulkan::VkInstance instance(data->root_allocator, raw_instance, nullptr,
-                                &wrapper);
-  }
-
   {
     // Test a non-nullptr pApplicationInfo
     VkApplicationInfo app_info{VK_STRUCTURE_TYPE_APPLICATION_INFO,

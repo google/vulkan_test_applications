@@ -425,7 +425,7 @@ VulkanApplication::FillImageLayersData(
   containers::vector<::VkSemaphore> waits(wait_semaphores, allocator_);
   containers::vector<::VkSemaphore> signals(signal_semaphores, allocator_);
   containers::vector<VkPipelineStageFlags> wait_dst_stage_masks(
-      waits.size(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+      waits.size(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, allocator_);
 
   // Prepare the buffer to be used for data copying.
   VkBufferCreateInfo buf_create_info{
@@ -570,7 +570,7 @@ void VulkanApplication::FillHostVisibleBuffer(Buffer* buffer, const void* data,
   }
   const char* d = reinterpret_cast<const char*>(data);
   size_t size = buffer->size() < data_size ? buffer->size() : data_size;
-  memcpy(p+buffer_offset, d, size);
+  memcpy(p + buffer_offset, d, size);
   buffer->flush();
   if (command_buffer) {
     VkBufferMemoryBarrier buf_barrier{
@@ -604,7 +604,7 @@ bool VulkanApplication::DumpImageLayersData(
 
   containers::vector<::VkSemaphore> waits(wait_semaphores, allocator_);
   containers::vector<VkPipelineStageFlags> wait_dst_stage_masks(
-      waits.size(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+      waits.size(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, allocator_);
 
   // Prepare the dst buffer.
   size_t image_size = GetImageExtentSizeInBytes(image_extent, img->format()) *

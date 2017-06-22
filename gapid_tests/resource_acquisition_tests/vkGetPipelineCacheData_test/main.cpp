@@ -32,13 +32,10 @@ uint32_t vertex_shader[] =
 
 int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
+  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+
   {
-    // 1. Create an empty pipeline cache, then get its data.
-    vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
-    vulkan::VkInstance instance(
-        vulkan::CreateDefaultInstance(data->root_allocator, &wrapper));
-    vulkan::VkDevice device(
-        vulkan::CreateDefaultDevice(data->root_allocator, instance, false));
+    vulkan::VkDevice& device = app.device();
 
     VkPipelineCacheCreateInfo create_info{
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,  // sType
@@ -49,14 +46,16 @@ int main_entry(const entry::entry_data* data) {
     };
 
     VkPipelineCache cache;
-    LOG_ASSERT(==, data->log, device->vkCreatePipelineCache(
-                                  device, &create_info, nullptr, &cache),
-               VK_SUCCESS);
+    LOG_ASSERT(
+        ==, data->log,
+        device->vkCreatePipelineCache(device, &create_info, nullptr, &cache),
+        VK_SUCCESS);
 
     // pData is null
     size_t cache_data_size = 0;
-    LOG_ASSERT(==, data->log, device->vkGetPipelineCacheData(
-                                  device, cache, &cache_data_size, nullptr),
+    LOG_ASSERT(==, data->log,
+               device->vkGetPipelineCacheData(device, cache, &cache_data_size,
+                                              nullptr),
                VK_SUCCESS);
 
     // pData is not null and pDataSize refer to the size of the cache data
@@ -81,7 +80,7 @@ int main_entry(const entry::entry_data* data) {
   {
     // 2. Create a graphics pipeline with pipeline cache, then get its data
     // Create pipeline layout
-    vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+
     vulkan::VkDevice& dev = app.device();
     vulkan::PipelineLayout pipeline_layout(app.CreatePipelineLayout(
         {{{

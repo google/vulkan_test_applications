@@ -44,11 +44,13 @@ def GetPhysicalDevices(test, architecture):
     # second call to enumerate physical devices
     second_enumerate_physical_devices = require(test.next_call_of(
         "vkEnumeratePhysicalDevices"))
-    require_equal(VK_SUCCESS, int(second_enumerate_physical_devices.return_val))
+    require_equal(VK_SUCCESS, int(
+        second_enumerate_physical_devices.return_val))
     require_not_equal(0, second_enumerate_physical_devices.int_instance)
     require_not_equal(
         0, second_enumerate_physical_devices.hex_pPhysicalDeviceCount)
-    require_not_equal(0, second_enumerate_physical_devices.hex_pPhysicalDevices)
+    require_not_equal(
+        0, second_enumerate_physical_devices.hex_pPhysicalDevices)
     require_not_equal(0, num_phy_devices)
     PHYSICAL_DEVICES = [("physicalDevices", ARRAY, num_phy_devices, POINTER)]
     returned_physical_devices = VulkanStruct(
@@ -67,7 +69,8 @@ class GetPhysicalDeviceFormatProperties(GapitTest):
             for fmt in ALL_VK_FORMATS:
                 get_properties = require(self.next_call_of(
                     "vkGetPhysicalDeviceFormatProperties"))
-                require_equal(pd, get_properties.int_physicalDevice)
+                require_equal(
+                    True, get_properties.int_physicalDevice in physical_devices)
                 require_equal(fmt, get_properties.int_format)
                 require_not_equal(0, get_properties.hex_pFormatProperties)
                 VulkanStruct(arch, FORMAT_PROPERTIES, get_write_offset_function(

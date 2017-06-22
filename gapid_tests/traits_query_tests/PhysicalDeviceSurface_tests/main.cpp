@@ -42,9 +42,8 @@ int main_entry(const entry::entry_data* data) {
 
     for (size_t i = 0; i < properties.size(); ++i) {
       VkBool32 supported = false;
-      LOG_EXPECT(==, data->log,
-                 instance->vkGetPhysicalDeviceSurfaceSupportKHR(
-                     device, i, surface, &supported),
+      LOG_EXPECT(==, data->log, instance->vkGetPhysicalDeviceSurfaceSupportKHR(
+                                    device, i, surface, &supported),
                  VK_SUCCESS);
       if (supported) {
         data->log->LogInfo("  Supports surfaces on queue ", i);
@@ -67,9 +66,8 @@ int main_entry(const entry::entry_data* data) {
                          surface_caps.currentExtent.height, "]");
 
       uint32_t num_formats = 0;
-      LOG_EXPECT(==, data->log,
-                 instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
-                     device, surface, &num_formats, nullptr),
+      LOG_EXPECT(==, data->log, instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
+                                    device, surface, &num_formats, nullptr),
                  VK_SUCCESS);
 
       LOG_EXPECT(>, data->log, num_formats, 0u);
@@ -105,7 +103,7 @@ int main_entry(const entry::entry_data* data) {
                  VK_SUCCESS);
 
       containers::vector<VkPresentModeKHR> present_modes(data->root_allocator);
-      present_modes.resize(num_formats);
+      present_modes.resize(num_present_modes);
 
       LOG_EXPECT(==, data->log,
                  instance->vkGetPhysicalDeviceSurfacePresentModesKHR(

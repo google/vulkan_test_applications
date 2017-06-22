@@ -120,41 +120,29 @@ vulkan::VulkanGraphicsPipeline CreateAndCommitPipeline(
 
 int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
 
   {
-    // 1. Test vkCmdBlendConstants
-    const float blend_constants[4] = {1.25, 2.5, 5.0, 10.0};
-    vulkan::VkDevice& device = app.device();
-    // Create a pipeline
-    vulkan::VulkanGraphicsPipeline pipeline =
-        CreateAndCommitPipeline(data, &app, {VK_DYNAMIC_STATE_BLEND_CONSTANTS});
-    // Populate command buffer
-    vulkan::VkCommandBuffer cmd_buf = app.GetCommandBuffer();
-    cmd_buf->vkBeginCommandBuffer(cmd_buf, &kBeginInfo);
-    cmd_buf->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                               pipeline);
-    cmd_buf->vkCmdSetBlendConstants(cmd_buf, blend_constants);
-    cmd_buf->vkEndCommandBuffer(cmd_buf);
-    // Don't need to submit the commands as we don't the correctness of the
-    // execution of the commands are not the goal of this test.
-  }
-
-  {
-    // 2. Test vkCmdSetLineWidth without 'Wide Line' feature, the only valid
-    // value for the line width is 1.0
-    const float line_width = 1.0;
-    vulkan::VkDevice& device = app.device();
-    // Create a pipeline
-    vulkan::VulkanGraphicsPipeline pipeline =
-        CreateAndCommitPipeline(data, &app, {VK_DYNAMIC_STATE_LINE_WIDTH});
-    // Populate command buffer
-    vulkan::VkCommandBuffer cmd_buf = app.GetCommandBuffer();
-    cmd_buf->vkBeginCommandBuffer(cmd_buf, &kBeginInfo);
-    cmd_buf->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                               pipeline);
-    cmd_buf->vkCmdSetLineWidth(cmd_buf, line_width);
-    cmd_buf->vkEndCommandBuffer(cmd_buf);
+    const float line_width = 2.0;
+    VkPhysicalDeviceFeatures requested_feateures{};
+    requested_feateures.wideLines = VK_TRUE;
+    vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data,
+                                  {}, requested_feateures);
+    if (app.device().is_valid()) {
+      // Create a pipeline
+      vulkan::VulkanGraphicsPipeline pipeline =
+          CreateAndCommitPipeline(data, &app, {VK_DYNAMIC_STATE_LINE_WIDTH});
+      // Populate command buffer
+      vulkan::VkCommandBuffer cmd_buf = app.GetCommandBuffer();
+      cmd_buf->vkBeginCommandBuffer(cmd_buf, &kBeginInfo);
+      cmd_buf->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                 pipeline);
+      cmd_buf->vkCmdSetLineWidth(cmd_buf, line_width);
+      cmd_buf->vkEndCommandBuffer(cmd_buf);
+    } else {
+      data->log->LogInfo(
+          "Disable test due to missing physical device feature: "
+          "widthLines");
+    }
   }
 
   data->log->LogInfo("Application Shutdown");

@@ -27,8 +27,8 @@ int main_entry(const entry::entry_data* data) {
 
   auto& allocator = data->root_allocator;
 
+  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
   {  // 1. Sampler using normalized coordinates
-    vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
     vulkan::VkDevice& device = app.device();
     VkSamplerCreateInfo create_info{
         /* sType = */ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -54,44 +54,6 @@ int main_entry(const entry::entry_data* data) {
     device->vkCreateSampler(device, &create_info, nullptr, &sampler);
     data->log->LogInfo("  sampler: ", sampler);
     device->vkDestroySampler(device, sampler, nullptr);
-  }
-
-  {  // 2. Sampler using unnormalized coordinates
-    VkPhysicalDeviceFeatures requested_features = {0};
-    requested_features.samplerAnisotropy = VK_TRUE;
-    vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data,
-                                  {}, requested_features);
-    if (app.device().is_valid()) {
-      vulkan::VkDevice& device = app.device();
-      VkSamplerCreateInfo create_info{
-          /* sType = */ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-          /* pNext = */ nullptr,
-          /* flags = */ 0,
-          /* magFilter = */ VK_FILTER_NEAREST,
-          /* minFilter = */ VK_FILTER_NEAREST,
-          /* mipmapMode = */ VK_SAMPLER_MIPMAP_MODE_NEAREST,
-          /* addressModeU = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-          /* addressModeV = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-          /* addressModeW = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-          /* mipLodBias = */ 0.f,
-          /* anisotropyEnable = */ false,
-          /* maxAnisotropy = */ 0.f,
-          /* compareEnable = */ false,
-          /* compareOp = */ VK_COMPARE_OP_LESS,
-          /* minLod = */ 0.f,
-          /* maxLod = */ 0.f,
-          /* borderColor = */ VK_BORDER_COLOR_INT_OPAQUE_WHITE,
-          /* unnormalizedCoordinates = */ true,
-      };
-      ::VkSampler sampler;
-      device->vkCreateSampler(device, &create_info, nullptr, &sampler);
-      data->log->LogInfo("  sampler: ", sampler);
-      device->vkDestroySampler(device, sampler, nullptr);
-    } else {
-      data->log->LogInfo(
-          "Disabled test due to missing physical device feature: "
-          "samplerAnisotropy");
-    }
   }
 
   data->log->LogInfo("Application Shutdown");

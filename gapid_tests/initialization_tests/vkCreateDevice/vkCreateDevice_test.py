@@ -81,10 +81,11 @@ class OneQueueDevice(GapitTest):
 
     def expect(self):
         arch = self.architecture
-        physical_device = GetPhysicalDevices(self, arch)[0]
+        physical_devices = GetPhysicalDevices(self, arch)
 
         create_device = require(self.nth_call_of("vkCreateDevice", 1))
-        require_equal(physical_device, create_device.int_physicalDevice)
+        require_equal(
+            True, create_device.int_physicalDevice in physical_devices)
         require_not_equal(0, create_device.hex_pCreateInfo)
         require_equal(0, create_device.hex_pAllocator)
         require_not_equal(0, create_device.hex_pDevice)

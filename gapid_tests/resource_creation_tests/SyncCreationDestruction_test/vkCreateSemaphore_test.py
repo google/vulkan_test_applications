@@ -15,7 +15,7 @@ from gapit_test_framework import GapitTest
 from vulkan_constants import *
 
 
-@gapit_test("SynchronizationCreationDestruction_test")
+@gapit_test("SyncCreationDestruction_test")
 class SemaphoreCreateDestroyTest(GapitTest):
 
     def expect(self):

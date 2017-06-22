@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-add_gapid_test(vkGetPhysicalDeviceQueueFamilyProperties_test
+add_gapid_test(vkGetPDQueueFamilyProperties_test
   SOURCES main.cpp
   LIBS
     vulkan_helpers

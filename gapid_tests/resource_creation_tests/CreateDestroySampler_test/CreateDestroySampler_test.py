@@ -116,7 +116,7 @@ class NormalizedCoordinates(GapitTest):
         check_destroy_sampler(self, device, sampler)
 
 
-@gapit_test("CreateDestroySampler_test")
+@gapit_test("UnnormalizedSampler_test")
 class UnnormalizedCoordinates(GapitTest):
 
     def expect(self):
@@ -124,7 +124,7 @@ class UnnormalizedCoordinates(GapitTest):
 
         architecture = self.architecture
         device_properties = require(
-            self.nth_call_of("vkGetPhysicalDeviceProperties", 2))
+            self.nth_call_of("vkGetPhysicalDeviceProperties", 1))
         create_device = self.next_call_of("vkCreateDevice")
         if create_device[0] is None:
             raise GapidUnsupportedException(

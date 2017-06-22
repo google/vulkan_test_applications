@@ -18,3 +18,9 @@ add_gapid_test(CreateDestroyQueryPool_test
   LIBS
     vulkan_helpers
 )
+
+add_gapid_test(QueryPipelineStats_test
+  SOURCES pipeline_statistic.cpp
+  LIBS
+    vulkan_helpers
+)
