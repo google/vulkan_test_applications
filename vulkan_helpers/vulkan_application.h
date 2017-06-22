@@ -145,6 +145,11 @@ class VulkanGraphicsPipeline {
   // Sets the vertex input streams from the given model.
   void SetInputStreams(VulkanModel* model);
 
+  // Gets the reference of the VkPipelineDepthStencilStateCreateInfo
+  VkPipelineDepthStencilStateCreateInfo& DepthStencilState() {
+    return depth_stencil_state_;
+  }
+
   void Commit();
   operator ::VkPipeline() const { return pipeline_; }
 
