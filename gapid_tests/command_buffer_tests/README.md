@@ -30,6 +30,7 @@ command buffers.
 - [vkCmdPushConstants_test](vkCmdPushConstants_test/README.md)
 - [vkCmdResetQueryPool_test](vkCmdResetQueryPool_test/README.md)
 - [vkCmdResolveImage_test](vkCmdResolveImage_test/README.md)
+- [vkCmdSetDepthBounds_test](vkCmdSetDepthBounds_test/README.md)
 - [vkCmdSetStencilReference_test](vkCmdSetStencilReference_test/README.md)
 - [vkCmdUpdateBuffer_test](vkCmdUpdateBuffer_test/README.md)
 - [vkQueuePresentKHR_test](vkQueuePresentKHR_test/README.md)
