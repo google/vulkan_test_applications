@@ -602,8 +602,8 @@ VkCommandBuffer CreateCommandBuffer(VkCommandPool* pool,
 VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
                                       VkSurfaceKHR* surface,
                                       containers::Allocator* allocator,
-                                      uint32_t present_queue_index,
                                       uint32_t graphics_queue_index,
+                                      uint32_t present_queue_index,
                                       const entry::entry_data* data) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
