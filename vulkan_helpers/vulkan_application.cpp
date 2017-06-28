@@ -305,6 +305,29 @@ VulkanApplication::CreateAndBindImage(const VkImageCreateInfo* create_info) {
       img, containers::UniqueDeleter(allocator_, sizeof(Image)));
 }
 
+containers::unique_ptr<VkImageView> VulkanApplication::CreateImageView(
+    const Image* image, VkImageViewType view_type,
+    const VkImageSubresourceRange& subresource_range) {
+  VkImageViewCreateInfo create_info{
+      VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  // sType
+      nullptr,                                   // pNext
+      0,                                         // flags
+      image->get_raw_image(),                    // image
+      view_type,                                 // viewType
+      image->format(),                           // format
+      {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
+       VK_COMPONENT_SWIZZLE_A},
+      subresource_range,
+  };
+  ::VkImageView raw_view;
+  LOG_ASSERT(==, log_, device_->vkCreateImageView(device_, &create_info,
+                                                  nullptr, &raw_view),
+             VK_SUCCESS);
+  return containers::make_unique<vulkan::VkImageView>(
+      allocator_, VkImageView(raw_view, nullptr, &device_));
+}
+
+
 containers::unique_ptr<VulkanApplication::Buffer>
 VulkanApplication::CreateAndBindBuffer(VulkanArena* heap,
                                        const VkBufferCreateInfo* create_info) {
@@ -1035,6 +1058,10 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(containers::Allocator* allocator,
 
 void VulkanGraphicsPipeline::SetCullMode(VkCullModeFlagBits mode) {
   rasterization_state_.cullMode = mode;
+}
+
+void VulkanGraphicsPipeline::SetFrontFace(VkFrontFace face) {
+  rasterization_state_.frontFace = face;
 }
 
 void VulkanGraphicsPipeline::SetRasterizationFill(VkPolygonMode mode) {
