@@ -16,9 +16,9 @@ code that happens to be owned by Google. See the
 # Test Types
 ## Sample applications
 
-These are a set of sample applications that either use the API in a way that is
-interesting for tools, or use some functionality of the API that has not been
-exposed in other samples.
+These are a set of sample applications that either uses the API in a way that is
+interesting for tools or use some functionality of the API that has not been
+exposed to other samples.
 - [application_sandbox](application_sandbox/README.md)
 
 ## GAPID command tests
@@ -26,11 +26,11 @@ exposed in other samples.
 These tests are designed to test the functionality of
 [GAPID](https://github.com/google/gapid) for Vulkan. They can also be
 used to expose a variety of function call permutations for any layers. As a
-group they attempt to call all vulkan functions with all permutations of
+group, they attempt to call all Vulkan functions with all permutations of
 valid inputs. See [gapid_tests](gapid_tests/README.md) for more information.
 
 ## Known Issues
-Currently Windows is not supported, but support is on the way.
+Currently, Windows is not supported, but support is on the way.
 
 ## Checking out / Building
 To clone:
@@ -50,7 +50,7 @@ cmake -GNinja {root} -DBUILD_APKS=ON -DANDROID_SDK=path/to/android/sdk
 ninja
 ```
 
-This assumes the android ndk is installed in the default location of
+This assumes the Android ndk is installed in the default location of
 path/to/android/sdk/ndk-bundle.
 
 If it is installed elsewhere, use
