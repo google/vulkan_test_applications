@@ -9,5 +9,6 @@ the acquisition of vulkan resources.
 - [vkGetImageSubresourceLayout_test](vkGetImageSubresourceLayout_test/README.md)
 - [vkGetPipelineCacheData_test](vkGetPipelineCacheData_test/README.md)
 - [vkGetQueryPoolResults_test](vkGetQueryPoolResults_test/README.md)
+- [vkGetRenderAreaGranularity_test](vkGetRenderAreaGranularity_test/README.md)
 - [vkGetSwapchainImagesKHR_test](vkGetSwapchainImagesKHR_test/README.md)
 
