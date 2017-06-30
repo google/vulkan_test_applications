@@ -115,8 +115,8 @@ VkSurfaceKHR CreateDefaultSurface(VkInstance* instance,
 // Note: They may be the same or different.
 VkDevice CreateDeviceForSwapchain(
     containers::Allocator* allocator, VkInstance* instance,
-    VkSurfaceKHR* surface, uint32_t* present_queue_index,
-    uint32_t* graphics_queue_index,
+    VkSurfaceKHR* surface, uint32_t* graphics_queue_index,
+    uint32_t* present_queue_index,
     const std::initializer_list<const char*> extensions = {},
     const VkPhysicalDeviceFeatures& features = {0},
     bool try_to_find_separate_present_queue = false,
