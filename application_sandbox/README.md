@@ -18,6 +18,7 @@ output that demonstrates the feature.
 [copy_image_buffer](copy_image_buffer/README.md)
 [copy_querypool_results](copy_querypool_results/README.md)
 [cube](cube/README.md)
+[depth_bounds](depth_bounds/README.md)
 [depth_readback](depth_readback/README.md)
 [dispatch](dispatch/README.md)
 [dispatch_indirect](dispatch_indirect/README.md)
