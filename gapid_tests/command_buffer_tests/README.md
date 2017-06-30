@@ -33,4 +33,5 @@ command buffers.
 - [vkCmdSetDepthBounds_test](vkCmdSetDepthBounds_test/README.md)
 - [vkCmdSetStencilReference_test](vkCmdSetStencilReference_test/README.md)
 - [vkCmdUpdateBuffer_test](vkCmdUpdateBuffer_test/README.md)
+- [vkCmdWriteTimestamp_test](vkCmdWriteTimestamp_test/README.md)
 - [vkQueuePresentKHR_test](vkQueuePresentKHR_test/README.md)
