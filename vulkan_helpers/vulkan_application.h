@@ -124,6 +124,8 @@ class VulkanGraphicsPipeline {
 
   void SetCullMode(VkCullModeFlagBits mode);
 
+  void SetFrontFace(VkFrontFace face);
+
   // Sets the rasterization fill mode of the polygon.
   void SetRasterizationFill(VkPolygonMode mode);
 
@@ -402,6 +404,11 @@ class VulkanApplication {
   // device-only image Arena.
   containers::unique_ptr<Image> CreateAndBindImage(
       const VkImageCreateInfo* create_info);
+  // Create an image view for the given image, with the same format of the
+  // given image and the given image view type, subresource range.
+  containers::unique_ptr<VkImageView> CreateImageView(
+      const Image* image, VkImageViewType view_type,
+      const VkImageSubresourceRange& subresource_range);
   // Creates a buffer from the given create_info, and binds memory from the
   // host-visible buffer Arena. Also maps the memory needed for the device.
   containers::unique_ptr<Buffer> CreateAndBindHostBuffer(

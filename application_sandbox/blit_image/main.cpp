@@ -180,24 +180,9 @@ class BlitImageSample : public sample_application::Sample<CubeFrameData> {
     };
     frame_data->blit_src_ =
         app()->CreateAndBindImage(&blit_src_image_create_info);
-    VkImageViewCreateInfo blit_src_image_view_create_info{
-        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  // sType
-        nullptr,                                   // pNext
-        0,                                         // flags
-        *frame_data->blit_src_,                    // image
-        VK_IMAGE_VIEW_TYPE_2D,                     // viewType
-        app()->swapchain().format(),               // format
-        {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
-         VK_COMPONENT_SWIZZLE_A},
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
-    ::VkImageView raw_view;
-    LOG_ASSERT(==, data_->log.get(), VK_SUCCESS,
-               app()->device()->vkCreateImageView(
-                   app()->device(), &blit_src_image_view_create_info, nullptr,
-                   &raw_view));
-    frame_data->blit_src_view_ = containers::make_unique<vulkan::VkImageView>(
-        data_->root_allocator,
-        vulkan::VkImageView(raw_view, nullptr, &app()->device()));
+    frame_data->blit_src_view_ = app()->CreateImageView(
+        frame_data->blit_src_.get(), VK_IMAGE_VIEW_TYPE_2D,
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1});
 
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
