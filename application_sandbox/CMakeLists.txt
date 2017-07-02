@@ -47,6 +47,7 @@ add_subdirectory(stencil)
 add_subdirectory(set_event)
 add_subdirectory(textured_cube)
 add_subdirectory(wireframe)
+add_subdirectory(write_timestamp)
 
 if (NOT ANDROID)
     string(REPLACE ";" "\n" ALL_SAMPLE_NAMES "${ALL_SAMPLE_NAMES}")

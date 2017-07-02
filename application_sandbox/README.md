@@ -28,3 +28,4 @@ output that demonstrates the feature.
 [stencil](stencil/README.md)
 [textured_cube](textured_cube/README.md)
 [wireframe](wireframe/README.md)
+[write_timestamp](write_timestamp/README.md)

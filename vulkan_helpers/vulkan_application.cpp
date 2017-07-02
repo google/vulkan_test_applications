@@ -327,7 +327,6 @@ containers::unique_ptr<VkImageView> VulkanApplication::CreateImageView(
       allocator_, VkImageView(raw_view, nullptr, &device_));
 }
 
-
 containers::unique_ptr<VulkanApplication::Buffer>
 VulkanApplication::CreateAndBindBuffer(VulkanArena* heap,
                                        const VkBufferCreateInfo* create_info) {
@@ -420,6 +419,26 @@ VulkanApplication::CreateAndBindDefaultExclusiveDeviceBuffer(
       /* pQueueFamilyIndices = */ nullptr,
   };
   return CreateAndBindDeviceBuffer(&create_info);
+}
+
+containers::unique_ptr<VkBufferView> VulkanApplication::CreateBufferView(
+    ::VkBuffer buffer, VkFormat format, VkDeviceSize offset,
+    VkDeviceSize range) {
+  VkBufferViewCreateInfo create_info{
+      VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,  // sType
+      nullptr,                                   // pNext
+      0,                                         // flags
+      buffer,                                    // buffer
+      format,                                    // format
+      offset,                                    // offset
+      range,                                     // range
+  };
+  ::VkBufferView raw_view;
+  LOG_ASSERT(==, log_, device_->vkCreateBufferView(device_, &create_info,
+                                                   nullptr, &raw_view),
+             VK_SUCCESS);
+  return containers::make_unique<vulkan::VkBufferView>(
+      allocator_, VkBufferView(raw_view, nullptr, &device_));
 }
 
 std::tuple<bool, VkCommandBuffer, BufferPointer>

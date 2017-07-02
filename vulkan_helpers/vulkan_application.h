@@ -436,6 +436,12 @@ class VulkanApplication {
   // VkSharingMode set to VK_SHARING_MODE_EXCLUSIVE.
   containers::unique_ptr<Buffer> CreateAndBindDefaultExclusiveDeviceBuffer(
       VkDeviceSize size, VkBufferUsageFlags usages);
+  // Create a buffer view for the given buffer, with the same format of the
+  // given buffer and the given buffer view offset and range.
+  containers::unique_ptr<VkBufferView> CreateBufferView(::VkBuffer buffer,
+                                                        VkFormat format,
+                                                        VkDeviceSize offset,
+                                                        VkDeviceSize range);
 
   // Creates a command buffer, appends commands to fill the given |data| to the
   // specified |image| and submit the command buffer to application's render
