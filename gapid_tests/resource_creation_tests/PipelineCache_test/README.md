@@ -1,4 +1,4 @@
-# vkCreatePipelineCache / vkDestroyPipelineCache
+# vkCreatePipelineCache / vkDestroyPipelineCache / vkMergePipelineCaches
 
 ## Signatures
 ```c++
@@ -11,6 +11,11 @@ void vkDestroyPipelineCache(
     VkDevice                                    device,
     VkPipelineCache                             pipelineCache,
     const VkAllocationCallbacks*                pAllocator);
+VkResult vkMergePipelineCaches(
+    VkDevice                                    device,
+    VkPipelineCache                             dstCache,
+    uint32_t                                    srcCacheCount,
+    const VkPipelineCache*                      pSrcCaches);
 ```
 
 ## VkPipelineCacheCreateInfo
@@ -31,8 +36,15 @@ According to the Vulkan spec:
 - `flags` **must** be 0
 - `initialDataSize` **may** be 0 or >0
 - `pInitialData` is a pointer to `initialDataSize` bytes.
+- `dstCache` **must** NOT appear in the list of source caches (`pSrcCaches`)
+- `srcCacheCount` **must** be greater than `0`
+- `dstCache` and each element of `pSrcCaches` **must** have been created,
+  allocated, or retrieved from `device`
 
 
 These tests should test the following cases:
 - [x] `initialDataSize` == 0
 - [ ] `initialDataSize` > 0
+- [x] `dstCache` of valid value
+- [x] `srcCacheCount` > 0
+- [x] `pSrcCaches` of valid value

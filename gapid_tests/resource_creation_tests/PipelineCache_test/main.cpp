@@ -46,6 +46,36 @@ int main_entry(const entry::entry_data* data) {
     device->vkDestroyPipelineCache(device, cache, nullptr);
   }
 
+  { // Merge pipeline caches
+    VkPipelineCacheCreateInfo create_info{
+        VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,  // sType
+        nullptr,                                       // pNext
+        0,                                             // flags
+        0,                                             // initialDataSize
+        nullptr                                        // pInitialData
+    };
+    VkPipelineCache caches[3];
+    LOG_ASSERT(
+        ==, data->log,
+        device->vkCreatePipelineCache(device, &create_info, nullptr, &caches[0]),
+        VK_SUCCESS);
+    LOG_ASSERT(
+        ==, data->log,
+        device->vkCreatePipelineCache(device, &create_info, nullptr, &caches[1]),
+        VK_SUCCESS);
+    LOG_ASSERT(
+        ==, data->log,
+        device->vkCreatePipelineCache(device, &create_info, nullptr, &caches[2]),
+        VK_SUCCESS);
+    LOG_ASSERT(
+        ==, data->log,
+        device->vkMergePipelineCaches(device, caches[0], 2, &caches[1]),
+        VK_SUCCESS);
+    device->vkDestroyPipelineCache(device, caches[0], nullptr);
+    device->vkDestroyPipelineCache(device, caches[1], nullptr);
+    device->vkDestroyPipelineCache(device, caches[2], nullptr);
+  }
+
   data->log->LogInfo("Application Shutdown");
   return 0;
 }
