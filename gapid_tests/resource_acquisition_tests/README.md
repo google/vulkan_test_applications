@@ -6,6 +6,7 @@ the acquisition of vulkan resources.
 # Tests
 - [vkAcquireNextImageKHR_test](vkAcquireNextImageKHR_test/README.md)
 - [vkGetDeviceQueue](vkGetDeviceQueue/README.md)
+- [vkGetImageSparseMemoryRequirements_test](vkGetImageSparseMemoryRequirements_test/README.md)
 - [vkGetImageSubresourceLayout_test](vkGetImageSubresourceLayout_test/README.md)
 - [vkGetPipelineCacheData_test](vkGetPipelineCacheData_test/README.md)
 - [vkGetQueryPoolResults_test](vkGetQueryPoolResults_test/README.md)
