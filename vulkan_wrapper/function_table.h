@@ -65,10 +65,12 @@ class InstanceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCreateAndroidSurfaceKHR)
 #elif defined __linux__
         ,
-        CONSTRUCT_LAZY_FUNCTION(vkCreateXcbSurfaceKHR)
+        CONSTRUCT_LAZY_FUNCTION(vkCreateXcbSurfaceKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceXcbPresentationSupportKHR)
 #elif defined _WIN32
         ,
-        CONSTRUCT_LAZY_FUNCTION(vkCreateWin32SurfaceKHR)
+        CONSTRUCT_LAZY_FUNCTION(vkCreateWin32SurfaceKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceWin32PresentationSupportKHR)
 #endif
 #undef CONSTRUCT_LAZY_FUNCTION
   {
@@ -110,8 +112,10 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkCreateAndroidSurfaceKHR);
 #elif defined __linux__
   LAZY_FUNCTION(vkCreateXcbSurfaceKHR);
+  LAZY_FUNCTION(vkGetPhysicalDeviceXcbPresentationSupportKHR);
 #elif defined _WIN32
   LAZY_FUNCTION(vkCreateWin32SurfaceKHR);
+  LAZY_FUNCTION(vkGetPhysicalDeviceWin32PresentationSupportKHR);
 #endif
 #undef LAZY_FUNCTION
 };
