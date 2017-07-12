@@ -30,7 +30,8 @@
 namespace {
 // Records a vkCmdWaitEvents command without any memory barrier in the command
 // buffer.
-void AddCmdWaitEvents(vulkan::VkCommandBuffer* cmd_buf_ptr,
+void AddCmdWaitEvents(containers::Allocator* allocator,
+                      vulkan::VkCommandBuffer* cmd_buf_ptr,
                       std::initializer_list<::VkEvent> wait_events,
                       VkPipelineStageFlags src_stages,
                       VkPipelineStageFlags dst_stages) {
@@ -38,7 +39,7 @@ void AddCmdWaitEvents(vulkan::VkCommandBuffer* cmd_buf_ptr,
     return;
   }
   auto& cmd_buf = *cmd_buf_ptr;
-  std::vector<::VkEvent> events(wait_events);
+  containers::vector<::VkEvent> events(wait_events, allocator);
   cmd_buf->vkCmdWaitEvents(cmd_buf,
                            events.size(),  // eventCount
                            events.data(),  // pEvents
@@ -50,7 +51,7 @@ void AddCmdWaitEvents(vulkan::VkCommandBuffer* cmd_buf_ptr,
                            nullptr,        // pBufferMemoryBarriers
                            0,              // imageMemoryBarrierCount
                            nullptr         // pImageMemoryBarriers
-                           );
+  );
 }
 
 // Records a vkCmdCopyBuffer to the command buffer, which copies from the src
@@ -140,7 +141,8 @@ int main_entry(const entry::entry_data* data) {
     // submit -> update -> set -> wait idle
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x00000000;
     app.BeginCommandBuffer(&t.cmd_buf);
-    AddCmdWaitEvents(&t.cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
+    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x},
+                     VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
     app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
@@ -154,7 +156,8 @@ int main_entry(const entry::entry_data* data) {
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x22222222;
     app.BeginCommandBuffer(&t.cmd_buf);
     t.device->vkSetEvent(t.device, event_x);
-    AddCmdWaitEvents(&t.cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
+    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x},
+                     VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
     app.EndAndSubmitCommandBuffer(&t.cmd_buf, &t.queue, {}, {}, {},
@@ -168,7 +171,7 @@ int main_entry(const entry::entry_data* data) {
                              VK_PIPELINE_STAGE_TRANSFER_BIT);
     t.cmd_buf->vkCmdSetEvent(t.cmd_buf, event_y,
                              VK_PIPELINE_STAGE_TRANSFER_BIT);
-    AddCmdWaitEvents(&t.cmd_buf, {event_x, event_y},
+    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x, event_y},
                      VK_PIPELINE_STAGE_TRANSFER_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
@@ -185,7 +188,7 @@ int main_entry(const entry::entry_data* data) {
                                   ::VkFence(VK_NULL_HANDLE));
     auto another_cmd_buf = app.GetCommandBuffer();
     app.BeginCommandBuffer(&another_cmd_buf);
-    AddCmdWaitEvents(&another_cmd_buf, {event_x},
+    AddCmdWaitEvents(data->root_allocator, &another_cmd_buf, {event_x},
                      VK_PIPELINE_STAGE_TRANSFER_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&another_cmd_buf, *t.src_buf, *t.dst_buf);
@@ -206,7 +209,8 @@ int main_entry(const entry::entry_data* data) {
     // Thread 1: submit [vkCmdWaitEvents] ->        -> t.queue wait idle
     // Thread 2:                            setEvent
     app.BeginCommandBuffer(&t.cmd_buf);
-    AddCmdWaitEvents(&t.cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
+    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x},
+                     VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
     std::function<void(std::function<void()>)> run_first =
@@ -227,7 +231,8 @@ int main_entry(const entry::entry_data* data) {
     // idle
     // Thread 2:                                           setEvent(s)
     app.BeginCommandBuffer(&t.cmd_buf);
-    AddCmdWaitEvents(&t.cmd_buf, {event_x, event_y}, VK_PIPELINE_STAGE_HOST_BIT,
+    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x, event_y},
+                     VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
     run_second = [&]() {
@@ -247,7 +252,8 @@ int main_entry(const entry::entry_data* data) {
       vulkan::VkSemaphore semaphore = vulkan::CreateSemaphore(&t.device);
       VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
       app.BeginCommandBuffer(&t.cmd_buf);
-      AddCmdWaitEvents(&t.cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
+      AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x},
+                       VK_PIPELINE_STAGE_HOST_BIT,
                        VK_PIPELINE_STAGE_TRANSFER_BIT);
       AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
       t.cmd_buf->vkCmdResetEvent(t.cmd_buf, event_x,
@@ -256,7 +262,8 @@ int main_entry(const entry::entry_data* data) {
                                     {semaphore.get_raw_object()}, fence);
       auto another_cmd_buf = app.GetCommandBuffer();
       app.BeginCommandBuffer(&another_cmd_buf);
-      AddCmdWaitEvents(&another_cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
+      AddCmdWaitEvents(data->root_allocator, &another_cmd_buf, {event_x},
+                       VK_PIPELINE_STAGE_HOST_BIT,
                        VK_PIPELINE_STAGE_TRANSFER_BIT);
       AddCmdCopyBuffer(&another_cmd_buf, *t.src_buf, *t.dst_buf);
       app.EndAndSubmitCommandBuffer(&another_cmd_buf, &t.queue,
@@ -279,9 +286,11 @@ int main_entry(const entry::entry_data* data) {
     // Thread 1: submit [wait x, wait y, copy]          -> idle
     // Thread 2:                         set y -> set x
     app.BeginCommandBuffer(&t.cmd_buf);
-    AddCmdWaitEvents(&t.cmd_buf, {event_x}, VK_PIPELINE_STAGE_HOST_BIT,
+    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x},
+                     VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
-    AddCmdWaitEvents(&t.cmd_buf, {event_y}, VK_PIPELINE_STAGE_HOST_BIT,
+    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_y},
+                     VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
     run_first = [&](std::function<void()> start_second_thread) {

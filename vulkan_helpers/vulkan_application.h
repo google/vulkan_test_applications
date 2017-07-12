@@ -29,6 +29,8 @@
 #include "vulkan_wrapper/queue_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
+#include <algorithm>
+
 namespace vulkan {
 struct VulkanModel;
 struct AllocationToken;
@@ -531,9 +533,12 @@ class VulkanApplication {
       std::initializer_list<::VkSemaphore> wait_semaphores,
       std::initializer_list<VkPipelineStageFlags> wait_stages,
       std::initializer_list<::VkSemaphore> signal_semaphores, ::VkFence fence) {
-    std::vector<::VkSemaphore> wait_semaphores_vec(wait_semaphores);
-    std::vector<VkPipelineStageFlags> wait_stages_vec(wait_stages);
-    std::vector<::VkSemaphore> signal_semaphores_vec(signal_semaphores);
+    containers::vector<::VkSemaphore> wait_semaphores_vec(wait_semaphores,
+                                                          allocator_);
+    containers::vector<VkPipelineStageFlags> wait_stages_vec(wait_stages,
+                                                             allocator_);
+    containers::vector<::VkSemaphore> signal_semaphores_vec(signal_semaphores,
+                                                            allocator_);
     (*cmd_buf)->vkEndCommandBuffer(*cmd_buf);
 
     auto& q = *queue;
@@ -731,6 +736,18 @@ class VulkanApplication {
   containers::vector<::VkImage> swapchain_images_;
   std::atomic<bool> should_exit_;
 };
+
+inline containers::vector<uint32_t> GetHostVisibleBufferData(
+    containers::Allocator* allocator, vulkan::VulkanApplication::Buffer* buf) {
+  buf->invalidate();
+  uint32_t* p = reinterpret_cast<uint32_t*>(buf->base_address());
+  containers::vector<uint32_t> data(allocator);
+  data.reserve(static_cast<size_t>(
+      buf->size() / static_cast<VkDeviceSize>(sizeof(uint32_t))));
+  std::for_each(p, p + buf->size() / sizeof(uint32_t),
+                [&data](uint32_t w) { data.push_back(w); });
+  return data;
+}
 
 using BufferPointer = containers::unique_ptr<VulkanApplication::Buffer>;
 using ImagePointer = containers::unique_ptr<VulkanApplication::Image>;

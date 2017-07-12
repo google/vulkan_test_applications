@@ -67,7 +67,8 @@ int main_entry(const entry::entry_data* data) {
       const auto device = physical_devices[i];
       data->log->LogInfo("    Phyiscal Device: ", device);
       uint32_t count = driver_counts[i] - 1;
-      std::vector<VkQueueFamilyProperties> properties(count);
+      containers::vector<VkQueueFamilyProperties> properties(
+          count, data->root_allocator);
       instance->vkGetPhysicalDeviceQueueFamilyProperties(device, &count,
                                                          properties.data());
       LOG_EXPECT(==, data->log, count, driver_counts[i] - 1);
@@ -83,7 +84,8 @@ int main_entry(const entry::entry_data* data) {
       const auto device = physical_devices[i];
       data->log->LogInfo("    Phyiscal Device: ", device);
       auto count = driver_counts[i];
-      std::vector<VkQueueFamilyProperties> properties(count);
+      containers::vector<VkQueueFamilyProperties> properties(
+          count, data->root_allocator);
       instance->vkGetPhysicalDeviceQueueFamilyProperties(device, &count,
                                                          properties.data());
       LOG_EXPECT(==, data->log, properties.size(), driver_counts[i]);
@@ -99,7 +101,8 @@ int main_entry(const entry::entry_data* data) {
       const auto device = physical_devices[i];
       data->log->LogInfo("    Phyiscal Device: ", device);
       uint32_t count = driver_counts[i] + 3;
-      std::vector<VkQueueFamilyProperties> properties(count);
+      containers::vector<VkQueueFamilyProperties> properties(
+          count, data->root_allocator);
       instance->vkGetPhysicalDeviceQueueFamilyProperties(device, &count,
                                                          properties.data());
       LOG_EXPECT(==, data->log, count, driver_counts[i]);
