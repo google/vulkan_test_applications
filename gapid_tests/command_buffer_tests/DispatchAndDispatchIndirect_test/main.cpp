@@ -28,21 +28,6 @@ uint32_t compute_shader[] =
 #include "double_numbers.comp.spv"
     ;
 
-namespace {
-
-std::vector<uint32_t> GetHostVisibleBufferData(
-    vulkan::VulkanApplication::Buffer* buf) {
-  buf->invalidate();
-  uint32_t* p = reinterpret_cast<uint32_t*>(buf->base_address());
-  std::vector<uint32_t> data;
-  data.reserve(static_cast<size_t>(
-    buf->size() / static_cast<VkDeviceSize>(sizeof(uint32_t))));
-  std::for_each(p, p + buf->size() / sizeof(uint32_t),
-                [&data](uint32_t w) { data.push_back(w); });
-  return data;
-}
-}  // anonymous namespace
-
 int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
 
@@ -117,13 +102,15 @@ int main_entry(const entry::entry_data* data) {
     app.BeginCommandBuffer(&cmd_buf);
 
     // Set inital values for the in-buffer and clear the out-buffer
-    std::vector<uint32_t> initial_in_buffer_value(kNumElements, 1);
+    containers::vector<uint32_t> initial_in_buffer_value(kNumElements, 1,
+                                                         data->root_allocator);
     app.FillHostVisibleBuffer(
         &*in_buffer,
         reinterpret_cast<const char*>(initial_in_buffer_value.data()),
         initial_in_buffer_value.size() * sizeof(uint32_t), 0, &cmd_buf,
         VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    std::vector<uint32_t> initial_out_buffer_value(kNumElements, 0);
+    containers::vector<uint32_t> initial_out_buffer_value(kNumElements, 0,
+                                                          data->root_allocator);
     app.FillHostVisibleBuffer(
         &*out_buffer,
         reinterpret_cast<const char*>(initial_out_buffer_value.data()),
@@ -142,7 +129,8 @@ int main_entry(const entry::entry_data* data) {
                    &cmd_buf, &app.render_queue()));
 
     // Check the output values
-    std::vector<uint32_t> output = GetHostVisibleBufferData(&*out_buffer);
+    containers::vector<uint32_t> output =
+        vulkan::GetHostVisibleBufferData(data->root_allocator, &*out_buffer);
     std::for_each(output.begin(), output.end(),
                   [data](uint32_t w) { LOG_EXPECT(==, data->log, 2, w); });
   }
@@ -158,13 +146,15 @@ int main_entry(const entry::entry_data* data) {
     app.BeginCommandBuffer(&cmd_buf);
 
     // Set inital values for the in-buffer and clear the out-buffer
-    std::vector<uint32_t> initial_in_buffer_value(kNumElements, 1);
+    containers::vector<uint32_t> initial_in_buffer_value(kNumElements, 1,
+                                                         data->root_allocator);
     app.FillHostVisibleBuffer(
         &*in_buffer,
         reinterpret_cast<const char*>(initial_in_buffer_value.data()),
         initial_in_buffer_value.size() * sizeof(uint32_t), 0, &cmd_buf,
         VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    std::vector<uint32_t> initial_out_buffer_value(kNumElements, 0);
+    containers::vector<uint32_t> initial_out_buffer_value(kNumElements, 0,
+                                                          data->root_allocator);
     app.FillHostVisibleBuffer(
         &*out_buffer,
         reinterpret_cast<const char*>(initial_out_buffer_value.data()),
@@ -191,7 +181,8 @@ int main_entry(const entry::entry_data* data) {
                    &cmd_buf, &app.render_queue()));
 
     // Check the output values
-    std::vector<uint32_t> output = GetHostVisibleBufferData(&*out_buffer);
+    containers::vector<uint32_t> output =
+        vulkan::GetHostVisibleBufferData(data->root_allocator, &*out_buffer);
     std::for_each(output.begin(), output.end(),
                   [data](uint32_t w) { LOG_EXPECT(==, data->log, 2, w); });
   }
