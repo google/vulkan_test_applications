@@ -13,18 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef SUPPORT_ENTRY_ENTRY_CONFIG_H_
-#define SUPPORT_ENTRY_ENTRY_CONFIG_H_
-#cmakedefine VAR ...
 
-#define DEFAULT_WINDOW_HEIGHT ${DEFAULT_WINDOW_HEIGHT}
-#define DEFAULT_WINDOW_WIDTH ${DEFAULT_WINDOW_WIDTH}
-
-#cmakedefine01 FIXED_TIMESTEP
-#cmakedefine01 PREFER_SEPARATE_PRESENT
-
-#define OUTPUT_FILE "${OUTPUT_FILE}"
-#define SHADER_COMPILER "${SHADER_COMPILER}"
-#define OUTPUT_FRAME ${OUTPUT_FRAME}
-
-#endif  // SUPPORT_ENTRY_ENTRY_CONFIG_H_
+float4 main(float4 input: COLOR): SV_TARGET
+{
+  return input;
+}

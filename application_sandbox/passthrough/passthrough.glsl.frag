@@ -13,18 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef SUPPORT_ENTRY_ENTRY_CONFIG_H_
-#define SUPPORT_ENTRY_ENTRY_CONFIG_H_
-#cmakedefine VAR ...
 
-#define DEFAULT_WINDOW_HEIGHT ${DEFAULT_WINDOW_HEIGHT}
-#define DEFAULT_WINDOW_WIDTH ${DEFAULT_WINDOW_WIDTH}
+#version 450
 
-#cmakedefine01 FIXED_TIMESTEP
-#cmakedefine01 PREFER_SEPARATE_PRESENT
+layout (location = 0) in vec4 in_color;
+layout (location = 0) out vec4 out_color;
 
-#define OUTPUT_FILE "${OUTPUT_FILE}"
-#define SHADER_COMPILER "${SHADER_COMPILER}"
-#define OUTPUT_FRAME ${OUTPUT_FRAME}
-
-#endif  // SUPPORT_ENTRY_ENTRY_CONFIG_H_
+void main() {
+    out_color = in_color;
+}

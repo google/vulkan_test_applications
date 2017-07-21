@@ -56,6 +56,7 @@ struct application_options {
   bool prefer_separate_present;
   const char* output_file;
   int32_t output_frame;
+  const char* shader_compiler;
 };
 
 struct entry_data {

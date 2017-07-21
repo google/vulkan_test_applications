@@ -27,6 +27,10 @@ if (NOT OUTPUT_FILE)
     set(OUTPUT_FILE output.ppm)
 endif()
 
+if (NOT SHADER_COMPILER)
+    set(SHADER_COMPILER glslc-glsl)
+endif()
+
 if (NOT DEFAULT_WINDOW_WIDTH)
   set(DEFAULT_WINDOW_WIDTH 100)
 endif()

@@ -384,7 +384,6 @@ function(add_shader_library target)
         file(RELATIVE_PATH rel_pos ${CMAKE_CURRENT_SOURCE_DIR} ${temp})
         set(output_file ${CMAKE_CURRENT_BINARY_DIR}/${rel_pos}.spv)
         get_filename_component(output_file ${output_file} ABSOLUTE)
-        list(APPEND output_files ${output_file})
 
 
         if (NOT EXISTS ${output_file}.d.cmake)
@@ -411,22 +410,87 @@ function(add_shader_library target)
           endforeach()
         endif()
 
-        add_custom_command (
-          OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${rel_pos}.spv
-          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-          COMMENT "Compiling SPIR-V binary ${shader}"
-          DEPENDS ${shader} ${FILE_DEPS}
-            ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
-          COMMAND ${CMAKE_GLSL_COMPILER} -mfmt=c -o ${output_file} -c ${temp} -MD
-            ${ADDITIONAL_ARGS}
-          COMMAND ${PYTHON_EXECUTABLE}
-            ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
-            ${output_file}.d
-          COMMAND ${CMAKE_COMMAND} -E
-            copy_if_different
-              ${output_file}.d.cmake.tmp
-              ${output_file}.d.cmake
-        )
+        # Compile HLSL shaders through glslc and DXC
+        get_filename_component(shader_name ${shader} NAME)
+
+        if (${shader_name} MATCHES ".*\\.hlsl\\..*")
+          message(STATUS "Found HLSL Shader: ${shader_name}")
+          ####################################
+          # Compile HLSL using DXC
+          ####################################
+          string(REPLACE ".hlsl." ".dxc.hlsl." dxc_hlsl_filename ${output_file})
+          if (NOT CMAKE_DXC_COMPILER)
+            # Create an empty .spv file as placeholder so the C++ code compiles.
+            message(STATUS "Touching file ${dxc_hlsl_filename}")
+            file(WRITE ${dxc_hlsl_filename} "{}")
+          else()
+            # We currently only support fragment shaders and vertex shaders.
+            # TODO: Set the DXC target environment for other shader kinds.
+            if (${shader} MATCHES ".*\\.frag")
+              set(DXC_TARGET_ENV "ps_6_0")
+            elseif(${shader} MATCHES ".*\\.vert")
+              set(DXC_TARGET_ENV "vs_6_0")
+            endif()
+            message(STATUS "shader is: ${shader}")
+            message(STATUS "temp is: ${temp}")
+            message(STATUS "Output file is: ${dxc_hlsl_filename}")
+            message(STATUS "target env: ${DXC_TARGET_ENV}")
+            add_custom_command (
+              OUTPUT ${dxc_hlsl_filename}
+              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+              COMMENT "Compiling HLSL to SPIR-V binary using DXC: ${shader}"
+              DEPENDS ${shader} ${FILE_DEPS} ${VulkanTestApplications_SOURCE_DIR}/tools/spirv_c_mfmt.py
+              COMMAND ${CMAKE_DXC_COMPILER} -spirv -Fo ${dxc_hlsl_filename} -E main -T ${DXC_TARGET_ENV} ${temp}
+              COMMAND ${PYTHON_EXECUTABLE} ${VulkanTestApplications_SOURCE_DIR}/tools/spirv_c_mfmt.py ${dxc_hlsl_filename} --output-file=${dxc_hlsl_filename}
+            )
+          endif()
+          list(APPEND output_files ${dxc_hlsl_filename})
+
+          ####################################
+          # Compile HLSL using glslc
+          ####################################
+          string(REPLACE ".hlsl." ".glslc.hlsl." glslc_hlsl_filename ${output_file})
+          message(STATUS "output file name: ${glslc_hlsl_filename}")
+          message(STATUS "input file name: ${temp}")
+          add_custom_command (
+            OUTPUT ${glslc_hlsl_filename}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Compiling HLSL to SPIR-V binary using glslc: ${shader}"
+            DEPENDS ${shader} ${FILE_DEPS}
+              ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
+            COMMAND ${CMAKE_GLSL_COMPILER} -mfmt=c -x hlsl -o ${glslc_hlsl_filename} -c ${temp} -MD
+            COMMAND ${PYTHON_EXECUTABLE}
+              ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
+              ${glslc_hlsl_filename}.d
+            COMMAND ${CMAKE_COMMAND} -E
+              copy_if_different
+                ${glslc_hlsl_filename}.d.cmake.tmp
+                ${glslc_hlsl_filename}.d.cmake
+          )
+          list(APPEND output_files ${glslc_hlsl_filename})
+
+        ####################################
+        # Compile GLSL shaders through glslc
+        ####################################
+        else()
+          add_custom_command (
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${rel_pos}.spv
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Compiling SPIR-V binary ${shader}"
+            DEPENDS ${shader} ${FILE_DEPS}
+              ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
+            COMMAND ${CMAKE_GLSL_COMPILER} -mfmt=c -o ${output_file} -c ${temp} -MD
+              ${ADDITIONAL_ARGS}
+            COMMAND ${PYTHON_EXECUTABLE}
+              ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
+              ${output_file}.d
+            COMMAND ${CMAKE_COMMAND} -E
+              copy_if_different
+                ${output_file}.d.cmake.tmp
+                ${output_file}.d.cmake
+          )
+          list(APPEND output_files ${output_file})
+        endif()
       endif()
     endforeach()
     add_custom_target(${target}
