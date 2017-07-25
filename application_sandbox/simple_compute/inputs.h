@@ -16,5 +16,5 @@
 // Leave this define here, it is needed for the loop unroller
 
 #define LOCAL_X_SIZE 128
-const uint kLocalXSize = LOCAL_X_SIZE;
-const uint kNumStorageBuffers = 12;
+const int kLocalXSize = LOCAL_X_SIZE;
+const int kNumStorageBuffers = 12;
