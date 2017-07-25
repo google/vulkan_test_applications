@@ -43,9 +43,8 @@ int main_entry(const entry::entry_data* data) {
       nullptr,                            // pImmutableSamplers
   };
 
-  containers::vector<VkDescriptorBufferInfo> buffer_infos(kNumStorageBuffers,
-                                                          data->root_allocator);
-
+  containers::vector<VkDescriptorBufferInfo> buffer_infos(data->root_allocator);
+  buffer_infos.resize(kNumStorageBuffers);
   // Both input and output buffers have 512 32-bit integers.
   const uint32_t kBufferElements = 512;
   const uint32_t kBufferSize = kBufferElements * sizeof(uint32_t);
