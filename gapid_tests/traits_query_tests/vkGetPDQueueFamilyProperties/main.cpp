@@ -31,8 +31,8 @@ int main_entry(const entry::entry_data* data) {
 
   data->log->LogInfo("API: vkGetPhysicalDeviceQueueFamilyProperties");
 
-  containers::vector<uint32_t> driver_counts(physical_device_count,
-                                             data->root_allocator);
+  containers::vector<uint32_t> driver_counts(data->root_allocator);
+  driver_counts.resize(physical_device_count);
   {
     data->log->LogInfo("  Case: pQueueFamilyProperties == nullptr");
     for (uint32_t i = 0; i < physical_device_count; ++i) {
