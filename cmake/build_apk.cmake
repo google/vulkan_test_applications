@@ -56,6 +56,10 @@ set(NON_CONFIGURABLE_ANDROID_SOURCES
 if (NOT CMAKE_GLSL_COMPILER)
   set(CMAKE_GLSL_COMPILER glslc)
 endif()
+if (NOT CMAKE_CL_COMPILER)
+  set(CMAKE_CL_COMPILER clspv)
+  message(STATUS "Assuming OpenCL C compiler is ${CMAKE_CL_COMPILER}")
+endif()
 
 SET(DEFAULT_WINDOW_WIDTH ${DEFAULT_WINDOW_WIDTH} CACHE INT
     "Default window width for platforms that have resizable windows")
@@ -379,13 +383,12 @@ function(add_shader_library target)
     set(output_files)
     foreach(shader ${LIB_SOURCES})
       get_filename_component(suffix ${shader} EXT)
-      if (${suffix} MATCHES "\\.vert|\\.frag|\\.geom|\\.comp|\\.tesc|\\.tese")
+      if (${suffix} MATCHES "\\.vert|\\.frag|\\.geom|\\.comp|\\.tesc|\\.tese|\\.cl")
         get_filename_component(temp ${shader} ABSOLUTE)
         file(RELATIVE_PATH rel_pos ${CMAKE_CURRENT_SOURCE_DIR} ${temp})
         set(output_file ${CMAKE_CURRENT_BINARY_DIR}/${rel_pos}.spv)
         get_filename_component(output_file ${output_file} ABSOLUTE)
         list(APPEND output_files ${output_file})
-
 
         if (NOT EXISTS ${output_file}.d.cmake)
             execute_process(
@@ -411,22 +414,34 @@ function(add_shader_library target)
           endforeach()
         endif()
 
-        add_custom_command (
-          OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${rel_pos}.spv
-          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-          COMMENT "Compiling SPIR-V binary ${shader}"
-          DEPENDS ${shader} ${FILE_DEPS}
-            ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
-          COMMAND ${CMAKE_GLSL_COMPILER} -mfmt=c -o ${output_file} -c ${temp} -MD
-            ${ADDITIONAL_ARGS}
-          COMMAND ${PYTHON_EXECUTABLE}
-            ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
-            ${output_file}.d
-          COMMAND ${CMAKE_COMMAND} -E
-            copy_if_different
-              ${output_file}.d.cmake.tmp
-              ${output_file}.d.cmake
-        )
+        if (${suffix} MATCHES "\\.vert|\\.frag|\\.geom|\\.comp|\\.tesc|\\.tese")
+          add_custom_command (
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${rel_pos}.spv
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Compiling SPIR-V binary ${shader}"
+            DEPENDS ${shader} ${FILE_DEPS}
+              ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
+            COMMAND ${CMAKE_GLSL_COMPILER} -mfmt=c -o ${output_file} -c ${temp} -MD
+              ${ADDITIONAL_ARGS}
+            COMMAND ${PYTHON_EXECUTABLE}
+              ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
+              ${output_file}.d
+            COMMAND ${CMAKE_COMMAND} -E
+              copy_if_different
+                ${output_file}.d.cmake.tmp
+                ${output_file}.d.cmake
+          )
+        elseif(${suffix} MATCHES ".cl")
+          add_custom_command (
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${rel_pos}.spv
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Compiling SPIR-V binary ${shader}"
+            DEPENDS ${shader} ${FILE_DEPS}
+              ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
+            # TODO(dneto): Handle include dependencies and include directories.
+            COMMAND ${CMAKE_CL_COMPILER} -mfmt=c -o ${output_file} ${temp}
+          )
+        endif()
       endif()
     endforeach()
     add_custom_target(${target}
