@@ -60,6 +60,10 @@ if (NOT CMAKE_CL_COMPILER)
   set(CMAKE_CL_COMPILER clspv)
   message(STATUS "Assuming OpenCL C compiler is ${CMAKE_CL_COMPILER}")
 endif()
+if (NOT CMAKE_SPIRV_ASSEMBLER)
+  set(CMAKE_SPIRV_ASSEMBLER spirv-as)
+  message(STATUS "Assuming SPIR-V assembler is ${CMAKE_SPIRV_ASSEMBLER}")
+endif()
 
 SET(DEFAULT_WINDOW_WIDTH ${DEFAULT_WINDOW_WIDTH} CACHE INT
     "Default window width for platforms that have resizable windows")
@@ -383,7 +387,7 @@ function(add_shader_library target)
     set(output_files)
     foreach(shader ${LIB_SOURCES})
       get_filename_component(suffix ${shader} EXT)
-      if (${suffix} MATCHES "\\.vert|\\.frag|\\.geom|\\.comp|\\.tesc|\\.tese|\\.cl")
+      if (${suffix} MATCHES "\\.vert|\\.frag|\\.geom|\\.comp|\\.tesc|\\.tese|\\.cl|\\.spvasm")
         get_filename_component(temp ${shader} ABSOLUTE)
         file(RELATIVE_PATH rel_pos ${CMAKE_CURRENT_SOURCE_DIR} ${temp})
         set(output_file ${CMAKE_CURRENT_BINARY_DIR}/${rel_pos}.spv)
@@ -440,6 +444,17 @@ function(add_shader_library target)
               ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
             # TODO(dneto): Handle include dependencies and include directories.
             COMMAND ${CMAKE_CL_COMPILER} -mfmt=c -o ${output_file} ${temp}
+          )
+        elseif(${suffix} MATCHES ".spvasm")
+          add_custom_command (
+            OUTPUT ${output_file}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Compiling SPIR-V binary ${shader}"
+            COMMAND ${CMAKE_SPIRV_ASSEMBLER} -o ${output_file}.spv ${temp}
+            COMMAND ${PYTHON_EXECUTABLE}
+               ${VulkanTestApplications_SOURCE_DIR}/cmake/convert_spv_to_c.py
+               -o ${output_file}
+               ${output_file}.spv
           )
         endif()
       endif()
