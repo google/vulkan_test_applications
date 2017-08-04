@@ -15,11 +15,12 @@
 add_shader_library(tiny_compute_shaders
   SOURCES
     add_numbers.comp
+    add_numbers.cl
   SHADER_DEPS
     shader_library
 )
 
-add_vulkan_sample_application(tiny_compute
+add_vulkan_sample_application(tiny_compute_glsl
   SOURCES main.cpp
     inputs.h
   LIBS
@@ -27,3 +28,14 @@ add_vulkan_sample_application(tiny_compute
   SHADERS
     tiny_compute_shaders
 )
+set_target_properties(tiny_compute_glsl PROPERTIES COMPILE_FLAGS "-DUSE_CL=0")
+
+add_vulkan_sample_application(tiny_compute_cl
+  SOURCES main.cpp
+    inputs.h
+  LIBS
+    vulkan_helpers
+  SHADERS
+    tiny_compute_shaders
+)
+set_target_properties(tiny_compute_cl PROPERTIES COMPILE_FLAGS "-DUSE_CL=1")

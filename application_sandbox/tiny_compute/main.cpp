@@ -19,8 +19,21 @@
 #include "vulkan_helpers/vulkan_application.h"
 
 uint32_t compute_shader[] =
+#if USE_CL
+#include "add_numbers.cl.spv"
+#else
 #include "add_numbers.comp.spv"
+#endif
     ;
+
+#if USE_CL
+// clspv does not allow a kernel function to be named "main".
+#define KERNEL_NAME "adder"
+#else
+// GLSL requires the shader entry point to be named "main".
+#define KERNEL_NAME "main"
+#endif
+
 
 enum {
   // We have use input buffers, and one output buffer.
@@ -99,7 +112,7 @@ int main_entry(const entry::entry_data* data) {
               VkShaderModuleCreateInfo{
                   VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, 0,
                   sizeof(compute_shader), compute_shader},
-              "main"));
+              KERNEL_NAME));
   {
     // 1. vkCmdDispatch
     auto cmd_buf = app.GetCommandBuffer();
