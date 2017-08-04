@@ -46,7 +46,7 @@ uint32_t compute_shader[] =
 
 
 enum {
-  // We have use input buffers, and one output buffer.
+  // We use two input buffers, and one output buffer.
   kNumStorageBuffers = 3
 };
 
