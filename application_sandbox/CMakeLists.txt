@@ -47,6 +47,7 @@ add_subdirectory(simple_compute)
 add_subdirectory(stencil)
 add_subdirectory(set_event)
 add_subdirectory(textured_cube)
+add_subdirectory(tiny_compute)
 add_subdirectory(wireframe)
 add_subdirectory(write_timestamp)
 
