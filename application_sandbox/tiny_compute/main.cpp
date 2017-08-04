@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
 #include "inputs.h"
 #include "support/entry/entry.h"
@@ -21,6 +22,8 @@
 uint32_t compute_shader[] =
 #if USE_CL
 #include "add_numbers.cl.spv"
+#elif USE_SPVASM
+#include "add_numbers.spvasm.spv"
 #else
 #include "add_numbers.comp.spv"
 #endif
@@ -29,9 +32,16 @@ uint32_t compute_shader[] =
 #if USE_CL
 // clspv does not allow a kernel function to be named "main".
 #define KERNEL_NAME "adder"
+#define EXTENSIONS  {"VK_KHR_storage_buffer_storage_class","VK_KHR_variable_pointers"}
+#elif USE_SPVASM
+// Use a different entry point name to be sure I'm running
+// the right example.
+#define KERNEL_NAME "asmadder"
+#define EXTENSIONS  {"VK_KHR_storage_buffer_storage_class", "VK_KHR_variable_pointers"}
 #else
 // GLSL requires the shader entry point to be named "main".
 #define KERNEL_NAME "main"
+#define EXTENSIONS  {}
 #endif
 
 
@@ -45,7 +55,8 @@ enum {
 int main_entry(const entry::entry_data* data) {
   data->log->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data,
+                                EXTENSIONS);
   vulkan::VkDevice& device = app.device();
 
   const uint32_t kOutputBuffer =

@@ -16,6 +16,7 @@ add_shader_library(tiny_compute_shaders
   SOURCES
     add_numbers.comp
     add_numbers.cl
+    add_numbers.spvasm
   SHADER_DEPS
     shader_library
 )
@@ -39,3 +40,13 @@ add_vulkan_sample_application(tiny_compute_cl
     tiny_compute_shaders
 )
 set_target_properties(tiny_compute_cl PROPERTIES COMPILE_FLAGS "-DUSE_CL=1")
+
+add_vulkan_sample_application(tiny_compute_spvasm
+  SOURCES main.cpp
+    inputs.h
+  LIBS
+    vulkan_helpers
+  SHADERS
+    tiny_compute_shaders
+)
+set_target_properties(tiny_compute_spvasm PROPERTIES COMPILE_FLAGS "-DUSE_SPVASM=1")
