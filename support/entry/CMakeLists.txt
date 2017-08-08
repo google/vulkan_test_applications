@@ -46,6 +46,7 @@ SET(DEFAULT_WINDOW_HEIGHT ${DEFAULT_WINDOW_HEIGHT} CACHE INT
 
 SET(OUTPUT_FRAME ${OUTPUT_FRAME} CACHE INT "Default output_frame value.")
 SET(OUTPUT_FILE ${OUTPUT_FILE} CACHE STRING "Output file for output_frame.")
+SET(SHADER_COMPILER ${SHADER_COMPILER} CACHE STRING "Shader language and compiler to use.")
 
 option(FIXED_TIMESTEP
     "Should the application run with a fixed timestep (0.1s)" ${FIXED_TIMESTEP})

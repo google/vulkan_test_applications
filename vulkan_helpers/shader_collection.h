@@ -29,7 +29,7 @@ namespace vulkan {
 class ShaderCollection {
  public:
   using u32vec = std::vector<uint32_t>;
-  ShaderCollection(const char* shader_compiler,
+  ShaderCollection(logging::Logger* log, const char* shader_compiler,
                    u32vec& glslc_glsl_vertex_shader,
                    u32vec& glslc_glsl_fragment_shader,
                    u32vec& glslc_hlsl_vertex_shader,
@@ -40,20 +40,20 @@ class ShaderCollection {
     if (strncmp(shader_compiler, "glslc-glsl", 10) == 0) {
       vertex_shader = glslc_glsl_vertex_shader.data();
       fragment_shader = glslc_glsl_fragment_shader.data();
-      vertex_shader_word_count = glslc_glsl_vertex_shader.size();
-      fragment_shader_word_count = glslc_glsl_fragment_shader.size();
+      vertex_shader_word_count = (uint32_t)glslc_glsl_vertex_shader.size();
+      fragment_shader_word_count = (uint32_t)glslc_glsl_fragment_shader.size();
     } else if (strncmp(shader_compiler, "glslc-hlsl", 10) == 0) {
       vertex_shader = glslc_hlsl_vertex_shader.data();
       fragment_shader = glslc_hlsl_fragment_shader.data();
-      vertex_shader_word_count = glslc_hlsl_vertex_shader.size();
-      fragment_shader_word_count = glslc_hlsl_fragment_shader.size();
+      vertex_shader_word_count = (uint32_t)glslc_hlsl_vertex_shader.size();
+      fragment_shader_word_count = (uint32_t)glslc_hlsl_fragment_shader.size();
     } else if (strncmp(shader_compiler, "dxc-hlsl", 8) == 0) {
       vertex_shader = dxc_hlsl_vertex_shader.data();
       fragment_shader = dxc_hlsl_fragment_shader.data();
-      vertex_shader_word_count = dxc_hlsl_vertex_shader.size();
-      fragment_shader_word_count = dxc_hlsl_fragment_shader.size();
+      vertex_shader_word_count = (uint32_t)dxc_hlsl_vertex_shader.size();
+      fragment_shader_word_count = (uint32_t)dxc_hlsl_fragment_shader.size();
     } else {
-      assert(false && "The given shader_compiler is invalid.");
+      log->LogError("The given shader_compiler is invalid.");
     }
   }
   uint32_t* vertexShader() { return vertex_shader; }

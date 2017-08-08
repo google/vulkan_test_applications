@@ -187,10 +187,10 @@ class PassthroughSample
             app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                           render_pass_.get(), 0));
     vulkan::ShaderCollection shaders(
-        data_->options.shader_compiler, glslc_glsl_vertex_shader,
-        glslc_glsl_fragment_shader, glslc_hlsl_vertex_shader,
-        glslc_hlsl_fragment_shader, dxc_hlsl_vertex_shader,
-        dxc_hlsl_fragment_shader);
+        data_->log.get(), data_->options.shader_compiler,
+        glslc_glsl_vertex_shader, glslc_glsl_fragment_shader,
+        glslc_hlsl_vertex_shader, glslc_hlsl_fragment_shader,
+        dxc_hlsl_vertex_shader, dxc_hlsl_fragment_shader);
     passthrough_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                      shaders.vertexShader(),
                                      shaders.vertexShaderWordCount());
