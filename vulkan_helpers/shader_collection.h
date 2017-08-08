@@ -53,7 +53,8 @@ class ShaderCollection {
       vertex_shader_word_count = (uint32_t)dxc_hlsl_vertex_shader.size();
       fragment_shader_word_count = (uint32_t)dxc_hlsl_fragment_shader.size();
     } else {
-      log->LogError("The given shader_compiler is invalid.");
+      LOG_ASSERT(==, log, shader_compiler,
+                 "glslc-glsl or glslc-hlsl or dxc-hlsl");
     }
   }
   uint32_t* vertexShader() { return vertex_shader; }
