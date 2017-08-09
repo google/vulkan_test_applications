@@ -94,37 +94,6 @@ VkBufferCreateInfo GetBufferCreateInfo(VkDeviceSize size,
   };
 }
 
-// A helper function that flushes the given data to the device memory for the
-// given host visible buffer. If a command buffer is given, add a buffer memory
-// barrier to the command buffer.
-void FlushHostVisibleBuffer(vulkan::VulkanApplication::Buffer* buf, size_t size,
-                            const char* data, vulkan::VkCommandBuffer* cmd_buf,
-                            VkPipelineStageFlags dst_stage_mask,
-                            VkAccessFlags dst_access_flags) {
-  char* p = reinterpret_cast<char*>(buf->base_address());
-  for (size_t i = 0; i < buf->size() && i < size; i++) {
-    p[i] = data[i];
-  }
-  buf->flush();
-
-  if (cmd_buf) {
-    VkBufferMemoryBarrier buf_barrier{
-        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-        nullptr,
-        VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
-        dst_access_flags,
-        VK_QUEUE_FAMILY_IGNORED,
-        VK_QUEUE_FAMILY_IGNORED,
-        *buf,
-        0,
-        VK_WHOLE_SIZE};
-
-    (*cmd_buf)->vkCmdPipelineBarrier(
-        *cmd_buf, VK_PIPELINE_STAGE_HOST_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-        dst_stage_mask, 0, 0, nullptr, 1, &buf_barrier, 0, nullptr);
-  }
-}
-
 }  // namespace
 
 struct PassthroughFrameData {
@@ -274,14 +243,15 @@ class PassthroughSample
     const ::VkBuffer vertex_buffers[2] = {*vertices_buf, *uv_buf};
     const ::VkDeviceSize vertex_buffer_offsets[2] = {0, 0};
 
-    FlushHostVisibleBuffer(&*vertices_buf, sizeof(kVertices),
-                           reinterpret_cast<const char*>(kVertices), &cmdBuffer,
-                           VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-                           VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
-    FlushHostVisibleBuffer(&*uv_buf, sizeof(kUV),
-                           reinterpret_cast<const char*>(kUV), &cmdBuffer,
-                           VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-                           VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+    app()->FillHostVisibleBuffer(&*vertices_buf,
+                                 reinterpret_cast<const char*>(kVertices),
+                                 sizeof(kVertices), 0, initialization_buffer,
+                                 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                                 VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+    app()->FillHostVisibleBuffer(&*uv_buf, reinterpret_cast<const char*>(kUV),
+                                 sizeof(kUV), 0, initialization_buffer,
+                                 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                                 VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
 
     cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);
