@@ -13,18 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef SUPPORT_ENTRY_ENTRY_CONFIG_H_
-#define SUPPORT_ENTRY_ENTRY_CONFIG_H_
-#cmakedefine VAR ...
 
-#define DEFAULT_WINDOW_HEIGHT ${DEFAULT_WINDOW_HEIGHT}
-#define DEFAULT_WINDOW_WIDTH ${DEFAULT_WINDOW_WIDTH}
+struct PSInput {
+  float4 position : SV_POSITION;
+  float4 color : COLOR;
+};
 
-#cmakedefine01 FIXED_TIMESTEP
-#cmakedefine01 PREFER_SEPARATE_PRESENT
+PSInput main(float4 position: POSITION, float4 color: COLOR) {
+  PSInput result;
+  result.position = position;
+  result.color = color;
+  return result;
+}
 
-#define OUTPUT_FILE "${OUTPUT_FILE}"
-#define SHADER_COMPILER "${SHADER_COMPILER}"
-#define OUTPUT_FRAME ${OUTPUT_FRAME}
-
-#endif  // SUPPORT_ENTRY_ENTRY_CONFIG_H_
