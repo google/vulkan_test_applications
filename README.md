@@ -29,14 +29,24 @@ used to expose a variety of function call permutations for any layers. As a
 group, they attempt to call all Vulkan functions with all permutations of
 valid inputs. See [gapid_tests](gapid_tests/README.md) for more information.
 
-## Known Issues
-Currently, Windows is not supported, but support is on the way.
-
 ## Checking out / Building
 To clone:
 git clone --recursive path/to/this/repository
 
 This will ensure that you have all of the dependencies checked out.
+
+To build for Windows.
+```
+cmake /path/to/source
+open VulkanTestApplications.sln
+```
+or if you want to use Ninja
+```
+From a Visual Studio command-prompt
+cmake -GNinja /path/to/source -DCMAKE_BUILD_TYPE=Release
+ninja
+```
+
 
 To build for Linux.
 ```
