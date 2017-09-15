@@ -1251,7 +1251,7 @@ VulkanComputePipeline::VulkanComputePipeline(
     containers::Allocator* allocator, PipelineLayout* layout,
     VulkanApplication* application,
     const VkShaderModuleCreateInfo& shader_module_create_info,
-    const char* shader_entry)
+    const char* shader_entry, const VkSpecializationInfo* specialization_info)
     : application_(application),
       pipeline_(VK_NULL_HANDLE, nullptr, &application->device()),
       shader_module_(VK_NULL_HANDLE, nullptr, &application->device()),
@@ -1269,7 +1269,7 @@ VulkanComputePipeline::VulkanComputePipeline(
       VK_SHADER_STAGE_COMPUTE_BIT,                          // stage
       shader_module_,                                       // module
       shader_entry,                                         // name
-      nullptr  // pSpecializationInfo
+      specialization_info                                   // pSpecializationInfo
   };
 
   VkComputePipelineCreateInfo pipeline_create_info{

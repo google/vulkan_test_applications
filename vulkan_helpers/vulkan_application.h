@@ -192,7 +192,8 @@ class VulkanComputePipeline {
       containers::Allocator* allocator, PipelineLayout* layout,
       VulkanApplication* application,
       const VkShaderModuleCreateInfo& shader_module_create_info,
-      const char* shader_entry);
+      const char* shader_entry,
+      const VkSpecializationInfo* specialization_info = nullptr);
   VulkanComputePipeline(VulkanComputePipeline&& other) = default;
 
   operator ::VkPipeline() const { return pipeline_; }
@@ -677,9 +678,11 @@ class VulkanApplication {
   VulkanComputePipeline CreateComputePipeline(
       PipelineLayout* layout,
       const VkShaderModuleCreateInfo& shader_module_create_info,
-      const char* shader_entry) {
+      const char* shader_entry,
+      const VkSpecializationInfo* specialization_info = nullptr) {
     return VulkanComputePipeline(allocator_, layout, this,
-                                 shader_module_create_info, shader_entry);
+                                 shader_module_create_info, shader_entry,
+                                 specialization_info);
   }
 
   bool should_exit() const { return should_exit_.load(); }
