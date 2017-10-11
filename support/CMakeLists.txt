@@ -14,10 +14,10 @@
 #
 
 # Log must exist first since other libraries depend on it
-add_subdirectory(log)
+add_vulkan_subdirectory(log)
 
-add_subdirectory(android_native_app_glue)
-add_subdirectory(containers)
-add_subdirectory(dynamic_loader)
-add_subdirectory(entry)
-add_subdirectory(math_common)
+add_vulkan_subdirectory(android_native_app_glue)
+add_vulkan_subdirectory(containers)
+add_vulkan_subdirectory(dynamic_loader)
+add_vulkan_subdirectory(entry)
+add_vulkan_subdirectory(math_common)

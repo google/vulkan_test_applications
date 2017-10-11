@@ -198,6 +198,23 @@ function(compile_hlsl_using_dxc shader output_file result)
   set(${result} ${dxc_hlsl_filename} PARENT_SCOPE)
 endfunction(compile_hlsl_using_dxc)
 
+# Android studio generates VERY deep paths. This causes builds on windows to fail,
+# because CMake is not set up to handle deep paths.
+# If we are building APKS, then shorten all paths
+# This is a marco so we can set the variable correctly in the parent scope
+macro(add_vulkan_subdirectory dir)
+
+  if (NOT ANDROID OR NOT CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
+    add_subdirectory(${dir})
+  else()
+    if (NOT next_sub_index)
+      set(next_sub_index 0)
+    endif()
+    add_subdirectory(${dir} ${next_sub_index})
+    math(EXPR next_sub_index "${next_sub_index} + 1")
+  endif()
+endmacro()
+
 # This adds a vulkan executable (program). By default this just plugs into
 # add_executable (Linux/Windows) or add_library (Android). If BUILD_APKS
 # is true, then an Android Studio project is created and a target to build it
@@ -275,7 +292,7 @@ function(add_vulkan_executable target)
     set(${target}_LIBS ${EXE_LIBS})
     set(${target}_SHADERS ${EXE_SHADERS})
     set(ANDROID_ADDITIONAL_PARAMS)
-    set(APK_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}/${target}-apk/")
+    set(APK_BUILD_ROOT "${VulkanTestApplications_BINARY_DIR}/${target}-apk/")
     string(REPLACE "\",\"" " " ANDROID_ABIS_SPACES "${ANDROID_ABIS}")
 
     if (${CMAKE_BUILD_TYPE} STREQUAL Debug)
@@ -287,13 +304,13 @@ function(add_vulkan_executable target)
 
     foreach(source ${CONFIGURABLE_ANDROID_SOURCES})
       file(RELATIVE_PATH rooted_source ${VulkanTestApplications_SOURCE_DIR}/cmake/android_project_template ${source})
-      configure_file(${source}.in ${CMAKE_CURRENT_BINARY_DIR}/${target}-apk/${rooted_source} @ONLY)
-      list(APPEND TARGET_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${target}-apk/${rooted_source})
+      configure_file(${source}.in ${APK_BUILD_ROOT}/${rooted_source} @ONLY)
+      list(APPEND TARGET_SOURCES ${APK_BUILD_ROOT}/${rooted_source})
     endforeach()
     foreach(source ${NON_CONFIGURABLE_ANDROID_SOURCES})
       file(RELATIVE_PATH rooted_source ${VulkanTestApplications_SOURCE_DIR}/cmake/android_project_template ${source})
-      configure_file(${source} ${CMAKE_CURRENT_BINARY_DIR}/${target}-apk/${rooted_source} COPYONLY)
-      list(APPEND TARGET_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${target}-apk/${rooted_source})
+      configure_file(${source} ${APK_BUILD_ROOT}/${rooted_source} COPYONLY)
+      list(APPEND TARGET_SOURCES ${APK_BUILD_ROOT}/${rooted_source})
     endforeach()
 
     if (CMAKE_BUILD_TYPE STREQUAL Debug)
@@ -331,7 +348,7 @@ function(add_vulkan_executable target)
       COMMAND ./gradlew --offline ${ASSEMBLE_COMMAND} --gradle-user-home
         ${VulkanTestApplications_BINARY_DIR}/.gradle
       COMMAND ${CMAKE_COMMAND} -E copy ${apk_build_location} ${target_apk}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${target}-apk
+      WORKING_DIRECTORY ${APK_BUILD_ROOT}
       DEPENDS ${SOURCE_DEPS}
               ${TARGET_SOURCES}
               ${MATHFU_HEADERS}
