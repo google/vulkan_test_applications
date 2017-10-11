@@ -13,46 +13,52 @@
 # limitations under the License.
 #
 
-project(VulkanTestApplications)
-
 cmake_minimum_required(VERSION 3.1)
 
-set(mathfu_build_benchmarks OFF CACHE BOOL "")
-set(mathfu_build_tests OFF CACHE BOOL "")
-add_subdirectory(third_party/mathfu)
-if (NOT MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions")
+if (NOT BUILD_APKS)
+project(VulkanTestApplications)
 else()
-  add_definitions(-DNOMINMAX -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS)
-  # TODO(awoloszyn): Figure out why std::vector is throwing up with .back()
-  add_definitions(/wd4146)
+project(VulkanTestApplications LANGUAGES)
 endif()
 
 include(cmake/setup.cmake)
 
-set(VULKAN_INCLUDE_LOCATION
-  "${CMAKE_CURRENT_SOURCE_DIR}/third_party;${CMAKE_CURRENT_SOURCE_DIR}/third_party/vulkan")
-add_subdirectory(third_party/vk_callback_swapchain)
+if (NOT BUILD_APKS)
+  set(mathfu_build_benchmarks OFF CACHE BOOL "")
+  set(mathfu_build_tests OFF CACHE BOOL "")
+  add_vulkan_subdirectory(third_party/mathfu)
+  if (NOT MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions")
+  else()
+    add_definitions(-DNOMINMAX -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS)
+    # TODO(awoloszyn): Figure out why std::vector is throwing up with .back()
+    add_definitions(/wd4146)
+  endif()
 
+
+  set(VULKAN_INCLUDE_LOCATION
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party;${CMAKE_CURRENT_SOURCE_DIR}/third_party/vulkan")
+  add_vulkan_subdirectory(third_party/vk_callback_swapchain)
+endif()
 include_directories(${VULKAN_INCLUDE_LOCATION})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_subdirectory(support)
-add_subdirectory(vulkan_wrapper)
-add_subdirectory(vulkan_helpers)
+add_vulkan_subdirectory(support)
+add_vulkan_subdirectory(vulkan_wrapper)
+add_vulkan_subdirectory(vulkan_helpers)
 
 # Support shaders
-add_subdirectory(shader_library)
+add_vulkan_subdirectory(shader_library)
 
 # Support Models
-add_subdirectory(standard_models)
+add_vulkan_subdirectory(standard_models)
 
 # Support Images
-add_subdirectory(standard_images)
+add_vulkan_subdirectory(standard_images)
 
 # All of the support code has to go above here, below here should come all of
 # the actual tests.
-add_subdirectory(gapid_tests)
+add_vulkan_subdirectory(gapid_tests)
 
 # Sample Applications and Sandbox
-add_subdirectory(application_sandbox)
+add_vulkan_subdirectory(application_sandbox)

@@ -13,4 +13,4 @@
 # limitations under the License.
 #
 
-add_subdirectory(vkUpdateDescriptorSets_test)
+add_vulkan_subdirectory(vkUpdateDescriptorSets_test)

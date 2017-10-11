@@ -23,4 +23,4 @@ if (NOT BUILD_APKS)
 endif()
 
 
-add_subdirectory(glsl)
+add_vulkan_subdirectory(glsl)
