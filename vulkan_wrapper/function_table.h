@@ -246,7 +246,8 @@ struct QueueFunctions {
   function(device, #function, device_functions)
         CONSTRUCT_LAZY_FUNCTION(vkQueueSubmit),
         CONSTRUCT_LAZY_FUNCTION(vkQueueWaitIdle),
-        CONSTRUCT_LAZY_FUNCTION(vkQueuePresentKHR)
+        CONSTRUCT_LAZY_FUNCTION(vkQueuePresentKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkQueueBindSparse)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -256,6 +257,7 @@ struct QueueFunctions {
   LAZY_FUNCTION(vkQueueSubmit);
   LAZY_FUNCTION(vkQueueWaitIdle);
   LAZY_FUNCTION(vkQueuePresentKHR);
+  LAZY_FUNCTION(vkQueueBindSparse);
 #undef LAZY_FUNCTION
 };
 

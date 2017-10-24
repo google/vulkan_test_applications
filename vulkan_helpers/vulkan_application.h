@@ -286,30 +286,63 @@ class DescriptorSet {
 // VulkanApplication holds all of the data needed for a typical single-threaded
 // Vulkan application.
 class VulkanApplication {
+ private:
+  class ImageCore {
+   public:
+    operator ::VkImage() const { return image_; }
+    const ::VkImage& get_raw_image() const { return image_.get_raw_object(); }
+    VkFormat format() const { return format_; }
+    explicit ImageCore(VkImage&& image, VkFormat format)
+        : image_(std::move(image)), format_(format) {}
+
+   private:
+    VkImage image_;
+    VkFormat format_;
+  };
+
  public:
   // The Image class holds onto a VkImage as well as memory that is bound to it.
   // When it is destroyed, it will return the memory to the heap from which
   // it was created.
-  class Image {
+  class Image : public ImageCore{
    public:
-    operator ::VkImage() const { return image_; }
-    const ::VkImage& get_raw_image() const { return image_.get_raw_object(); }
     ~Image() { heap_->FreeMemory(token_); }
-    VkFormat format() const { return format_; }
     ::VkDeviceSize size() const;
 
    private:
     friend class ::vulkan::VulkanApplication;
     Image(VulkanArena* heap, AllocationToken* token, VkImage&& image,
           VkFormat format)
-        : heap_(heap),
-          token_(token),
-          image_(std::move(image)),
-          format_(format) {}
+        : ImageCore(std::move(image), format),
+          heap_(heap),
+          token_(token){}
     VulkanArena* heap_;
     AllocationToken* token_;
-    VkImage image_;
-    VkFormat format_;
+  };
+
+  // The SparseImage class holds onto a VkImage as well as the memories that
+  // are sparsely bound to it. It will return the memory to the heap from
+  // which it was bound.
+  class SparseImage : public ImageCore{
+    public:
+      ~SparseImage() {
+        for (const auto &ti : tokens_) {
+          heap_->FreeMemory(ti);
+        }
+      }
+      ::VkDeviceSize size() const;
+
+    private:
+      friend class ::vulkan::VulkanApplication;
+      SparseImage(VulkanArena* heap,
+                  containers::vector<AllocationToken*>&& tokens,
+                  VkImage&& image, VkFormat format)
+          : ImageCore(std::move(image), format),
+            heap_(heap),
+            tokens_(std::move(tokens)) {}
+
+      VulkanArena* heap_;
+      containers::vector<AllocationToken*> tokens_;
   };
 
   // The buffer class holds onto a VkBuffer. If this buffer was created
@@ -401,12 +434,18 @@ class VulkanApplication {
                     uint32_t device_image_size = 1024 * 128,
                     uint32_t device_buffer_size = 1024 * 128,
                     uint32_t coherent_buffer_size = 1024 * 128,
-                    bool use_async_compute_queue = false);
+                    bool use_async_compute_queue = false,
+                    bool use_sparse_binding = false);
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.
   containers::unique_ptr<Image> CreateAndBindImage(
       const VkImageCreateInfo* create_info);
+  // Creates an sparse bound image from the given create_info, and binds memory
+  // from the device-only image arena. The size of the binding block is the
+  // given |slice_size| roundup to the image's memory alignment.
+  containers::unique_ptr<SparseImage> CreateAndBindSparseImage(
+      const VkImageCreateInfo* create_info, size_t slice_size);
   // Create an image view for the given image, with the same format of the
   // given image and the given image view type, subresource range.
   containers::unique_ptr<VkImageView> CreateImageView(
@@ -583,6 +622,10 @@ class VulkanApplication {
   // or the async compute queue could not be created, returns nullptr.
   VkQueue* async_compute_queue() { return async_compute_queue_concrete_.get(); }
 
+  // Returns the Sparse binding queue. Note: It may be the same as the render
+  // queue, present queue or, if applicable, the compute queue.
+  VkQueue& sparse_binding_queue() { return *sparse_binding_queue_; }
+
   // Returns the device that was created for this application.
   VkDevice& device() { return device_; }
   VkInstance& instance() { return instance_; }
@@ -711,19 +754,23 @@ class VulkanApplication {
   // VkDevice does not have a default constructor.
   VkDevice CreateDevice(const std::initializer_list<const char*> extensions,
                         const VkPhysicalDeviceFeatures& features,
-                        bool create_async_compute_queue);
+                        bool create_async_compute_queue,
+                        bool use_sparse_binding);
 
   containers::Allocator* allocator_;
   logging::Logger* log_;
   const entry::entry_data* entry_data_;
   containers::unique_ptr<VkQueue> render_queue_concrete_;
   containers::unique_ptr<VkQueue> present_queue_concrete_;
+  containers::unique_ptr<VkQueue> sparse_binding_queue_concrete_;
   containers::unique_ptr<VkQueue> async_compute_queue_concrete_;
   VkQueue* render_queue_;
   VkQueue* present_queue_;
+  VkQueue* sparse_binding_queue_;
   uint32_t render_queue_index_;
   uint32_t present_queue_index_;
   uint32_t compute_queue_index_;
+  uint32_t sparse_binding_queue_index_;
 
   LibraryWrapper library_wrapper_;
   VkInstance instance_;
@@ -754,6 +801,7 @@ inline containers::vector<uint32_t> GetHostVisibleBufferData(
 
 using BufferPointer = containers::unique_ptr<VulkanApplication::Buffer>;
 using ImagePointer = containers::unique_ptr<VulkanApplication::Image>;
+using SparseImagePointer = containers::unique_ptr<VulkanApplication::SparseImage>;
 }  // namespace vulkan
 
 #endif  // VULKAN_HELPERS_VULKAN_APPLICATION

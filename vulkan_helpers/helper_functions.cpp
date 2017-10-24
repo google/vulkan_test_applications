@@ -128,16 +128,12 @@ VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
     wrapper->GetLogger()->LogInfo("    ", extension);
   }
 
-  VkInstanceCreateInfo info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                            nullptr,
-                            0,
-                            &app_info,
-                            uint32_t(data->options.output_frame >= 0
-                                         ? (sizeof(layers) / sizeof(layers[0]))
-                                         : 0),
-                            layers,
-                            (sizeof(extensions) / sizeof(extensions[0])),
-                            extensions};
+  VkInstanceCreateInfo info{
+      VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &app_info,
+      uint32_t(data->options.output_frame >= 0
+                   ? (sizeof(layers) / sizeof(layers[0]))
+                   : 0),
+      layers, (sizeof(extensions) / sizeof(extensions[0])), extensions};
 
   ::VkInstance raw_instance;
   LOG_ASSERT(==, wrapper->GetLogger(),
@@ -359,6 +355,36 @@ bool SupportRequestPhysicalDeviceFeatures(
   return true;
 }
 
+namespace {
+// A helper class to hold queue create info
+struct QueueCreateInfo {
+  QueueCreateInfo(containers::Allocator* allocator, uint32_t family_index,
+                  VkDeviceQueueCreateFlags flags)
+      : flags(flags),
+        queue_family_index(family_index),
+        queue_count(0),
+        priorities(allocator) {}
+
+  inline void AddQueue(float priority) {
+    queue_count++;
+    priorities.push_back(priority);
+  }
+  inline VkDeviceQueueCreateInfo GetVkDeviceQueueCreateInfo() const {
+    return VkDeviceQueueCreateInfo{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                                   nullptr,
+                                   flags,
+                                   queue_family_index,
+                                   queue_count,
+                                   priorities.data()};
+  };
+
+  const VkDeviceQueueCreateFlags flags;
+  const uint32_t queue_family_index;
+  uint32_t queue_count;
+  containers::vector<float> priorities;
+};
+}  // namespace
+
 VkDevice CreateDeviceForSwapchain(
     containers::Allocator* allocator, VkInstance* instance,
     VkSurfaceKHR* surface, uint32_t* present_queue_index,
@@ -366,7 +392,7 @@ VkDevice CreateDeviceForSwapchain(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features,
     bool try_to_find_separate_present_queue,
-    uint32_t* async_compute_queue_index) {
+    uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index) {
   containers::vector<VkPhysicalDevice> physical_devices =
       GetPhysicalDevices(allocator, *instance);
   float priority = 1.f;
@@ -444,38 +470,51 @@ VkDevice CreateDeviceForSwapchain(
     }
 
     uint32_t num_queue_infos = 1;
-    VkDeviceQueueCreateInfo queue_infos[3];
-    queue_infos[0] = {/* sType = */ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                      /* pNext = */ nullptr,
-                      /* flags = */ 0,
-                      /* queueFamilyIndex = */ graphics_queue_family_index,
-                      /* queueCount */ 1,
-                      /* pQueuePriorities = */ &priority};
+    containers::vector<QueueCreateInfo> queue_create_infos(allocator);
+    queue_create_infos.reserve(4);
+    queue_create_infos.emplace_back(
+        QueueCreateInfo(allocator, graphics_queue_family_index, 0));
+    queue_create_infos.back().AddQueue(1.0f);
     if (graphics_queue_family_index != present_queue_family_index) {
-      queue_infos[num_queue_infos++] = {
-          /* sType = */ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-          /* pNext = */ nullptr,
-          /* flags = */ 0,
-          /* queueFamilyIndex = */ present_queue_family_index,
-          /* queueCount */ 1,
-          /* pQueuePriorities = */ &priority};
+      queue_create_infos.emplace_back(
+          QueueCreateInfo(allocator, present_queue_family_index, 0));
+      queue_create_infos.back().AddQueue(1.0f);
     }
     if (async_compute_queue_index != nullptr) {
       *async_compute_queue_index =
           GetAsyncComputeQueueFamilyIndex(allocator, *instance, device);
       if (*async_compute_queue_index != 0xFFFFFFFF) {
-        if (*async_compute_queue_index != graphics_queue_family_index) {
-          queue_infos[num_queue_infos++] = {
-              /* sType = */ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-              /* pNext = */ nullptr,
-              /* flags = */ 0,
-              /* queueFamilyIndex = */ *async_compute_queue_index,
-              /* queueCount */ 1,
-              /* pQueuePriorities = */ &priority};
-        } else {
-          queue_infos[0].queueCount += 1;
-          additional_priorities.push_back(0.5f);
-          queue_infos[0].pQueuePriorities = additional_priorities.data();
+        bool added = false;
+        for (auto& qi : queue_create_infos) {
+          if (qi.queue_family_index == *async_compute_queue_index) {
+            qi.AddQueue(0.5f);
+            added = true;
+            break;
+          }
+        }
+        if (!added) {
+          queue_create_infos.emplace_back(
+              QueueCreateInfo(allocator, *async_compute_queue_index, 0));
+          queue_create_infos.back().AddQueue(0.5f);
+        }
+      }
+    }
+    if (sparse_binding_queue_index != nullptr) {
+      *sparse_binding_queue_index = GetQueueFamily(allocator, *instance, device,
+                                                   VK_QUEUE_SPARSE_BINDING_BIT);
+      if (*sparse_binding_queue_index != 0xFFFFFFFF) {
+        bool exist = false;
+        for (auto& qi : queue_create_infos) {
+          if (qi.queue_family_index == *sparse_binding_queue_index) {
+            // no need to create new separate queue for sparse binding.
+            exist = true;
+            break;
+          }
+        }
+        if (!exist) {
+          queue_create_infos.emplace_back(
+              QueueCreateInfo(allocator, *sparse_binding_queue_index, 0));
+          queue_create_infos.back().AddQueue(1.0f);
         }
       }
     }
@@ -489,12 +528,18 @@ VkDevice CreateDeviceForSwapchain(
       enabled_extensions.push_back(ext);
     }
 
+    containers::vector<VkDeviceQueueCreateInfo> raw_queue_infos(allocator);
+    raw_queue_infos.reserve(4);
+    for (const auto& qi : queue_create_infos) {
+      raw_queue_infos.emplace_back(qi.GetVkDeviceQueueCreateInfo());
+    }
+
     VkDeviceCreateInfo info{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,  // stype
         nullptr,                               // pNext
         0,                                     // flags
         num_queue_infos,                       // queueCreateInfoCount
-        queue_infos,                           // pQueueCreateInfos
+        raw_queue_infos.data(),                // pQueueCreateInfos
         0,                                     // enabledLayerCount
         nullptr,                               // ppEnabledLayerNames
         static_cast<uint32_t>(
@@ -592,10 +637,9 @@ VkCommandBuffer CreateCommandBuffer(VkCommandPool* pool,
       /* commandBufferCount = */ 1,
   };
   ::VkCommandBuffer raw_command_buffer;
-  LOG_ASSERT(
-      ==, device->GetLogger(),
-      (*device)->vkAllocateCommandBuffers(*device, &info, &raw_command_buffer),
-      VK_SUCCESS);
+  LOG_ASSERT(==, device->GetLogger(), (*device)->vkAllocateCommandBuffers(
+                                          *device, &info, &raw_command_buffer),
+             VK_SUCCESS);
   return vulkan::VkCommandBuffer(raw_command_buffer, pool, device);
 }
 
@@ -854,10 +898,9 @@ VkDescriptorPool CreateDescriptorPool(VkDevice* device, uint32_t num_pool_size,
       /* pPoolSizes = */ pool_sizes};
 
   ::VkDescriptorPool raw_pool;
-  LOG_ASSERT(
-      ==, device->GetLogger(),
-      (*device)->vkCreateDescriptorPool(*device, &info, nullptr, &raw_pool),
-      VK_SUCCESS);
+  LOG_ASSERT(==, device->GetLogger(), (*device)->vkCreateDescriptorPool(
+                                          *device, &info, nullptr, &raw_pool),
+             VK_SUCCESS);
   return vulkan::VkDescriptorPool(raw_pool, nullptr, device);
 }
 
@@ -880,9 +923,8 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice* device,
   };
 
   ::VkDescriptorSetLayout raw_layout;
-  LOG_ASSERT(==, device->GetLogger(),
-             (*device)->vkCreateDescriptorSetLayout(*device, &info, nullptr,
-                                                    &raw_layout),
+  LOG_ASSERT(==, device->GetLogger(), (*device)->vkCreateDescriptorSetLayout(
+                                          *device, &info, nullptr, &raw_layout),
              VK_SUCCESS);
   return vulkan::VkDescriptorSetLayout(raw_layout, nullptr, device);
 }
@@ -897,10 +939,9 @@ VkDescriptorSet AllocateDescriptorSet(VkDevice* device, ::VkDescriptorPool pool,
       /* pSetLayouts = */ &layout,
   };
   ::VkDescriptorSet raw_set;
-  LOG_ASSERT(
-      ==, device->GetLogger(),
-      (*device)->vkAllocateDescriptorSets(*device, &alloc_info, &raw_set),
-      VK_SUCCESS);
+  LOG_ASSERT(==, device->GetLogger(), (*device)->vkAllocateDescriptorSets(
+                                          *device, &alloc_info, &raw_set),
+             VK_SUCCESS);
   return vulkan::VkDescriptorSet(raw_set, pool, device);
 }
 
