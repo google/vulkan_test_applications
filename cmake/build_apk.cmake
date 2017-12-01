@@ -259,6 +259,7 @@ function(add_vulkan_executable target)
     add_executable(${target} ${ADDITIONAL_ARGS}
       ${EXE_SOURCES} ${EXE_UNPARSED_ARGS})
     setup_folders(${target})
+    target_include_directories(${target} PRIVATE ${VulkanTestApplications_SOURCE_DIR})
     mathfu_configure_flags(${target})
     if (EXE_LIBS)
       target_link_libraries(${target} PRIVATE ${EXE_LIBS})
