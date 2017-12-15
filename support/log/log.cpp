@@ -14,6 +14,7 @@
  */
 
 #include "support/log/log.h"
+#include <cstring>
 
 namespace logging {
 #if defined __ANDROID__
@@ -33,9 +34,30 @@ class InternalLogger : public Logger {
 class InternalLogger : public Logger {
  public:
   void LogErrorString(const char* str) override {
-    fprintf(stderr, "error: %s", str);
+    fprintf(stderr, "error: ");
+    int len = strlen(str);
+    int pos = 0;
+    while (len) {
+      int written = fprintf(stderr, "%s", str + pos);
+      pos += written;
+      len -= written;
+    }
   }
-  void LogInfoString(const char* str) override { fprintf(stdout, "%s", str); }
+
+  void LogInfoString(const char* str) override {
+    int len = strlen(str);
+    int pos = 0;
+    while (len) {
+      int written = fprintf(stdout, "%s", str + pos);
+      pos += written;
+      len -= written;
+    }
+  }
+
+  void Flush() override {
+    fflush(stderr);
+    fflush(stdout);
+  }
 };
 #elif defined _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -69,4 +91,4 @@ class InternalLogger : public Logger {
 containers::unique_ptr<Logger> GetLogger(containers::Allocator* allocator) {
   return containers::make_unique<InternalLogger>(allocator);
 }
-}
+}  // namespace logging

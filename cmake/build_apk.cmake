@@ -52,10 +52,7 @@ set(NON_CONFIGURABLE_ANDROID_SOURCES
   ${VulkanTestApplications_SOURCE_DIR}/cmake/android_project_template/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
   ${VulkanTestApplications_SOURCE_DIR}/cmake/android_project_template/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png)
 
-
-if (NOT CMAKE_GLSL_COMPILER)
-  set(CMAKE_GLSL_COMPILER glslc)
-endif()
+set(CMAKE_GLSL_COMPILER "glslc" CACHE STRING "Which glsl compiler to use")
 
 SET(DEFAULT_WINDOW_WIDTH ${DEFAULT_WINDOW_WIDTH} CACHE INT
     "Default window width for platforms that have resizable windows")
@@ -221,7 +218,7 @@ endmacro()
 # is created. All of the dependencies are correctly tracked and the
 # project will be rebuilt if any dependency changes.
 function(add_vulkan_executable target)
-  cmake_parse_arguments(EXE "NON_DEFAULT" "" "SOURCES;LIBS;SHADERS;MODELS;ADDITIONAL;TEXTURES" ${ARGN})
+  cmake_parse_arguments(EXE "NON_DEFAULT" "" "SOURCES;LIBS;SHADERS;MODELS;ADDITIONAL;TEXTURES;ADDITIONAL_INCLUDES" ${ARGN})
 
   if (ANDROID)
     add_library(${target} SHARED ${EXE_SOURCES})
@@ -261,6 +258,9 @@ function(add_vulkan_executable target)
     setup_folders(${target})
     target_include_directories(${target} PRIVATE ${VulkanTestApplications_SOURCE_DIR})
     mathfu_configure_flags(${target})
+    if (EXE_ADDITIONAL_INCLUDES)
+      target_include_directories(${target} PRIVATE ${EXE_ADDITIONAL_INCLUDES})
+    endif()
     if (EXE_LIBS)
       target_link_libraries(${target} PRIVATE ${EXE_LIBS})
     endif()

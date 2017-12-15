@@ -225,9 +225,10 @@ VulkanApplication::VulkanApplication(
         VK_IMAGE_LAYOUT_UNDEFINED,            // initialLayout
     };
     ::VkImage image;
-    LOG_ASSERT(==, log_, device_->vkCreateImage(device_, &image_create_info,
-                                                nullptr, &image),
-               VK_SUCCESS);
+    LOG_ASSERT(
+        ==, log_,
+        device_->vkCreateImage(device_, &image_create_info, nullptr, &image),
+        VK_SUCCESS);
     VkMemoryRequirements requirements;
     device_->vkGetImageMemoryRequirements(device_, image, &requirements);
     device_->vkDestroyImage(device_, image, nullptr);
@@ -320,9 +321,10 @@ containers::unique_ptr<VkImageView> VulkanApplication::CreateImageView(
       subresource_range,
   };
   ::VkImageView raw_view;
-  LOG_ASSERT(==, log_, device_->vkCreateImageView(device_, &create_info,
-                                                  nullptr, &raw_view),
-             VK_SUCCESS);
+  LOG_ASSERT(
+      ==, log_,
+      device_->vkCreateImageView(device_, &create_info, nullptr, &raw_view),
+      VK_SUCCESS);
   return containers::make_unique<vulkan::VkImageView>(
       allocator_, VkImageView(raw_view, nullptr, &device_));
 }
@@ -426,17 +428,18 @@ containers::unique_ptr<VkBufferView> VulkanApplication::CreateBufferView(
     VkDeviceSize range) {
   VkBufferViewCreateInfo create_info{
       VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,  // sType
-      nullptr,                                   // pNext
-      0,                                         // flags
-      buffer,                                    // buffer
-      format,                                    // format
-      offset,                                    // offset
-      range,                                     // range
+      nullptr,                                    // pNext
+      0,                                          // flags
+      buffer,                                     // buffer
+      format,                                     // format
+      offset,                                     // offset
+      range,                                      // range
   };
   ::VkBufferView raw_view;
-  LOG_ASSERT(==, log_, device_->vkCreateBufferView(device_, &create_info,
-                                                   nullptr, &raw_view),
-             VK_SUCCESS);
+  LOG_ASSERT(
+      ==, log_,
+      device_->vkCreateBufferView(device_, &create_info, nullptr, &raw_view),
+      VK_SUCCESS);
   return containers::make_unique<vulkan::VkBufferView>(
       allocator_, VkBufferView(raw_view, nullptr, &device_));
 }
@@ -449,8 +452,9 @@ VulkanApplication::FillImageLayersData(
     std::initializer_list<::VkSemaphore> wait_semaphores,
     std::initializer_list<::VkSemaphore> signal_semaphores, ::VkFence fence) {
   auto failure_return = std::make_tuple(
-      false, VkCommandBuffer(static_cast<::VkCommandBuffer>(VK_NULL_HANDLE),
-                             &command_pool_, &device_),
+      false,
+      VkCommandBuffer(static_cast<::VkCommandBuffer>(VK_NULL_HANDLE),
+                      &command_pool_, &device_),
       BufferPointer(nullptr));
   if (!img) {
     log_->LogError("FillImageLayersData(): The given *img is nullptr");
@@ -516,8 +520,11 @@ VulkanApplication::FillImageLayersData(
       *img,
       // subresource range, only deal one mip level
       {
-          image_subresource.aspectMask, image_subresource.mipLevel, 1,
-          image_subresource.baseArrayLayer, image_subresource.layerCount,
+          image_subresource.aspectMask,
+          image_subresource.mipLevel,
+          1,
+          image_subresource.baseArrayLayer,
+          image_subresource.layerCount,
       }};
   command_buffer->vkCmdPipelineBarrier(
       command_buffer, VK_PIPELINE_STAGE_HOST_BIT,
@@ -704,8 +711,11 @@ bool VulkanApplication::DumpImageLayersData(
       *img,
       // subresource range, only deal with one mip level
       {
-          image_subresource.aspectMask, image_subresource.mipLevel, 1,
-          image_subresource.baseArrayLayer, image_subresource.layerCount,
+          image_subresource.aspectMask,
+          image_subresource.mipLevel,
+          1,
+          image_subresource.baseArrayLayer,
+          image_subresource.layerCount,
       }};
   command_buffer->vkCmdPipelineBarrier(
       command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -799,7 +809,8 @@ VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
                " bytes.");
 
   do {
-    if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+    if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY ||
+        res == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
       log->LogInfo("Could not allocate ", buffer_size,
                    " bytes of "
                    "device memory. Attempting to allocate ",
@@ -813,7 +824,8 @@ VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
                                       &device_memory);
     // If we cannot even allocate 1/4 of the requested memory, it is time to
     // fail.
-  } while (res == VK_ERROR_OUT_OF_DEVICE_MEMORY &&
+  } while ((res == VK_ERROR_OUT_OF_DEVICE_MEMORY ||
+            res == VK_ERROR_OUT_OF_HOST_MEMORY) &&
            buffer_size > original_size / 4);
   LOG_ASSERT(==, log, VK_SUCCESS, res);
   memory_.initialize(device_memory);
@@ -1269,7 +1281,7 @@ VulkanComputePipeline::VulkanComputePipeline(
       VK_SHADER_STAGE_COMPUTE_BIT,                          // stage
       shader_module_,                                       // module
       shader_entry,                                         // name
-      specialization_info                                   // pSpecializationInfo
+      specialization_info  // pSpecializationInfo
   };
 
   VkComputePipelineCreateInfo pipeline_create_info{

@@ -21,7 +21,7 @@
 #include <string>
 
 #include "support/containers/unique_ptr.h"
-
+#include "support/containers/vector.h"
 namespace logging {
 
 // Tests the result of "res op exp" and if the result is not "true"
@@ -65,7 +65,7 @@ namespace logging {
 // We will have to assume that the STL is doing the right thing here.
 class Logger {
  public:
-   virtual ~Logger() {}
+  virtual ~Logger() {}
 
   // Logs a set of values to the error stream of the logger.
   template <typename... Args>
@@ -92,11 +92,23 @@ class Logger {
     *stream << val;
   }
 
+  template <typename T>
+  void LogHelper(std::ostringstream* stream, const containers::vector<T>& val) {
+    *stream << "[";
+    for (size_t i = 0; i < val.size(); ++i) {
+      if (i != 0) {
+        *stream << ", ";
+      }
+      LogHelper(stream, val[i]);
+    }
+    *stream << "]";
+  }
+
   // Helper function to recursively add elements from Args to
   // the stream.
   template <typename T, typename... Args>
   void LogHelper(std::ostringstream* stream, const T& val, Args... args) {
-    *stream << val;
+    LogHelper(stream, val);
     LogHelper(stream, args...);
   }
 
@@ -108,10 +120,13 @@ class Logger {
   // input null-terminated
   // string to the STDOUT equivalent.
   virtual void LogInfoString(const char* str) = 0;
+
+ public:
+  virtual void Flush() {}
 };
 
 // Returns a platform-specific logger.
 containers::unique_ptr<Logger> GetLogger(containers::Allocator* allocator);
-}
+}  // namespace logging
 
 #endif  // SUPPORT_LOG_LOG_H_
