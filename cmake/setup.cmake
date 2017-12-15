@@ -28,7 +28,6 @@
 option(BUILD_APKS "Should we be building Android apks for our project"
   ${BUILD_APKS})
 
-
 if (BUILD_APKS)
   set(ANDROID_SDK "" CACHE STRING "Location of the Android SDK (Sdk must contain gradle support)")
   set(ANDROID_NDK ${ANDROID_SDK}/ndk-bundle CACHE STRING "Location of the Android NDK (required r12b or higher)")
