@@ -25,6 +25,7 @@ output that demonstrates the feature.
 [execute_commands](execute_commands/README.md)
 [fill_buffer](fill_buffer/README.md)
 [set_event](set_event/README.md)
+[sparse_binding](sparse_binding/README.md)
 [stencil](stencil/README.md)
 [textured_cube](textured_cube/README.md)
 [wireframe](wireframe/README.md)

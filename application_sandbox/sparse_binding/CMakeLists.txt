@@ -12,10 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_texture_library(standard_images
+
+add_shader_library(sparse_binding_shaders
   SOURCES
-    particle.png
-    r8.png
-    rgb8.png
-    star.png
+    sparse_binding.frag
+    sparse_binding.vert
+  SHADER_DEPS
+    shader_library
+)
+
+add_vulkan_sample_application(sparse_binding
+  SOURCES main.cpp
+  LIBS
+    vulkan_helpers
+  MODELS
+    standard_models
+  TEXTURES
+    standard_images
+  SHADERS
+    sparse_binding_shaders
 )

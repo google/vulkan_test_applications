@@ -120,7 +120,8 @@ VkDevice CreateDeviceForSwapchain(
     const std::initializer_list<const char*> extensions = {},
     const VkPhysicalDeviceFeatures& features = {0},
     bool try_to_find_separate_present_queue = false,
-    uint32_t* aync_compute_queue_index = nullptr);
+    uint32_t* aync_compute_queue_index = nullptr,
+    uint32_t* sparse_binding_queue_index = nullptr);
 
 // Creates a primary level default command buffer from the given command pool
 // and the device.

@@ -31,25 +31,30 @@ struct VulkanTexture {
  public:
   // A standard VulkanTexture object. It is expected to be used with the
   // output from convert_obj_to_c.py. That is, positions, texture_coords
-  // and normals are expected to be sequential in memory.
+  // and normals are expected to be sequential in memory. If a non-zero
+  // |sparse_binding_block_size| is given, the texture image will be sparsely
+  // bound with the given block size aligned to the image's memory alignment.
   VulkanTexture(containers::Allocator* allocator, logging::Logger* logger,
                 VkFormat format, size_t width, size_t height, const void* data,
-                size_t data_size)
+                size_t data_size, size_t sparse_binding_block_size = 0u)
       : allocator_(allocator),
         logger_(logger),
         format_(format),
         width_(width),
         height_(height),
         data_(data),
-        data_size_(data_size) {}
+        data_size_(data_size),
+        sparse_binding_block_size_(sparse_binding_block_size),
+        image_(nullptr) {}
 
   // Constructs a vulkan model from the output of the convert_img_to_c.py
   // script.
   template <typename T>
   VulkanTexture(containers::Allocator* allocator, logging::Logger* logger,
-                const T& t)
+                const T& t, size_t sparse_binding_block_size = 0u)
       : VulkanTexture(allocator, logger, t.format, t.width, t.height,
-                      static_cast<const void*>(t.data), sizeof(t.data)) {}
+                      static_cast<const void*>(t.data), sizeof(t.data),
+                      sparse_binding_block_size) {}
 
   // Creates the image object.
   // Also creates a temporary buffer object for the upload data
@@ -93,13 +98,20 @@ struct VulkanTexture {
         nullptr,                                  // pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED                 // initialLayout
     };
-    image_ = application->CreateAndBindImage(&image_create_info);
+    if (sparse_binding_block_size_ > 0u) {
+      image_create_info.flags =
+          image_create_info.flags | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
+      sparse_image_ = application->CreateAndBindSparseImage(&image_create_info,
+          sparse_binding_block_size_);
+    } else {
+      image_ = application->CreateAndBindImage(&image_create_info);
+    }
 
     VkImageViewCreateInfo view_create_info = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  // sType
         nullptr,                                   // pNext
         0,                                         // flags
-        *image_,                                   // image
+        image(),                                   // image
         VK_IMAGE_VIEW_TYPE_2D,                     // viewType
         format_,                                   // format
         {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
@@ -124,7 +136,7 @@ struct VulkanTexture {
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,    // newLayout
         VK_QUEUE_FAMILY_IGNORED,                 // srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                 // dstQueueFamilyIndex
-        *image_,                                 // image
+        image(),                                 // image
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
     VkBufferMemoryBarrier buffer_barrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
@@ -155,7 +167,7 @@ struct VulkanTexture {
     };
 
     (*cmdBuffer)
-        ->vkCmdCopyBufferToImage(*cmdBuffer, *upload_buffer_, *image_,
+        ->vkCmdCopyBufferToImage(*cmdBuffer, *upload_buffer_, image(),
                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                  &copy_params);
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -172,7 +184,9 @@ struct VulkanTexture {
   // buffer will be released.
   void InitializationComplete() { upload_buffer_.reset(); }
 
-  ::VkImage image() const { return *image_; }
+  ::VkImage image() const {
+    return image_ != nullptr ? *image_ : *sparse_image_;
+  }
   ::VkImageView view() const { return *image_view_; }
 
  private:
@@ -183,9 +197,11 @@ struct VulkanTexture {
   const size_t data_size_;
   containers::Allocator* allocator_;
   logging::Logger* logger_;
+  size_t sparse_binding_block_size_;
 
   containers::unique_ptr<vulkan::VulkanApplication::Buffer> upload_buffer_;
   containers::unique_ptr<vulkan::VulkanApplication::Image> image_;
+  containers::unique_ptr<vulkan::VulkanApplication::SparseImage> sparse_image_;
   containers::unique_ptr<vulkan::VkImageView> image_view_;
 };
 

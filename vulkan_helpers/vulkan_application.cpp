@@ -60,7 +60,8 @@ VulkanApplication::VulkanApplication(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features, uint32_t host_buffer_size,
     uint32_t device_image_size, uint32_t device_buffer_size,
-    uint32_t coherent_buffer_size, bool use_async_compute_queue)
+    uint32_t coherent_buffer_size, bool use_async_compute_queue,
+    bool use_sparse_binding)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -73,7 +74,8 @@ VulkanApplication::VulkanApplication(
       instance_(CreateInstanceForApplication(allocator_, &library_wrapper_,
                                              entry_data_)),
       surface_(CreateDefaultSurface(&instance_, entry_data_)),
-      device_(CreateDevice(extensions, features, use_async_compute_queue)),
+      device_(CreateDevice(extensions, features, use_async_compute_queue,
+                           use_sparse_binding)),
       swapchain_(CreateDefaultSwapchain(&instance_, &device_, &surface_,
                                         allocator_, render_queue_index_,
                                         present_queue_index_, entry_data_)),
@@ -244,7 +246,8 @@ VulkanApplication::VulkanApplication(
 
 VkDevice VulkanApplication::CreateDevice(
     const std::initializer_list<const char*> extensions,
-    const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue) {
+    const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue,
+    bool use_sparse_binding) {
   // Since this is called by the constructor be careful not to
   // use any data other than what has already been initialized.
   // allocator_, log_, entry_data_, library_wrapper_, instance_,
@@ -254,7 +257,8 @@ VkDevice VulkanApplication::CreateDevice(
       allocator_, &instance_, &surface_, &render_queue_index_,
       &present_queue_index_, extensions, features,
       entry_data_->options.prefer_separate_present,
-      create_async_compute_queue ? &compute_queue_index_ : nullptr));
+      create_async_compute_queue ? &compute_queue_index_ : nullptr,
+      use_sparse_binding ? &sparse_binding_queue_index_ : nullptr));
   if (device.is_valid()) {
     if (render_queue_index_ == present_queue_index_) {
       render_queue_concrete_ = containers::make_unique<VkQueue>(
@@ -274,6 +278,21 @@ VkDevice VulkanApplication::CreateDevice(
           allocator_,
           GetQueue(&device, compute_queue_index_,
                    compute_queue_index_ == render_queue_index_ ? 1 : 0));
+    }
+    if (use_sparse_binding && sparse_binding_queue_index_ != 0xFFFFFFFF) {
+      log_->LogInfo("### Requesting sparse binding queue");
+      if (sparse_binding_queue_index_ == render_queue_index_) {
+        sparse_binding_queue_ = render_queue_;
+      } else if (sparse_binding_queue_index_ == present_queue_index_) {
+        sparse_binding_queue_ = present_queue_;
+      } else if (sparse_binding_queue_index_ == compute_queue_index_) {
+        sparse_binding_queue_ = async_compute_queue_concrete_.get();
+      } else {
+        sparse_binding_queue_concrete_ = containers::make_unique<VkQueue>(
+            allocator_, GetQueue(&device, sparse_binding_queue_index_, 0));
+        sparse_binding_queue_ = sparse_binding_queue_concrete_.get();
+      }
+      log_->LogInfo("### Got sparse binding queue: ", sparse_binding_queue_->get_raw_object());
     }
   }
   return std::move(device);
@@ -303,6 +322,65 @@ VulkanApplication::CreateAndBindImage(const VkImageCreateInfo* create_info) {
             VkImage(image, nullptr, &device_), create_info->format);
 
   return containers::unique_ptr<Image>(
+      img, containers::UniqueDeleter(allocator_, sizeof(Image)));
+}
+
+containers::unique_ptr<VulkanApplication::SparseImage>
+VulkanApplication::CreateAndBindSparseImage(
+    const VkImageCreateInfo* create_info, size_t slice_size) {
+  LOG_ASSERT(!=, log_, create_info->flags && VK_IMAGE_CREATE_SPARSE_BINDING_BIT,
+             0u);
+  LOG_ASSERT(==, log_, sparse_binding_queue_ != nullptr, true);
+  ::VkImage image;
+  LOG_ASSERT(==, log_,
+             device_->vkCreateImage(device_, create_info, nullptr, &image),
+             VK_SUCCESS);
+  VkMemoryRequirements requirements;
+  device_->vkGetImageMemoryRequirements(device_, image, &requirements);
+  size_t alignment = requirements.alignment;
+  slice_size = ((slice_size + alignment - 1) / alignment) * alignment;
+  size_t num_slice = size_t(requirements.size) / slice_size;
+
+  containers::vector<AllocationToken*> tokens(allocator_);
+  containers::vector<VkSparseMemoryBind> binds(allocator_);
+  VkDeviceSize resourceOffset = 0u;
+  for (size_t i = 0; i < num_slice; i++) {
+    ::VkDeviceMemory memory;
+    ::VkDeviceSize offset;
+    AllocationToken* token = device_only_image_heap_->AllocateMemory(
+      slice_size, requirements.alignment, &memory, &offset, nullptr);
+    tokens.push_back(token);
+    binds.emplace_back(VkSparseMemoryBind{resourceOffset, slice_size, memory, offset, 0});
+    resourceOffset += slice_size;
+  }
+  VkSparseImageOpaqueMemoryBindInfo opaque_img_bind_info{image, uint32_t(binds.size()),
+                                              binds.data()};
+  VkBindSparseInfo bind_info{
+      VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,  // sType
+      nullptr,                             // pNext
+      0u,                                  // waitSemaphoreCount
+      nullptr,                             // pWaitSemaphores
+      0u,                                  // bufferBindCount
+      nullptr,                             // pBufferBinds
+      1,                                   // imageOpaqueBindCount
+      &opaque_img_bind_info,               // pImageOpaqueBinds
+      0u,                                  // imageBindCount
+      nullptr,                             // pImageBinds
+      0u,                                  // signalSemaphoreCount
+      nullptr                              // pSignalSemaphores
+  };
+  LOG_ASSERT(==, log_, VK_SUCCESS, sparse_binding_queue()->vkQueueBindSparse(
+                                       sparse_binding_queue(), 1u, &bind_info,
+                                       ::VkFence(VK_NULL_HANDLE)));
+  sparse_binding_queue()->vkQueueWaitIdle(sparse_binding_queue());
+
+  // We have to do it this way because Image is private and friended,
+  // so we cannot go through make_unique.
+  SparseImage* img = new (allocator_->malloc(sizeof(SparseImage)))
+      SparseImage(device_only_image_heap_.get(), std::move(tokens),
+            VkImage(image, nullptr, &device_), create_info->format);
+
+  return containers::unique_ptr<SparseImage>(
       img, containers::UniqueDeleter(allocator_, sizeof(Image)));
 }
 
@@ -1304,5 +1382,13 @@ VulkanComputePipeline::VulkanComputePipeline(
 
 ::VkDeviceSize VulkanApplication::Image::size() const {
   return token_ ? token_->allocationSize : 0u;
+}
+
+::VkDeviceSize VulkanApplication::SparseImage::size() const {
+  ::VkDeviceSize r = 0u;
+  for (const auto& ti : tokens_) {
+    r += ti ? ti->allocationSize : 0u;
+  }
+  return r;
 }
 }  // namespace vulkan
