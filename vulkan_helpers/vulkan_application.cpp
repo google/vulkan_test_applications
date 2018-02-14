@@ -683,7 +683,7 @@ void VulkanApplication::FillSmallBuffer(Buffer* buffer, const void* data,
       data_size};
 
   (*command_buffer)
-      ->vkCmdPipelineBarrier(*command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+      ->vkCmdPipelineBarrier(*command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT|VK_PIPELINE_STAGE_HOST_BIT,
                              VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr,
                              1, &barrier, 0, nullptr);
 }
