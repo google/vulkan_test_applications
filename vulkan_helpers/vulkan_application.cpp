@@ -292,7 +292,8 @@ VkDevice VulkanApplication::CreateDevice(
             allocator_, GetQueue(&device, sparse_binding_queue_index_, 0));
         sparse_binding_queue_ = sparse_binding_queue_concrete_.get();
       }
-      log_->LogInfo("### Got sparse binding queue: ", sparse_binding_queue_->get_raw_object());
+      log_->LogInfo("### Got sparse binding queue: ",
+                    sparse_binding_queue_->get_raw_object());
     }
   }
   return std::move(device);
@@ -348,13 +349,14 @@ VulkanApplication::CreateAndBindSparseImage(
     ::VkDeviceMemory memory;
     ::VkDeviceSize offset;
     AllocationToken* token = device_only_image_heap_->AllocateMemory(
-      slice_size, requirements.alignment, &memory, &offset, nullptr);
+        slice_size, requirements.alignment, &memory, &offset, nullptr);
     tokens.push_back(token);
-    binds.emplace_back(VkSparseMemoryBind{resourceOffset, slice_size, memory, offset, 0});
+    binds.emplace_back(
+        VkSparseMemoryBind{resourceOffset, slice_size, memory, offset, 0});
     resourceOffset += slice_size;
   }
-  VkSparseImageOpaqueMemoryBindInfo opaque_img_bind_info{image, uint32_t(binds.size()),
-                                              binds.data()};
+  VkSparseImageOpaqueMemoryBindInfo opaque_img_bind_info{
+      image, uint32_t(binds.size()), binds.data()};
   VkBindSparseInfo bind_info{
       VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,  // sType
       nullptr,                             // pNext
@@ -369,16 +371,17 @@ VulkanApplication::CreateAndBindSparseImage(
       0u,                                  // signalSemaphoreCount
       nullptr                              // pSignalSemaphores
   };
-  LOG_ASSERT(==, log_, VK_SUCCESS, sparse_binding_queue()->vkQueueBindSparse(
-                                       sparse_binding_queue(), 1u, &bind_info,
-                                       ::VkFence(VK_NULL_HANDLE)));
+  LOG_ASSERT(
+      ==, log_, VK_SUCCESS,
+      sparse_binding_queue()->vkQueueBindSparse(
+          sparse_binding_queue(), 1u, &bind_info, ::VkFence(VK_NULL_HANDLE)));
   sparse_binding_queue()->vkQueueWaitIdle(sparse_binding_queue());
 
   // We have to do it this way because Image is private and friended,
   // so we cannot go through make_unique.
   SparseImage* img = new (allocator_->malloc(sizeof(SparseImage)))
       SparseImage(device_only_image_heap_.get(), std::move(tokens),
-            VkImage(image, nullptr, &device_), create_info->format);
+                  VkImage(image, nullptr, &device_), create_info->format);
 
   return containers::unique_ptr<SparseImage>(
       img, containers::UniqueDeleter(allocator_, sizeof(Image)));
@@ -671,7 +674,7 @@ void VulkanApplication::FillSmallBuffer(Buffer* buffer, const void* data,
   VkBufferMemoryBarrier barrier = {
       VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
       nullptr,                                  // pNext
-      VK_ACCESS_HOST_WRITE_BIT,                 // srcAccessMask
+      VK_ACCESS_TRANSFER_WRITE_BIT,             // srcAccessMask
       target_usage,                             // dstAccessMask
       VK_QUEUE_FAMILY_IGNORED,                  // srcQueueFamilyIndex
       VK_QUEUE_FAMILY_IGNORED,                  // dstQueueFamilyIndex
