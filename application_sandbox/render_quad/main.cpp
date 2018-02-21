@@ -50,8 +50,8 @@ void populateData(logging::Logger* log, uint8_t* dst, size_t size,
   size_t staging_pixel_width = 0;
   // TODO: Handle more format
   switch (staging_format) {
-    case VK_FORMAT_R32G32B32A32_UINT:
-      staging_pixel_width = 4 * sizeof(uint32_t);
+    case VK_FORMAT_R8G8B8A8_UINT:
+      staging_pixel_width = sizeof(uint32_t);
       break;
     case VK_FORMAT_R32_UINT:
       staging_pixel_width = sizeof(uint32_t);
@@ -61,6 +61,7 @@ void populateData(logging::Logger* log, uint8_t* dst, size_t size,
   }
   switch (target_format) {
     case VK_FORMAT_B8G8R8A8_UNORM:
+    case VK_FORMAT_R8G8B8A8_UNORM:
       target_pixel_width = sizeof(uint32_t);
       break;
     case VK_FORMAT_D16_UNORM:
@@ -71,6 +72,12 @@ void populateData(logging::Logger* log, uint8_t* dst, size_t size,
   }
   // staging image must have a wider format than the target image to avoid
   // precision lost.
+  if (target_pixel_width == 0 ) {
+      log->LogInfo("Target image format not supported:", target_format);
+  }
+  if (staging_pixel_width == 0) {
+      log->LogInfo("Staging image format not supported:", staging_format);
+  }
   LOG_ASSERT(!=, log, 0, target_pixel_width);
   LOG_ASSERT(!=, log, 0, staging_pixel_width);
   LOG_ASSERT(>=, log, staging_pixel_width, target_pixel_width);
@@ -103,7 +110,7 @@ class RenderQuadSample
                    const VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
         Sample<RenderQuadFrameData>(
-            // Each copy of color unpacked source data is: 400*400*4*4 bytes.
+            // Each copy of color unpacked source data is: 400*400*4 bytes.
             data->root_allocator, data, 10, 512, 10, 1,
             sample_application::SampleOptions().EnableDepthBuffer(),
             requested_features),
@@ -162,7 +169,7 @@ class RenderQuadSample
                 },  // Color Attachment
                 {
                     0,                                         // flags
-                    VK_FORMAT_R32G32B32A32_UINT,               // format
+                    VK_FORMAT_R8G8B8A8_UINT,               // format
                     num_samples(),                             // samples
                     VK_ATTACHMENT_LOAD_OP_LOAD,                // loadOp
                     VK_ATTACHMENT_STORE_OP_DONT_CARE,          // storeOp
@@ -214,15 +221,15 @@ class RenderQuadSample
     pipeline_->Commit();
 
     // TODO: initialize depth and color init data.
-    color_data_ = containers::make_unique<vulkan::BufferFrameData<ColorData>>(
+    color_data_ = containers::make_unique<vulkan::BufferFrameData<Data>>(
         data_->root_allocator, app(), num_swapchain_images,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-    depth_data_ = containers::make_unique<vulkan::BufferFrameData<DepthData>>(
+    depth_data_ = containers::make_unique<vulkan::BufferFrameData<Data>>(
         data_->root_allocator, app(), num_swapchain_images,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
     populateData(data_->log.get(), color_data_->data().data.data(),
-                 color_data_->data().data.size(), VK_FORMAT_R32G32B32A32_UINT,
+                 color_data_->data().data.size(), VK_FORMAT_R8G8B8A8_UINT,
                  app()->swapchain().format());
     populateData(data_->log.get(), depth_data_->data().data.data(),
                  depth_data_->data().data.size(), VK_FORMAT_R32_UINT,
@@ -243,7 +250,7 @@ class RenderQuadSample
         nullptr,                              // pNext
         0,                                    // flags
         VK_IMAGE_TYPE_2D,                     // imageType
-        VK_FORMAT_R32G32B32A32_UINT,          // format
+        VK_FORMAT_R8G8B8A8_UINT,          // format
         {
             app()->swapchain().width(),   // width
             app()->swapchain().height(),  // height
@@ -539,10 +546,7 @@ class RenderQuadSample
   }
 
  private:
-  struct ColorData {
-    std::array<uint8_t, sizeof(src_data.data) * 4> data;
-  };
-  struct DepthData {
+  struct Data {
     std::array<uint8_t, sizeof(src_data.data)> data;
   };
 
@@ -552,8 +556,8 @@ class RenderQuadSample
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
   VkDescriptorSetLayoutBinding descriptor_set_layout_binding_;
 
-  containers::unique_ptr<vulkan::BufferFrameData<ColorData>> color_data_;
-  containers::unique_ptr<vulkan::BufferFrameData<DepthData>> depth_data_;
+  containers::unique_ptr<vulkan::BufferFrameData<Data>> color_data_;
+  containers::unique_ptr<vulkan::BufferFrameData<Data>> depth_data_;
 
   vulkan::VulkanModel plane_;
 };

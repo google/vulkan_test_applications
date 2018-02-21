@@ -22,11 +22,14 @@ layout(input_attachment_index = 0, binding = 0, set = 0) uniform usubpassInput c
 layout(input_attachment_index = 1, binding = 0, set = 0) uniform usubpassInput depth_data;
 
 void main() {
-    uint u = subpassLoad(color_data).r;
-    out_color[0] = (u&0xFF)/255.0;
-    out_color[1] = ((u>>8)&0xFF)/255.0;
-    out_color[2] = ((u>>16)&0xFF)/255.0;
-    out_color[3] = ((u>>24)&0xFF)/255.0;
+    uint r = subpassLoad(color_data).r;
+    uint g = subpassLoad(color_data).g;
+    uint b = subpassLoad(color_data).b;
+    uint a = subpassLoad(color_data).a;
+    out_color.r = (r&0xFF)/255.0;
+    out_color.g = (g&0xFF)/255.0;
+    out_color.b = (b&0xFF)/255.0;
+    out_color.a = (a&0xFF)/255.0;
 
     gl_FragDepth = (subpassLoad(depth_data).r)/float(uint(0xFFFFFFFF));
 }
