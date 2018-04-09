@@ -466,8 +466,8 @@ class TestManager(object):
                             test_name = test_name.replace("\\", ".")
                             test = obj()
                             test_name += "." + test.name()
-                            if (include_matcher.match(test_name) and
-                                    exclude_matcher.match(test_name) is None):
+                            if (include_matcher.search(test_name) and
+                                    exclude_matcher.search(test_name) is None):
                                 self.add_test(obj.gapit_test_name,
                                               test_name, test)
                 except:
