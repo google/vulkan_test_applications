@@ -370,13 +370,13 @@ def parse_observation(observation_type, start, end, line, atom):
     '''Parses the second line of a memory observation.
     '''
     start_match = re.match(
-        r'0x([0-9a-f]+)(@[0-9]+)?', start)
+        r'(?:0x)?([0-9a-f]+)(@[0-9]+)?', start)
     start_pool = 0
     if start_match.group(2):
         start_pool = int(start_match.group(2))
 
     end_match = re.match(
-        r'0x([0-9a-f]+)(@[0-9]+)?', end)
+        r'(?:0x)?([0-9a-f]+)(@[0-9]+)?', end)
 
     if observation_type == "R":
         atom.add_read_observation(
@@ -523,7 +523,8 @@ def parse_trace_file(filename):
             current_state = MEMORY
         elif current_state == MEMORY:
             match = re.match(
-                r'\s*(R|W): \[(0x[0-9a-f]+) - (0x[0-9a-f]+)\]', line)
+                r'\s*(R|W): \[((?:0x)?[0-9a-f]+) - ((?:0x)?[0-9a-f]+)\]', line)
+            match_empty = re.match(r'\s*(R|W): \[0 - 0\]', line)
             if not match:
                 current_state = NEW_ATOM
                 continue

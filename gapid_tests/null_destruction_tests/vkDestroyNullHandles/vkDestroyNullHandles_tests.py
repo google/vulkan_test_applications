@@ -30,7 +30,7 @@ class AllDestroy(GapitTest):
             "vkGetPhysicalDeviceProperties"))
 
         if (self.not_device(device_properties, 0x5BCE4000, NVIDIA_K2200) and
-            self.not_device(device_properties, 0x5BCE4000, NVIDIA_965M):
+            self.not_device(device_properties, 0x5BCE4000, NVIDIA_965M)):
                 destroy_pipeline_cache=require(
                     self.next_call_of("vkDestroyPipelineCache"))
                 require_not_equal(0, destroy_pipeline_cache.int_device)
