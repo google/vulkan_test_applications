@@ -891,7 +891,7 @@ VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
 
   do {
     if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY ||
-        res == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+        res == VK_ERROR_OUT_OF_HOST_MEMORY) {
       log->LogInfo("Could not allocate ", buffer_size,
                    " bytes of "
                    "device memory. Attempting to allocate ",
