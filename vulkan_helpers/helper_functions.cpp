@@ -469,7 +469,6 @@ VkDevice CreateDeviceForSwapchain(
       present_queue_family_index = backup_present_queue_family_index;
     }
 
-    uint32_t num_queue_infos = 1;
     containers::vector<QueueCreateInfo> queue_create_infos(allocator);
     queue_create_infos.reserve(4);
     queue_create_infos.emplace_back(
@@ -538,7 +537,7 @@ VkDevice CreateDeviceForSwapchain(
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,  // stype
         nullptr,                               // pNext
         0,                                     // flags
-        num_queue_infos,                       // queueCreateInfoCount
+        raw_queue_infos.size(),                // queueCreateInfoCount
         raw_queue_infos.data(),                // pQueueCreateInfos
         0,                                     // enabledLayerCount
         nullptr,                               // ppEnabledLayerNames
