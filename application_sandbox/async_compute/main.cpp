@@ -295,7 +295,7 @@ class ASyncThreadRunner {
 
       // Transfer the ownership from the render_queue to this queue.
       command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+          command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
 
@@ -341,7 +341,7 @@ class ASyncThreadRunner {
       barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
       command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+          command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
 
@@ -364,7 +364,7 @@ class ASyncThreadRunner {
           dat.render_ssbo_->size(),                 // size
       };
       wake_command_buffer->vkCmdPipelineBarrier(
-          wake_command_buffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+          wake_command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &wake_barrier,
           0, nullptr);
 
@@ -980,7 +980,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
       };
       cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                      VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0,
+                                      VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0,
                                       nullptr, 1, &barrier, 0, nullptr);
     }
 
