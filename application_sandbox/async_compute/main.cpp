@@ -295,7 +295,7 @@ class ASyncThreadRunner {
 
       // Transfer the ownership from the render_queue to this queue.
       command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+          command_buffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
 
@@ -341,7 +341,7 @@ class ASyncThreadRunner {
       barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
       command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+          command_buffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
 
@@ -364,7 +364,7 @@ class ASyncThreadRunner {
           dat.render_ssbo_->size(),                 // size
       };
       wake_command_buffer->vkCmdPipelineBarrier(
-          wake_command_buffer, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+          wake_command_buffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &wake_barrier,
           0, nullptr);
 
@@ -476,9 +476,11 @@ class ASyncThreadRunner {
     while (!exit_.load()) {
       // 1)
       if (!first) {
-        app_->device()->vkWaitForFences(app_->device(), 1,
+        LOG_ASSERT(
+            ==, app_->GetLogger(), VK_SUCCESS,
+            app_->device()->vkWaitForFences(app_->device(), 1,
                                         &computation_fence.get_raw_object(),
-                                        false, 0xFFFFFFFFFFFFFFFF);
+                                        false, 0xFFFFFFFFFFFFFFFF));
         app_->device()->vkResetFences(app_->device(), 1,
                                       &computation_fence.get_raw_object());
         // 2)
@@ -978,7 +980,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
       };
       cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                      VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 0,
+                                      VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0,
                                       nullptr, 1, &barrier, 0, nullptr);
     }
 

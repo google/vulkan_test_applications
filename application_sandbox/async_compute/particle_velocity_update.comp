@@ -41,9 +41,7 @@ void main() {
   Vector2 total_acceleration = vec2(0.f, 0.f);
   for (int i = 0; i < TOTAL_PARTICLES / PARTICLE_SPLIT; ++i) {
     uint idx = (PARTICLE_SPLIT * i) + gl_GlobalInvocationID.x + int(frame_number);
-    while (idx > TOTAL_PARTICLES) {
-      idx = idx - TOTAL_PARTICLES;
-    }
+    idx = idx % TOTAL_PARTICLES;
     if (idx != gl_GlobalInvocationID.x) {
       Vector2 direction = simulation[idx].position_velocity.xy - sim.position_velocity.xy;
       float lensq = dot(direction, direction);
