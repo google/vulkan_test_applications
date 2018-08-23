@@ -51,7 +51,7 @@ static internal::dummy __attribute__((used)) test_dummy;
 
 // If output_frame is > -1, then the given image frame will be written
 // to output_file, otherwise the application will render to the screen.
-struct application_options {
+struct ApplicationOptions {
   bool fixed_timestep;
   bool prefer_separate_present;
   const char* output_file;
@@ -69,13 +69,37 @@ struct entry_data {
 #elif defined __linux__
   xcb_window_t native_window_handle;
   xcb_connection_t* native_connection;
+  xcb_intern_atom_reply_t* atom_wm_delete_window;
 #endif
   // This is never null.
   containers::unique_ptr<logging::Logger> log;
   containers::Allocator* root_allocator;
   uint32_t width;
   uint32_t height;
-  application_options options;
+  ApplicationOptions options;
+
+  bool should_exit() const {
+#if defined __linux__
+    if (native_connection != nullptr && atom_wm_delete_window != nullptr) {
+      xcb_generic_event_t* event = xcb_poll_for_event(native_connection);
+      while(event) {
+        uint8_t event_code = event->response_type & 0x7f;
+        if (event_code == XCB_CLIENT_MESSAGE) {
+          if ((*(xcb_client_message_event_t*)event).data.data32[0] ==
+              atom_wm_delete_window->atom) {
+            free(event);
+            return true;
+          }
+        }
+        free(event);
+        event = xcb_poll_for_event(native_connection);
+      }
+    }
+    return false;
+#else
+    return false;
+#endif
+  }
 };
 }  // namespace entry
 

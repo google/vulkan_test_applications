@@ -208,6 +208,7 @@ int main(int argc, const char** argv) {
   containers::LeakCheckAllocator root_allocator;
   xcb_connection_t* connection;
   xcb_window_t window;
+  xcb_intern_atom_reply_t* atom_wm_delete_window;
   if (args.output_frame == -1) {
     connection = xcb_connect(NULL, NULL);
     const xcb_setup_t* setup = xcb_get_setup(connection);
@@ -219,6 +220,19 @@ int main(int argc, const char** argv) {
                       0, args.window_width, args.window_height, 1,
                       XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, 0,
                       NULL);
+    /* Magic code that will send notification when window is destroyed */
+    xcb_intern_atom_cookie_t cookie =
+        xcb_intern_atom(connection, 1, 12, "WM_PROTOCOLS");
+    xcb_intern_atom_reply_t* reply =
+        xcb_intern_atom_reply(connection, cookie, 0);
+    xcb_intern_atom_cookie_t cookie2 =
+        xcb_intern_atom(connection, 0, 16, "WM_DELETE_WINDOW");
+    atom_wm_delete_window =
+        xcb_intern_atom_reply(connection, cookie2, 0);
+    xcb_change_property(connection, XCB_PROP_MODE_REPLACE, window,
+                        reply->atom, 4, 32, 1,
+                        &atom_wm_delete_window->atom);
+    free(reply);
 
     xcb_map_window(connection, window);
     xcb_flush(connection);
@@ -230,6 +244,7 @@ int main(int argc, const char** argv) {
     entry::entry_data data{
         window,
         connection,
+        atom_wm_delete_window,
         logging::GetLogger(&root_allocator),
         &root_allocator,
         args.window_width,
@@ -240,6 +255,7 @@ int main(int argc, const char** argv) {
   });
   main_thread.join();
   // TODO(awoloszyn): Handle other events here.
+  free(atom_wm_delete_window);
   xcb_disconnect(connection);
   assert(root_allocator.currently_allocated_bytes_.load() == 0);
   return return_value;

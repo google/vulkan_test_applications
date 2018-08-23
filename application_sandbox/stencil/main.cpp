@@ -469,7 +469,7 @@ int main_entry(const entry::entry_data* data) {
   StencilSample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit()) {
+  while (!sample.should_exit() && !data->should_exit()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
