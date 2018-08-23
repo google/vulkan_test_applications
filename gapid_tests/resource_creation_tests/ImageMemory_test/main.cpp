@@ -21,13 +21,13 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto& allocator = data->root_allocator;
-  vulkan::LibraryWrapper wrapper(allocator, data->log.get());
+  auto allocator = data->allocator();
+  vulkan::LibraryWrapper wrapper(allocator, data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(vulkan::CreateDefaultDevice(allocator, instance));
   {
     VkImageCreateInfo image_create_info{
@@ -58,17 +58,17 @@ int main_entry(const entry::entry_data* data) {
     VkMemoryRequirements image_memory_requirements = {};
     device->vkGetImageMemoryRequirements(device, image,
                                          &image_memory_requirements);
-    data->log->LogInfo("Memory Requirements: ");
-    data->log->LogInfo("    size : ", image_memory_requirements.size);
-    data->log->LogInfo("    alignment : ", image_memory_requirements.alignment);
-    data->log->LogInfo("    memoryTypeBits : ",
+    data->logger()->LogInfo("Memory Requirements: ");
+    data->logger()->LogInfo("    size : ", image_memory_requirements.size);
+    data->logger()->LogInfo("    alignment : ", image_memory_requirements.alignment);
+    data->logger()->LogInfo("    memoryTypeBits : ",
                        image_memory_requirements.memoryTypeBits);
 
     uint32_t memory_index = vulkan::GetMemoryIndex(
-        &device, data->log.get(), image_memory_requirements.memoryTypeBits,
+        &device, data->logger(), image_memory_requirements.memoryTypeBits,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    data->log->LogInfo("Using memory index: ", memory_index);
+    data->logger()->LogInfo("Using memory index: ", memory_index);
 
     VkMemoryAllocateInfo allocate_info{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,  // sType
@@ -77,16 +77,16 @@ int main_entry(const entry::entry_data* data) {
         memory_index};
 
     VkDeviceMemory device_memory;
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkAllocateMemory(device, &allocate_info, nullptr,
                                         &device_memory));
 
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkBindImageMemory(device, image, device_memory, 0));
 
     device->vkFreeMemory(device, device_memory, nullptr);
 
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -125,7 +125,7 @@ class Sample {
   };
 
  public:
-  Sample(containers::Allocator* allocator, const entry::entry_data* entry_data,
+  Sample(containers::Allocator* allocator, const entry::EntryData* entry_data,
          uint32_t host_buffer_size_in_MB, uint32_t image_memory_size_in_MB,
          uint32_t device_buffer_size_in_MB, uint32_t coherent_buffer_size_in_MB,
          const SampleOptions& options,
@@ -133,7 +133,7 @@ class Sample {
       : options_(options),
         data_(entry_data),
         allocator_(allocator),
-        application_(allocator, entry_data->log.get(), entry_data, {},
+        application_(allocator, entry_data->logger(), entry_data, {},
                      physical_device_features,
                      host_buffer_size_in_MB * 1024 * 1024,
                      image_memory_size_in_MB * 1024 * 1024,
@@ -146,7 +146,7 @@ class Sample {
         initialization_command_buffer_(application_.GetCommandBuffer()),
         average_frame_time_(0),
         is_valid_(true) {
-    if (data_->options.fixed_timestep) {
+    if (data_->fixed_timestep()) {
       app()->GetLogger()->LogInfo("Running with a fixed timestep of 0.1s");
     }
 
@@ -237,7 +237,7 @@ class Sample {
     auto current_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsed_time = current_time - last_frame_time_;
     last_frame_time_ = current_time;
-    Update(data_->options.fixed_timestep ? 0.1f : elapsed_time.count());
+    Update(data_->fixed_timestep() ? 0.1f : elapsed_time.count());
 
     // Smooth this out, so that it is more sensible.
     average_frame_time_ =
@@ -502,7 +502,7 @@ class Sample {
       view_create_info.image = *data->depth_stencil_;
 
       LOG_ASSERT(
-          ==, data_->log.get(), VK_SUCCESS,
+          ==, data_->logger(), VK_SUCCESS,
           application_.device()->vkCreateImageView(
               application_.device(), &view_create_info, nullptr, &raw_view));
       data->depth_view_ = containers::make_unique<vulkan::VkImageView>(
@@ -526,7 +526,7 @@ class Sample {
     view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
     LOG_ASSERT(
-        ==, data_->log.get(), VK_SUCCESS,
+        ==, data_->logger(), VK_SUCCESS,
         application_.device()->vkCreateImageView(
             application_.device(), &view_create_info, nullptr, &raw_view));
     data->image_view = containers::make_unique<vulkan::VkImageView>(
@@ -748,7 +748,7 @@ class Sample {
   }
 
   SampleOptions options_;
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::Allocator* allocator_;
   // The VulkanApplication that we build on, we want this to be the
   // last thing deleted, it goes at the top.

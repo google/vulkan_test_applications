@@ -35,7 +35,7 @@ uint32_t vertex_shader[] =
 
 namespace {
 void QueryWithoutDrawingAnythingAndCopyResults(
-    const entry::entry_data* data, vulkan::VulkanApplication* app,
+    const entry::EntryData* data, vulkan::VulkanApplication* app,
     const VkQueryPoolCreateInfo& query_pool_create_info, uint32_t first_query,
     uint32_t query_count, ::VkBuffer dst_buffer, VkDeviceSize dst_offset,
     VkDeviceSize stride, VkQueryResultFlags flags) {
@@ -221,7 +221,7 @@ void QueryWithoutDrawingAnythingAndCopyResults(
   };
 
   VkPipeline raw_pipeline;
-  LOG_EXPECT(==, data->log, device->vkCreateGraphicsPipelines(
+  LOG_EXPECT(==, data->logger(), device->vkCreateGraphicsPipelines(
                                 device, app->pipeline_cache(), 1, &create_info,
                                 nullptr, &raw_pipeline),
              VK_SUCCESS);
@@ -250,7 +250,7 @@ void QueryWithoutDrawingAnythingAndCopyResults(
       },
   };
   ::VkImageView raw_image_view;
-  LOG_EXPECT(==, data->log, app->device()->vkCreateImageView(
+  LOG_EXPECT(==, data->logger(), app->device()->vkCreateImageView(
                                 app->device(), &image_view_create_info, nullptr,
                                 &raw_image_view),
              VK_SUCCESS);
@@ -389,10 +389,10 @@ vulkan::BufferPointer CreateBufferAndFlush(vulkan::VulkanApplication* app,
 }
 }
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
 
   {
     // 1. Get 32-bit results from all the queries in a four-query pool,
@@ -416,10 +416,10 @@ int main_entry(const entry::entry_data* data) {
 
     for (uint32_t i = 0; i < buffer_size; i++) {
       if (i < offset) {
-        LOG_ASSERT(==, data->log, uint8_t(result_buffer->base_address()[i]),
+        LOG_ASSERT(==, data->logger(), uint8_t(result_buffer->base_address()[i]),
                    0xFFU);
       } else {
-        LOG_ASSERT(==, data->log, uint8_t(result_buffer->base_address()[i]),
+        LOG_ASSERT(==, data->logger(), uint8_t(result_buffer->base_address()[i]),
                    0x0U);
       }
     }
@@ -449,7 +449,7 @@ int main_entry(const entry::entry_data* data) {
     result_buffer->invalidate();
 
     for (uint32_t i = 0; i < buffer_size; i++) {
-      LOG_ASSERT(==, data->log, uint8_t(result_buffer->base_address()[i]),
+      LOG_ASSERT(==, data->logger(), uint8_t(result_buffer->base_address()[i]),
                  0x0U);
     }
   }
@@ -480,14 +480,14 @@ int main_entry(const entry::entry_data* data) {
     uint32_t* ptr = reinterpret_cast<uint32_t*>(result_buffer->base_address());
     for (uint32_t i = 0; i < buffer_size / sizeof(uint32_t); i++) {
       if (i % 3 == 0) {
-        LOG_ASSERT(==, data->log, ptr[i], 0x0U);
+        LOG_ASSERT(==, data->logger(), ptr[i], 0x0U);
       } else if (i % 3 == 1) {
-        LOG_ASSERT(==, data->log, ptr[i], 0x1U);
+        LOG_ASSERT(==, data->logger(), ptr[i], 0x1U);
       } else {
-        LOG_ASSERT(==, data->log, ptr[i], 0xFFFFFFFFU);
+        LOG_ASSERT(==, data->logger(), ptr[i], 0xFFFFFFFFU);
       }
     }
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

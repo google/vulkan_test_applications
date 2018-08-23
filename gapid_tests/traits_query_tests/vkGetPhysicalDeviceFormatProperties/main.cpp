@@ -20,32 +20,32 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   containers::vector<VkPhysicalDevice> physical_devices(
-      vulkan::GetPhysicalDevices(data->root_allocator, instance));
+      vulkan::GetPhysicalDevices(data->allocator(), instance));
   const uint32_t physical_device_count = physical_devices.size();
 
-  data->log->LogInfo("API: vkGetPhysicalDeviceFormatProperties");
+  data->logger()->LogInfo("API: vkGetPhysicalDeviceFormatProperties");
 
   auto output_properties = [data](const VkFormatProperties& properties) {
-    data->log->LogInfo("      linearTilingFeatures: ",
+    data->logger()->LogInfo("      linearTilingFeatures: ",
                        properties.linearTilingFeatures);
-    data->log->LogInfo("      optimalTilingFeatures: ",
+    data->logger()->LogInfo("      optimalTilingFeatures: ",
                        properties.optimalTilingFeatures);
-    data->log->LogInfo("      bufferFeatures: ", properties.bufferFeatures);
+    data->logger()->LogInfo("      bufferFeatures: ", properties.bufferFeatures);
   };
 
   {
     for (const auto& device : physical_devices) {
-      data->log->LogInfo("  Phyiscal Device: ", device);
+      data->logger()->LogInfo("  Phyiscal Device: ", device);
 
       VkFormatProperties properties;
-      for (auto format : vulkan::AllVkFormats(data->root_allocator)) {
-        data->log->LogInfo("    VkFormat: ", format);
+      for (auto format : vulkan::AllVkFormats(data->allocator())) {
+        data->logger()->LogInfo("    VkFormat: ", format);
         instance->vkGetPhysicalDeviceFormatProperties(device, format,
                                                       &properties);
         output_properties(properties);
@@ -53,6 +53,6 @@ int main_entry(const entry::entry_data* data) {
     }
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

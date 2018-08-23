@@ -29,12 +29,12 @@ uint32_t vertex_shader[] =
 #include "simple_vertex.vert.spv"
     ;
 
-void CreatePipelineAndSetDepthBias(const entry::entry_data* data,
+void CreatePipelineAndSetDepthBias(const entry::EntryData* data,
                                    vulkan::VulkanApplication* app_ptr,
                                    float depth_bias_constant_factor,
                                    float depth_bias_clamp,
                                    float depth_bias_slope_factor) {
-  LOG_ASSERT(!=, data->log, 0, (uintptr_t)app_ptr);
+  LOG_ASSERT(!=, data->logger(), 0, (uintptr_t)app_ptr);
   vulkan::VulkanApplication& app = *app_ptr;
   vulkan::PipelineLayout pipeline_layout(app.CreatePipelineLayout(
       {{{
@@ -128,8 +128,8 @@ void CreatePipelineAndSetDepthBias(const entry::entry_data* data,
   command_buffer->vkEndCommandBuffer(command_buffer);
 }
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
   {
     const float depth_bias_constant_factor = 1.1f;
@@ -138,7 +138,7 @@ int main_entry(const entry::entry_data* data) {
     const float depth_bias_slope_factor = 3.3f;
     // 1. Test with depthBiasClamp set to zero, so physical device feature:
     // depthBiasClamp is not required.
-    vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+    vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
     CreatePipelineAndSetDepthBias(data, &app, depth_bias_constant_factor,
                                   depth_bias_clamp, depth_bias_slope_factor);
   }
@@ -151,17 +151,17 @@ int main_entry(const entry::entry_data* data) {
     const float depth_bias_slope_factor = 3.3f;
     VkPhysicalDeviceFeatures request_features = {0};
     request_features.depthBiasClamp = VK_TRUE;
-    vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data,
+    vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
                                   {}, request_features);
     if (app.device().is_valid()) {
       CreatePipelineAndSetDepthBias(data, &app, depth_bias_constant_factor,
                                     depth_bias_clamp, depth_bias_slope_factor);
     } else {
-      data->log->LogInfo(
+      data->logger()->LogInfo(
           "Disabled test due to missing physical device feature: "
           "depthBiasClamp");
     }
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

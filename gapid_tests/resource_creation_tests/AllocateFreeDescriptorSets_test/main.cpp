@@ -21,11 +21,11 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto& allocator = data->root_allocator;
-  vulkan::LibraryWrapper wrapper(allocator, data->log.get());
+  auto allocator = data->allocator();
+  vulkan::LibraryWrapper wrapper(allocator, data->logger());
   vulkan::VkInstance instance(vulkan::CreateEmptyInstance(allocator, &wrapper));
   vulkan::VkDevice device(vulkan::CreateDefaultDevice(allocator, instance));
 
@@ -48,7 +48,7 @@ int main_entry(const entry::entry_data* data) {
     };
     ::VkDescriptorSet set;
     device->vkAllocateDescriptorSets(device, &alloc_info, &set);
-    data->log->LogInfo("  descriptor set: ", set);
+    data->logger()->LogInfo("  descriptor set: ", set);
     device->vkFreeDescriptorSets(device, raw_pool, 1, &set);
   }
 
@@ -78,11 +78,11 @@ int main_entry(const entry::entry_data* data) {
     device->vkAllocateDescriptorSets(device, &alloc_info,
                                      (::VkDescriptorSet*)sets);
     for (int i = 0; i < kNumSets; ++i) {
-      data->log->LogInfo("  descriptor set: ", sets[i]);
+      data->logger()->LogInfo("  descriptor set: ", sets[i]);
     }
     device->vkFreeDescriptorSets(device, raw_pool, kNumSets, sets);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -22,19 +22,19 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
   VkDescriptorSetLayoutBinding binding{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                                        VK_SHADER_STAGE_VERTEX_BIT, nullptr};
   vulkan::VkDescriptorSetLayout descriptor_set_layout =
-      vulkan::CreateDescriptorSetLayout(data->root_allocator, &device,
+      vulkan::CreateDescriptorSetLayout(data->allocator(), &device,
                                         {binding});
 
   // The size of the data must be a multiple of 4
-  containers::vector<char> constants(100, 0xab, data->root_allocator);
+  containers::vector<char> constants(100, 0xab, data->allocator());
 
   VkPushConstantRange range{VK_SHADER_STAGE_VERTEX_BIT, 0,
                             uint32_t(constants.size())};
@@ -78,6 +78,6 @@ int main_entry(const entry::entry_data* data) {
     app.render_queue()->vkQueueWaitIdle(app.render_queue());
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

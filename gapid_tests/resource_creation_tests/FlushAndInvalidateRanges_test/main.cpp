@@ -22,9 +22,9 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
   vulkan::VkCommandBuffer cmd_buf = app.GetCommandBuffer();
   ::VkCommandBuffer raw_cmd_buf = cmd_buf.get_command_buffer();
@@ -48,7 +48,7 @@ int main_entry(const entry::entry_data* data) {
   device->vkGetBufferMemoryRequirements(device, tiny_buffer, &requirements);
   device->vkDestroyBuffer(device, tiny_buffer, nullptr);
   uint32_t memory_type_index =
-      GetMemoryIndex(&device, data->log.get(), requirements.memoryTypeBits,
+      GetMemoryIndex(&device, data->logger(), requirements.memoryTypeBits,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
   // Allocate memory space for 2048 bytes
   // Mapped memories must be aligned to kNonCoherentAtomSize and all the sizes
@@ -186,7 +186,7 @@ int main_entry(const entry::entry_data* data) {
       // Only the second 256-byte block of the dst buffer has the data flushed
       // before.
       for (size_t i = kNonCoherentAtomSize; i < map_size; i++) {
-        LOG_ASSERT(==, data->log, (i & 0xFF), (unsigned char)buf_data[i]);
+        LOG_ASSERT(==, data->logger(), (i & 0xFF), (unsigned char)buf_data[i]);
       }
       device->vkUnmapMemory(device, device_memory);
     }
@@ -306,13 +306,13 @@ int main_entry(const entry::entry_data* data) {
       };
       device->vkInvalidateMappedMemoryRanges(device, 1, &invalidate_range);
       for (size_t i = kNonCoherentAtomSize; i < map_size; i++) {
-        LOG_ASSERT(==, data->log, ((512 - i) & 0xFF),
+        LOG_ASSERT(==, data->logger(), ((512 - i) & 0xFF),
                    (unsigned char)buf_data[i]);
       }
       device->vkUnmapMemory(device, device_memory);
     }
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

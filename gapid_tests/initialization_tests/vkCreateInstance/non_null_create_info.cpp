@@ -18,10 +18,10 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   {
     // Test a non-nullptr pApplicationInfo
     VkApplicationInfo app_info{VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -44,9 +44,9 @@ int main_entry(const entry::entry_data* data) {
     VkInstance raw_instance;
     wrapper.vkCreateInstance(&info, nullptr, &raw_instance);
     // vulkan::VkInstance will handle destroying the instance
-    vulkan::VkInstance instance(data->root_allocator, raw_instance, nullptr,
+    vulkan::VkInstance instance(data->allocator(), raw_instance, nullptr,
                                 &wrapper);
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -57,10 +57,10 @@ const vulkan::VulkanGraphicsPipeline::InputStream kUVStream{
 const uint32_t kIndex[] = {0, 1, 2};
 }  // anonymous namespace
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
 
   // Create vertex buffers and index buffer
@@ -160,7 +160,7 @@ int main_entry(const entry::entry_data* data) {
       },
   };
   ::VkImageView raw_image_view;
-  LOG_ASSERT(==, data->log, app.device()->vkCreateImageView(
+  LOG_ASSERT(==, data->logger(), app.device()->vkCreateImageView(
                                 app.device(), &image_view_create_info, nullptr,
                                 &raw_image_view),
              VK_SUCCESS);
@@ -220,7 +220,7 @@ int main_entry(const entry::entry_data* data) {
                                     vertex_buffer_offsets);
     cmd_buf->vkCmdDraw(cmd_buf, 3, 1, 0, 0);
     cmd_buf->vkCmdEndRenderPass(cmd_buf);
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                app.EndAndSubmitCommandBufferAndWaitForQueueIdle(
                    &cmd_buf, &app.render_queue()));
   }
@@ -254,7 +254,7 @@ int main_entry(const entry::entry_data* data) {
     cmd_buf->vkCmdBindIndexBuffer(cmd_buf, *index_buf, 0, VK_INDEX_TYPE_UINT32);
     cmd_buf->vkCmdDrawIndexed(cmd_buf, 3, 1, 0, 0, 0);
     cmd_buf->vkCmdEndRenderPass(cmd_buf);
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                app.EndAndSubmitCommandBufferAndWaitForQueueIdle(
                    &cmd_buf, &app.render_queue()));
   }
@@ -294,7 +294,7 @@ int main_entry(const entry::entry_data* data) {
                                     vertex_buffer_offsets);
     cmd_buf->vkCmdDrawIndirect(cmd_buf, *ic_buf, 0, 1, 0);
     cmd_buf->vkCmdEndRenderPass(cmd_buf);
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                app.EndAndSubmitCommandBufferAndWaitForQueueIdle(
                    &cmd_buf, &app.render_queue()));
   }
@@ -337,11 +337,11 @@ int main_entry(const entry::entry_data* data) {
     cmd_buf->vkCmdBindIndexBuffer(cmd_buf, *index_buf, 0, VK_INDEX_TYPE_UINT32);
     cmd_buf->vkCmdDrawIndexedIndirect(cmd_buf, *ic_buf, 0, 1, 0);
     cmd_buf->vkCmdEndRenderPass(cmd_buf);
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                app.EndAndSubmitCommandBufferAndWaitForQueueIdle(
                    &cmd_buf, &app.render_queue()));
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

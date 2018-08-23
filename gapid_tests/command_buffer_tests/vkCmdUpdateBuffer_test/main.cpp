@@ -19,10 +19,10 @@
 
 #include <algorithm>
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+  vulkan::VulkanApplication application(data->allocator(), data->logger(),
                                         data, {}, {0}, 1024 * 100, 1024 * 100,
                                         1024 * 100);
   {
@@ -45,7 +45,7 @@ int main_entry(const entry::entry_data* data) {
         application.CreateAndBindHostBuffer(&create_info);
 
     containers::vector<uint8_t> buffer_data(update_size, update_byte,
-                                            data->root_allocator);
+                                            data->allocator());
     vulkan::VkCommandBuffer cmd_buf = application.GetCommandBuffer();
     VkCommandBufferBeginInfo begin_info{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr, 0, nullptr};
@@ -101,10 +101,10 @@ int main_entry(const entry::entry_data* data) {
     std::for_each(update_buffer->base_address(),
                   update_buffer->base_address() + update_size,
                   [&data, update_byte](uint8_t c) {
-                    LOG_ASSERT(==, data->log, c, update_byte);
+                    LOG_ASSERT(==, data->logger(), c, update_byte);
                   });
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

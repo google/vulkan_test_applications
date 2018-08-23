@@ -69,18 +69,18 @@ struct DepthBoundsFrameData {
 class DepthBoundsSample
     : public sample_application::Sample<DepthBoundsFrameData> {
  public:
-  DepthBoundsSample(const entry::entry_data* data,
+  DepthBoundsSample(const entry::EntryData* data,
                     const VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
         Sample<DepthBoundsFrameData>(
-            data->root_allocator, data, 1, 512, 1, 1,
+            data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions().EnableDepthBuffer(),
             requested_features) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator, app()->CreatePipelineLayout({{}}));
+        data_->allocator(), app()->CreatePipelineLayout({{}}));
 
     VkAttachmentReference depth_attachment = {
         0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
@@ -88,7 +88,7 @@ class DepthBoundsSample
         1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     first_render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {
                 {
@@ -130,7 +130,7 @@ class DepthBoundsSample
             ));
 
     second_render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {
                 {
@@ -172,7 +172,7 @@ class DepthBoundsSample
             ));
 
     pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       first_render_pass_.get(), 0));
     pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main", vertex_shader);
@@ -206,7 +206,7 @@ class DepthBoundsSample
 
     frame_data->render_command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     // Create a framebuffer for rendering
     VkImageView views[2] = {depth_view(frame_data), color_view(frame_data)};
@@ -226,7 +226,7 @@ class DepthBoundsSample
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     VkClearValue clears[2] = {{1.0f, 1}, {0.0f, 0.0f, 0.0f, 0.0f}};
@@ -364,7 +364,7 @@ class DepthBoundsSample
   }
 
  private:
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> first_render_pass_;
@@ -374,18 +374,18 @@ class DepthBoundsSample
   float depthBoundsCenterDiff_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   VkPhysicalDeviceFeatures requested_features = {0};
   requested_features.depthBounds = VK_TRUE;
   DepthBoundsSample sample(data, requested_features);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->ShouldExit()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

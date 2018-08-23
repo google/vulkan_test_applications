@@ -16,10 +16,10 @@
 #include "support/entry/entry.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/vulkan_application.h"
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+  vulkan::VulkanApplication application(data->allocator(), data->logger(),
                                         data, {}, {0}, 1024 * 100, 1024 * 100,
                                         1024 * 100);
   VkImageCreateInfo image_create_info{
@@ -171,10 +171,10 @@ int main_entry(const entry::entry_data* data) {
 
   dest_buffer->invalidate();
   for (size_t i = 0; i < 32 * 32 * 4; ++i) {
-    LOG_ASSERT(==, data->log, (0xFF & i),
+    LOG_ASSERT(==, data->logger(), (0xFF & i),
                static_cast<unsigned char>(dest_buffer->base_address()[i]));
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -19,9 +19,9 @@
 #include "vulkan_helpers/known_device_infos.h"
 #include "vulkan_helpers/vulkan_application.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::VulkanApplication application(data->allocator(), data->logger(),
                                         data);
 
   {
@@ -37,7 +37,7 @@ int main_entry(const entry::entry_data* data) {
         0,                                         // pipelineStatistics
     };
     ::VkQueryPool query_pool;
-    LOG_EXPECT(==, data->log,
+    LOG_EXPECT(==, data->logger(),
                device->vkCreateQueryPool(device, &query_pool_create_info,
                                          nullptr, &query_pool),
                VK_SUCCESS);
@@ -57,12 +57,12 @@ int main_entry(const entry::entry_data* data) {
         0,                                         // pipelineStatistics
     };
     ::VkQueryPool query_pool;
-    LOG_EXPECT(==, data->log,
+    LOG_EXPECT(==, data->logger(),
                device->vkCreateQueryPool(device, &query_pool_create_info,
                                          nullptr, &query_pool),
                VK_SUCCESS);
     device->vkDestroyQueryPool(device, query_pool, nullptr);
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

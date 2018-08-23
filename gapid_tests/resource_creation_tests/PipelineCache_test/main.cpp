@@ -21,13 +21,13 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateDefaultInstance(data->root_allocator, &wrapper));
+      vulkan::CreateDefaultInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(
-      vulkan::CreateDefaultDevice(data->root_allocator, instance, false));
+      vulkan::CreateDefaultDevice(data->allocator(), instance, false));
 
   {  // Empty cache
     VkPipelineCacheCreateInfo create_info{
@@ -40,7 +40,7 @@ int main_entry(const entry::entry_data* data) {
 
     VkPipelineCache cache;
     LOG_ASSERT(
-        ==, data->log,
+        ==, data->logger(),
         device->vkCreatePipelineCache(device, &create_info, nullptr, &cache),
         VK_SUCCESS);
     device->vkDestroyPipelineCache(device, cache, nullptr);
@@ -56,19 +56,19 @@ int main_entry(const entry::entry_data* data) {
     };
     VkPipelineCache caches[3];
     LOG_ASSERT(
-        ==, data->log,
+        ==, data->logger(),
         device->vkCreatePipelineCache(device, &create_info, nullptr, &caches[0]),
         VK_SUCCESS);
     LOG_ASSERT(
-        ==, data->log,
+        ==, data->logger(),
         device->vkCreatePipelineCache(device, &create_info, nullptr, &caches[1]),
         VK_SUCCESS);
     LOG_ASSERT(
-        ==, data->log,
+        ==, data->logger(),
         device->vkCreatePipelineCache(device, &create_info, nullptr, &caches[2]),
         VK_SUCCESS);
     LOG_ASSERT(
-        ==, data->log,
+        ==, data->logger(),
         device->vkMergePipelineCaches(device, caches[0], 2, &caches[1]),
         VK_SUCCESS);
     device->vkDestroyPipelineCache(device, caches[0], nullptr);
@@ -76,6 +76,6 @@ int main_entry(const entry::entry_data* data) {
     device->vkDestroyPipelineCache(device, caches[2], nullptr);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

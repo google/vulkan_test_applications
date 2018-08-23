@@ -29,10 +29,10 @@ uint32_t vertex_shader[] =
 #include "simple_vertex.vert.spv"
     ;
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   // So we don't have to type app.device every time.
   vulkan::VkDevice& device = app.device();
 
@@ -135,6 +135,6 @@ int main_entry(const entry::entry_data* data) {
     command_buffer->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
     command_buffer->vkEndCommandBuffer(command_buffer);
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

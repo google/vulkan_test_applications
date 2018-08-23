@@ -427,7 +427,7 @@ class VulkanApplication {
   //  One for device-only-accessible buffers.
   //  One for device-only images.
   VulkanApplication(containers::Allocator* allocator, logging::Logger* log,
-                    const entry::entry_data* entry_data,
+                    const entry::EntryData* entry_data,
                     const std::initializer_list<const char*> extensions = {},
                     const VkPhysicalDeviceFeatures& features = {0},
                     uint32_t host_buffer_size = 1024 * 128,
@@ -759,7 +759,7 @@ class VulkanApplication {
 
   containers::Allocator* allocator_;
   logging::Logger* log_;
-  const entry::entry_data* entry_data_;
+  const entry::EntryData* entry_data_;
   containers::unique_ptr<VkQueue> render_queue_concrete_;
   containers::unique_ptr<VkQueue> present_queue_concrete_;
   containers::unique_ptr<VkQueue> sparse_binding_queue_concrete_;

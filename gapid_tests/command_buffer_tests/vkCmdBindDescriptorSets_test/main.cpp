@@ -16,10 +16,10 @@
 #include "support/entry/entry.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/vulkan_application.h"
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
 
   vulkan::VkCommandBuffer command_buffer = app.GetCommandBuffer();
@@ -70,6 +70,6 @@ int main_entry(const entry::entry_data* data) {
                                     static_cast<VkFence>(VK_NULL_HANDLE));
   app.render_queue()->vkQueueWaitIdle(app.render_queue());
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

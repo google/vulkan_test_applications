@@ -23,12 +23,12 @@ const uint32_t kComputeShader[] =
 #include "double_numbers.comp.spv"
     ;
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto alloc = data->root_allocator;
+  auto alloc = data->allocator();
 
-  vulkan::LibraryWrapper wrapper(alloc, data->log.get());
+  vulkan::LibraryWrapper wrapper(alloc, data->logger());
   vulkan::VkInstance instance(vulkan::CreateDefaultInstance(alloc, &wrapper));
   vulkan::VkDevice device(vulkan::CreateDefaultDevice(alloc, instance, true));
   const ::VkPhysicalDevice pdev = device.physical_device();
@@ -54,7 +54,7 @@ int main_entry(const entry::entry_data* data) {
       break;
     }
   }
-  LOG_ASSERT(!=, data->log, VK_MAX_MEMORY_TYPES, memory_type_index);
+  LOG_ASSERT(!=, data->logger(), VK_MAX_MEMORY_TYPES, memory_type_index);
 
   vulkan::VkDeviceMemory memory(
       AllocateDeviceMemory(&device, memory_type_index, memory_size));
@@ -62,7 +62,7 @@ int main_entry(const entry::entry_data* data) {
   // Populate the memory with data.
 
   void* payload = nullptr;
-  LOG_ASSERT(==, data->log, VK_SUCCESS,
+  LOG_ASSERT(==, data->logger(), VK_SUCCESS,
              device->vkMapMemory(device, memory, 0, memory_size, 0, &payload));
   for (uint32_t i = 0; i < kNumElements; ++i) {
     // Only fill the first half. Zero out the second half. The second half will
@@ -85,19 +85,19 @@ int main_entry(const entry::entry_data* data) {
       /* pQueueFamilyIndices = */ &queue_index,
   };
   ::VkBuffer raw_in_buffer;
-  LOG_ASSERT(==, data->log, VK_SUCCESS,
+  LOG_ASSERT(==, data->logger(), VK_SUCCESS,
              device->vkCreateBuffer(device, &buf_create_info, nullptr,
                                     &raw_in_buffer));
   vulkan::VkBuffer in_buffer(raw_in_buffer, nullptr, &device);
-  LOG_ASSERT(==, data->log, VK_SUCCESS,
+  LOG_ASSERT(==, data->logger(), VK_SUCCESS,
              device->vkBindBufferMemory(device, raw_in_buffer, memory, 0));
   ::VkBuffer raw_out_buffer;
-  LOG_ASSERT(==, data->log, VK_SUCCESS,
+  LOG_ASSERT(==, data->logger(), VK_SUCCESS,
              device->vkCreateBuffer(device, &buf_create_info, nullptr,
                                     &raw_out_buffer));
   vulkan::VkBuffer out_buffer(raw_out_buffer, nullptr, &device);
   LOG_ASSERT(
-      ==, data->log, VK_SUCCESS,
+      ==, data->logger(), VK_SUCCESS,
       device->vkBindBufferMemory(device, raw_out_buffer, memory, buffer_size));
 
   // Create descriptor set and pipeline layout.
@@ -122,7 +122,7 @@ int main_entry(const entry::entry_data* data) {
   };
   ::VkPipelineLayout raw_pipeline_layout;
   LOG_ASSERT(
-      ==, data->log, VK_SUCCESS,
+      ==, data->logger(), VK_SUCCESS,
       device->vkCreatePipelineLayout(device, &pipeline_layout_create_info,
                                      nullptr, &raw_pipeline_layout));
   vulkan::VkPipelineLayout pipeline_layout(raw_pipeline_layout, nullptr,
@@ -151,7 +151,7 @@ int main_entry(const entry::entry_data* data) {
       /* basePipelineIndex = */ 0,
   };
   ::VkPipeline raw_pipeline;
-  LOG_ASSERT(==, data->log, VK_SUCCESS,
+  LOG_ASSERT(==, data->logger(), VK_SUCCESS,
              device->vkCreateComputePipelines(
                  device, static_cast<::VkPipelineCache>(VK_NULL_HANDLE), 1,
                  &compute_pipeline_create_info, nullptr, &raw_pipeline));
@@ -216,7 +216,7 @@ int main_entry(const entry::entry_data* data) {
       /* queueFamilyIndex = */ queue_index,
   };
   ::VkCommandPool raw_command_pool;
-  LOG_ASSERT(==, data->log, VK_SUCCESS,
+  LOG_ASSERT(==, data->logger(), VK_SUCCESS,
              device->vkCreateCommandPool(device, &command_pool_create_info,
                                          nullptr, &raw_command_pool));
   vulkan::VkCommandPool command_pool(raw_command_pool, nullptr, &device);
@@ -234,7 +234,7 @@ int main_entry(const entry::entry_data* data) {
       /* pInheritanceInfo = */ nullptr,
   };
   LOG_ASSERT(
-      ==, data->log, VK_SUCCESS,
+      ==, data->logger(), VK_SUCCESS,
       command_buffer->vkBeginCommandBuffer(command_buffer, &cmdbuf_begin_info));
   command_buffer->vkCmdBindPipeline(
       command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, raw_pipeline);
@@ -242,7 +242,7 @@ int main_entry(const entry::entry_data* data) {
       command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, raw_pipeline_layout, 0, 1,
       &raw_dset, 0, nullptr);
   command_buffer->vkCmdDispatch(command_buffer, kNumElements, 1, 1);
-  LOG_ASSERT(==, data->log, VK_SUCCESS,
+  LOG_ASSERT(==, data->logger(), VK_SUCCESS,
              command_buffer->vkEndCommandBuffer(command_buffer));
 
   // Submit.
@@ -258,19 +258,19 @@ int main_entry(const entry::entry_data* data) {
       /* signalSemaphoreCount = */ 0,
       /* pSignalSemaphores = */ nullptr,
   };
-  LOG_ASSERT(==, data->log, VK_SUCCESS,
+  LOG_ASSERT(==, data->logger(), VK_SUCCESS,
              queue->vkQueueSubmit(queue, 1, &submit_info,
                                   static_cast<::VkFence>(VK_NULL_HANDLE)));
-  LOG_ASSERT(==, data->log, VK_SUCCESS, queue->vkQueueWaitIdle(queue));
+  LOG_ASSERT(==, data->logger(), VK_SUCCESS, queue->vkQueueWaitIdle(queue));
 
-  LOG_ASSERT(==, data->log, VK_SUCCESS,
+  LOG_ASSERT(==, data->logger(), VK_SUCCESS,
              device->vkMapMemory(device, memory, 0, memory_size, 0, &payload));
   for (uint32_t i = 0; i < kNumElements; ++i) {
-    LOG_EXPECT(==, data->log, 84,
+    LOG_EXPECT(==, data->logger(), 84,
                static_cast<uint32_t*>(payload)[i + kNumElements]);
   }
   device->vkUnmapMemory(device, memory);
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

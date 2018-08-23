@@ -679,15 +679,15 @@ struct AsyncFrameData {
 
 class AsyncSample : public sample_application::Sample<AsyncFrameData> {
  public:
-  AsyncSample(const entry::entry_data* data)
+  AsyncSample(const entry::EntryData* data)
       : data_(data),
-        Sample<AsyncFrameData>(data->root_allocator, data, 1, 512, 32, 1,
+        Sample<AsyncFrameData>(data->allocator(), data, 1, 512, 32, 1,
                                sample_application::SampleOptions()
                                    .EnableAsyncCompute()
                                    .EnableMultisampling()),
-        quad_model_(data->root_allocator, data->log.get(), quad_data),
-        particle_texture_(data->root_allocator, data->log.get(), texture_data),
-        thread_runner_(data->root_allocator, app(), kNumAsyncComputeBuffers) {
+        quad_model_(data->allocator(), data->logger(), quad_data),
+        particle_texture_(data->allocator(), data->logger(), texture_data),
+        thread_runner_(data->allocator(), app(), kNumAsyncComputeBuffers) {
     current_computation_result_buffer_ = -1;
     if (!app()->async_compute_queue()) {
       app()->GetLogger()->LogError("Could not find async compute queue.");
@@ -699,7 +699,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
     aspect_buffer_ = containers::make_unique<vulkan::BufferFrameData<Vector4>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     // All of this is the fairly standard setup for rendering.
     quad_model_.InitializeData(app(), initialization_buffer);
@@ -735,12 +735,12 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
     };
 
     sampler_ = containers::make_unique<vulkan::VkSampler>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::CreateSampler(&app()->device(), VK_FILTER_LINEAR,
                               VK_FILTER_LINEAR));
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout({{particle_descriptor_set_layouts_[0],
                                       particle_descriptor_set_layouts_[1],
                                       particle_descriptor_set_layouts_[2],
@@ -750,7 +750,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                 0,                                         // flags
@@ -780,7 +780,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
 
     particle_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                           render_pass_.get(), 0));
     particle_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -812,11 +812,11 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
 
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     frame_data->particle_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet(
                 {particle_descriptor_set_layouts_[0],
                  particle_descriptor_set_layouts_[1],
@@ -842,7 +842,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
   }
 
@@ -1031,7 +1031,7 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
   }
 
  private:
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
 
   // All of the data needed for the particle rendering pipeline.
   VkDescriptorSetLayoutBinding particle_descriptor_set_layouts_[4];
@@ -1060,19 +1060,19 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
   int32_t current_computation_result_buffer_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   AsyncSample sample(data);
   if (!sample.is_valid()) {
-    data->log->LogInfo("Application is invalid.");
+    data->logger()->LogInfo("Application is invalid.");
     return -1;
   }
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->ShouldExit()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

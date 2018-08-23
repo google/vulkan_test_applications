@@ -19,10 +19,10 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
   {
     // 1. Clear a 2D single layer, single mip level color image
@@ -102,20 +102,20 @@ int main_entry(const entry::entry_data* data) {
     app.render_queue()->vkQueueWaitIdle(app.render_queue());
 
     // Dump the data in the cleared image
-    containers::vector<uint8_t> dump_data(data->root_allocator);
+    containers::vector<uint8_t> dump_data(data->allocator());
     app.DumpImageLayersData(
         image_ptr.get(), {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0},
         image_extent, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &dump_data, {});
 
     // Check the dump data
     containers::vector<uint8_t> expected_data(32 * 32 * 4, 0.2 * 255,
-                                              data->root_allocator);
-    LOG_ASSERT(==, data->log, expected_data.size(), dump_data.size());
-    LOG_ASSERT(==, data->log, true,
+                                              data->allocator());
+    LOG_ASSERT(==, data->logger(), expected_data.size(), dump_data.size());
+    LOG_ASSERT(==, data->logger(), true,
                std::equal(expected_data.begin(), expected_data.end(),
                           dump_data.begin()));
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -51,15 +51,15 @@ struct WireframeFrameData {
 class CopyQueryPoolResultSample
     : public sample_application::Sample<WireframeFrameData> {
  public:
-  CopyQueryPoolResultSample(const entry::entry_data* data,
+  CopyQueryPoolResultSample(const entry::EntryData* data,
                             const VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
-        Sample<WireframeFrameData>(data->root_allocator, data, 1, 512, 1, 1,
+        Sample<WireframeFrameData>(data->allocator(), data, 1, 512, 1, 1,
                                    sample_application::SampleOptions()
                                        .EnableDepthBuffer()
                                        .EnableMultisampling(),
                                    requested_features),
-        torus_(data->root_allocator, data->log.get(), torus_data),
+        torus_(data->allocator(), data->logger(), torus_data),
         grey_scale_(0u),
         num_frames_(0u) {}
   virtual void InitializeApplicationData(
@@ -99,7 +99,7 @@ class CopyQueryPoolResultSample
         0,
     };
     query_pool_ = containers::make_unique<vulkan::VkQueryPool>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::CreateQueryPool(&app()->device(), query_pool_create_info));
 
     // Query before drawing anything to make sure the initial value of query
@@ -136,7 +136,7 @@ class CopyQueryPoolResultSample
     query_pool_results_buf_ =
         app()->CreateAndBindHostBuffer(&query_pool_results_buf_create_info);
     containers::vector<uint32_t> query_pool_init_values(
-        query_pool_result_buf_size, 0xFFFFFFFF, data_->root_allocator);
+        query_pool_result_buf_size, 0xFFFFFFFF, data_->allocator());
     memcpy(query_pool_results_buf_->base_address(),
            query_pool_init_values.data(), query_pool_result_buf_size);
     query_pool_results_buf_->flush(0, query_pool_result_buf_size);
@@ -166,7 +166,7 @@ class CopyQueryPoolResultSample
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout({{
             torus_descriptor_set_layouts_[0], torus_descriptor_set_layouts_[1],
             torus_descriptor_set_layouts_[2],
@@ -178,7 +178,7 @@ class CopyQueryPoolResultSample
         1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                  0,                                 // flags
@@ -218,7 +218,7 @@ class CopyQueryPoolResultSample
             ));
 
     torus_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     torus_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -237,11 +237,11 @@ class CopyQueryPoolResultSample
     torus_pipeline_->Commit();
 
     camera_data_ = containers::make_unique<vulkan::BufferFrameData<CameraData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     model_data_ = containers::make_unique<vulkan::BufferFrameData<ModelData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     float aspect =
@@ -271,13 +271,13 @@ class CopyQueryPoolResultSample
         vulkan::kMaxOffsetAlignment,                // range
     };
     ::VkBufferView raw_buf_view;
-    LOG_ASSERT(==, data_->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data_->logger(), VK_SUCCESS,
                app()->device()->vkCreateBufferView(
                    app()->device(), &query_pool_results_buf_view_create_info,
                    nullptr, &raw_buf_view));
     frame_data->query_pool_results_buf_view_ =
         containers::make_unique<vulkan::VkBufferView>(
-            data_->root_allocator,
+            data_->allocator(),
             vulkan::VkBufferView(raw_buf_view, nullptr, &app()->device()));
 
     // Buffer memory barriers for the query/descriptor buffer.
@@ -307,11 +307,11 @@ class CopyQueryPoolResultSample
     // Populate the command buffer
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     frame_data->torus_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet({
                 torus_descriptor_set_layouts_[0],
                 torus_descriptor_set_layouts_[1],
@@ -380,7 +380,7 @@ class CopyQueryPoolResultSample
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     (*frame_data->command_buffer_)
@@ -406,7 +406,7 @@ class CopyQueryPoolResultSample
     };
 
     // Reset the query for this frame in the query pool and then begin query.
-    LOG_ASSERT(<, data_->log, frame_index, query_pool_results_buf_->size());
+    LOG_ASSERT(<, data_->logger(), frame_index, query_pool_results_buf_->size());
     cmdBuffer->vkCmdCopyQueryPoolResults(
         cmdBuffer, *query_pool_, static_cast<uint32_t>(frame_index),
         static_cast<uint32_t>(1), *query_pool_results_buf_,
@@ -486,7 +486,7 @@ class CopyQueryPoolResultSample
     Mat44 transform;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> torus_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
@@ -502,18 +502,18 @@ class CopyQueryPoolResultSample
   uint32_t num_frames_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   VkPhysicalDeviceFeatures requested_features = {0};
   requested_features.fillModeNonSolid = VK_TRUE;
   CopyQueryPoolResultSample sample(data, requested_features);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->ShouldExit()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

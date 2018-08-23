@@ -19,10 +19,10 @@
 
 #include <algorithm>
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+  vulkan::VulkanApplication application(data->allocator(), data->logger(),
                                         data);
   {
     // Fill a buffer first with data: 0x12345678, size: VK_WHOLE_SIZE and
@@ -103,7 +103,7 @@ int main_entry(const entry::entry_data* data) {
     uint32_t* data_ptr = reinterpret_cast<uint32_t*>(buffer->base_address());
     std::for_each(data_ptr, data_ptr + buffer_size / sizeof(uint32_t),
                   [&data, first_fill_uint](uint32_t d) {
-                    LOG_ASSERT(==, data->log, d, first_fill_uint);
+                    LOG_ASSERT(==, data->logger(), d, first_fill_uint);
                   });
 
     // Fill the buffer second time
@@ -144,14 +144,14 @@ int main_entry(const entry::entry_data* data) {
          fill_size](uint32_t d) {
           if (counter >= fill_offset / sizeof(uint32_t) &&
               counter < (fill_offset + fill_size) / sizeof(uint32_t)) {
-            LOG_ASSERT(==, data->log, d, second_fill_uint);
+            LOG_ASSERT(==, data->logger(), d, second_fill_uint);
           } else {
-            LOG_ASSERT(==, data->log, d, first_fill_uint);
+            LOG_ASSERT(==, data->logger(), d, first_fill_uint);
           }
           counter++;
         });
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

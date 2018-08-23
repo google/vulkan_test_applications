@@ -56,7 +56,7 @@ VkInstance CreateDefaultInstance(containers::Allocator* allocator,
 // identical to CreateDefaultInstance.
 VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
                                         LibraryWrapper* wrapper,
-                                        const entry::entry_data* data);
+                                        const entry::EntryData* data);
 
 containers::vector<VkPhysicalDevice> GetPhysicalDevices(
     containers::Allocator* allocator, VkInstance& instance);
@@ -98,7 +98,7 @@ VkCommandPool CreateDefaultCommandPool(containers::Allocator* allocator,
 // Creates a surface to render into the the default window
 // provided in entry_data.
 VkSurfaceKHR CreateDefaultSurface(VkInstance* instance,
-                                  const entry::entry_data* entry_data);
+                                  const entry::EntryData* entry_data);
 
 // Creates a device capable of presenting to the given surface.
 // The device is created with the given extensions.
@@ -142,7 +142,7 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
                                       containers::Allocator* allocator,
                                       uint32_t present_queue_index,
                                       uint32_t graphics_queue_index,
-                                      const entry::entry_data* data);
+                                      const entry::EntryData* data);
 
 // Returns a uint32_t with only the lowest bit set.
 uint32_t inline GetLSB(uint32_t val) { return ((val - 1) ^ val) & val; }

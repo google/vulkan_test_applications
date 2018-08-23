@@ -21,13 +21,13 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto& allocator = data->root_allocator;
-  vulkan::LibraryWrapper wrapper(allocator, data->log.get());
+  auto allocator = data->allocator();
+  vulkan::LibraryWrapper wrapper(allocator, data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateDefaultInstance(data->root_allocator, &wrapper));
+      vulkan::CreateDefaultInstance(data->allocator(), &wrapper));
 
   vulkan::VkSurfaceKHR surface(vulkan::CreateDefaultSurface(&instance, data));
 
@@ -36,24 +36,24 @@ int main_entry(const entry::entry_data* data) {
     // prepare swapchain
     uint32_t queues[2];
     vulkan::VkDevice device(vulkan::CreateDeviceForSwapchain(
-        data->root_allocator, &instance, &surface, &queues[0], &queues[1]));
+        data->allocator(), &instance, &surface, &queues[0], &queues[1]));
     vulkan::VkSwapchainKHR swapchain(vulkan::CreateDefaultSwapchain(
         &instance, &device, &surface, allocator, queues[0], queues[1], data));
 
     // get images
     uint32_t num_images;
 
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                device->vkGetSwapchainImagesKHR(device, swapchain, &num_images,
                                                nullptr),
                VK_SUCCESS);
     containers::vector<::VkImage> images(allocator);
     images.resize(num_images);
-    LOG_EXPECT(==, data->log,
+    LOG_EXPECT(==, data->logger(),
                device->vkGetSwapchainImagesKHR(device, swapchain, &num_images,
                                                images.data()),
                VK_SUCCESS);
-    LOG_ASSERT(!=, data->log, images.size(), 0);
+    LOG_ASSERT(!=, data->logger(), images.size(), 0);
 
     // prepare image view create info
     VkImageViewCreateInfo image_view_create_info{
@@ -80,7 +80,7 @@ int main_entry(const entry::entry_data* data) {
         },
     };
     ::VkImageView image_view;
-    LOG_EXPECT(==, data->log,
+    LOG_EXPECT(==, data->logger(),
                device->vkCreateImageView(device, &image_view_create_info,
                                          nullptr, &image_view),
                VK_SUCCESS);
@@ -88,6 +88,6 @@ int main_entry(const entry::entry_data* data) {
     device->vkDestroyImageView(device, image_view, nullptr);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

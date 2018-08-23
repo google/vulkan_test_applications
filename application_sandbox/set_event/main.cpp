@@ -54,11 +54,11 @@ struct CubeFrameData {
 // for host, and device buffer sizes.
 class SetEventSample : public sample_application::Sample<CubeFrameData> {
  public:
-  SetEventSample(const entry::entry_data* data)
+  SetEventSample(const entry::EntryData* data)
       : data_(data),
-        Sample<CubeFrameData>(data->root_allocator, data, 1, 512, 1, 1,
+        Sample<CubeFrameData>(data->allocator(), data, 1, 512, 1, 1,
                               sample_application::SampleOptions()),
-        cube_(data->root_allocator, data->log.get(), cube_data) {}
+        cube_(data->allocator(), data->logger(), cube_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
@@ -87,7 +87,7 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout({{
             cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
             cube_descriptor_set_layouts_[2],
@@ -97,7 +97,7 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                 0,                                         // flags
@@ -126,7 +126,7 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -143,11 +143,11 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
 
     camera_data =
         containers::make_unique<vulkan::BufferFrameData<camera_data_>>(
-            data_->root_allocator, app(), num_swapchain_images,
+            data_->allocator(), app(), num_swapchain_images,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     model_data = containers::make_unique<vulkan::BufferFrameData<model_data_>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     float aspect =
@@ -165,7 +165,7 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
       size_t frame_index) override {
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     // Initialize the coherent buffer which is to be used as texel uniform
     // buffer, and the event the control the produce and consume of the data
@@ -180,7 +180,7 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
     init_color_data->a = 0.0f;
     frame_data->color_data_update_event_ =
         containers::make_unique<vulkan::VkEvent>(
-            data_->root_allocator, vulkan::CreateEvent(&app()->device()));
+            data_->allocator(), vulkan::CreateEvent(&app()->device()));
 
     // The buffer memory barrier for the color data buffer, transition from
     // host write to read in fragment shader
@@ -205,18 +205,18 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
         VK_WHOLE_SIZE,                              // range
     };
     ::VkBufferView raw_buf_view;
-    LOG_ASSERT(==, data_->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data_->logger(), VK_SUCCESS,
                app()->device()->vkCreateBufferView(
                    app()->device(), &color_data_buffer_view_create_info,
                    nullptr, &raw_buf_view));
     frame_data->color_data_buffer_view_ =
         containers::make_unique<vulkan::VkBufferView>(
-            data_->root_allocator,
+            data_->allocator(),
             vulkan::VkBufferView(raw_buf_view, nullptr, &app()->device()));
 
     frame_data->cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet({
                 cube_descriptor_set_layouts_[0],
                 cube_descriptor_set_layouts_[1],
@@ -285,7 +285,7 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     (*frame_data->command_buffer_)
@@ -393,7 +393,7 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
     float a;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> cube_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
@@ -404,16 +404,16 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
   containers::unique_ptr<vulkan::BufferFrameData<model_data_>> model_data;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   SetEventSample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->ShouldExit()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

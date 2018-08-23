@@ -21,10 +21,10 @@
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+  vulkan::VulkanApplication application(data->allocator(), data->logger(),
                                         data, {}, {0}, 1024 * 100, 1024 * 100,
                                         1024 * 100);
 
@@ -53,7 +53,7 @@ int main_entry(const entry::entry_data* data) {
   size_t image_data_size = vulkan::GetImageExtentSizeInBytes(
       src_image_extent, VK_FORMAT_R8G8B8A8_UNORM);
   containers::vector<uint8_t> image_data(image_data_size, 0,
-                                         data->root_allocator);
+                                         data->allocator());
   for (size_t i = 0; i < image_data_size; i++) {
     image_data[i] = i & 0xFF;
   }
@@ -196,7 +196,7 @@ int main_entry(const entry::entry_data* data) {
     application.render_queue()->vkQueueWaitIdle(application.render_queue());
 
     // Dump the content of the destination image to check the result.
-    containers::vector<uint8_t> dump_data(data->root_allocator);
+    containers::vector<uint8_t> dump_data(data->allocator());
     application.DumpImageLayersData(
         dst_image.get(),
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},  // subresourcelayer
@@ -206,12 +206,12 @@ int main_entry(const entry::entry_data* data) {
         &dump_data,                            // data
         {}                                     // wait_semaphores
         );
-    LOG_ASSERT(==, data->log, image_data.size(), dump_data.size());
+    LOG_ASSERT(==, data->logger(), image_data.size(), dump_data.size());
     LOG_ASSERT(
-        ==, data->log, true,
+        ==, data->logger(), true,
         std::equal(image_data.begin(), image_data.end(), dump_data.begin()));
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

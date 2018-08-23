@@ -21,13 +21,13 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto& allocator = data->root_allocator;
-  vulkan::LibraryWrapper wrapper(allocator, data->log.get());
+  auto allocator = data->allocator();
+  vulkan::LibraryWrapper wrapper(allocator, data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(vulkan::CreateDefaultDevice(allocator, instance));
   {
     VkImageCreateInfo image_create_info{
@@ -57,28 +57,28 @@ int main_entry(const entry::entry_data* data) {
 
     uint32_t count = 0;
     device->vkGetImageSparseMemoryRequirements(device, image, &count, nullptr);
-    data->log->LogInfo("  SparseMemoryRequirementCount: ", count);
+    data->logger()->LogInfo("  SparseMemoryRequirementCount: ", count);
     containers::vector<VkSparseImageMemoryRequirements> requirements(
-        count, {}, data->root_allocator);
+        count, {}, data->allocator());
     device->vkGetImageSparseMemoryRequirements(device, image, &count,
                                                requirements.data());
     for (uint32_t i = 0; i < count; i++) {
-      data->log->LogInfo("  Memory Requirement: ", i);
-      data->log->LogInfo(
+      data->logger()->LogInfo("  Memory Requirement: ", i);
+      data->logger()->LogInfo(
           "  formatProperties.imageGranularity.width: ",
           requirements[i].formatProperties.imageGranularity.width);
-      data->log->LogInfo(
+      data->logger()->LogInfo(
           "  formatProperties.imageGranularity.height: ",
           requirements[i].formatProperties.imageGranularity.height);
-      data->log->LogInfo(
+      data->logger()->LogInfo(
           "  formatProperties.imageGranularity.depth: ",
           requirements[i].formatProperties.imageGranularity.depth);
-      data->log->LogInfo("    imageMipTailFirstLod: ", requirements[i].imageMipTailFirstLod);
-      data->log->LogInfo("        imageMipTailSize: ", requirements[i].imageMipTailSize);
-      data->log->LogInfo("      imageMipTailOffset: ", requirements[i].imageMipTailOffset);
-      data->log->LogInfo("      imageMipTailStride: ", requirements[i].imageMipTailStride);
+      data->logger()->LogInfo("    imageMipTailFirstLod: ", requirements[i].imageMipTailFirstLod);
+      data->logger()->LogInfo("        imageMipTailSize: ", requirements[i].imageMipTailSize);
+      data->logger()->LogInfo("      imageMipTailOffset: ", requirements[i].imageMipTailOffset);
+      data->logger()->LogInfo("      imageMipTailStride: ", requirements[i].imageMipTailStride);
     }
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

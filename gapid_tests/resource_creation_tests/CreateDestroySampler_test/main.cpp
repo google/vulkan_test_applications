@@ -22,12 +22,12 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto& allocator = data->root_allocator;
+  auto allocator = data->allocator();
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   {  // 1. Sampler using normalized coordinates
     vulkan::VkDevice& device = app.device();
     VkSamplerCreateInfo create_info{
@@ -52,10 +52,10 @@ int main_entry(const entry::entry_data* data) {
     };
     ::VkSampler sampler;
     device->vkCreateSampler(device, &create_info, nullptr, &sampler);
-    data->log->LogInfo("  sampler: ", sampler);
+    data->logger()->LogInfo("  sampler: ", sampler);
     device->vkDestroySampler(device, sampler, nullptr);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

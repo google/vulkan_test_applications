@@ -20,13 +20,13 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(
-      vulkan::CreateDefaultDevice(data->root_allocator, instance));
+      vulkan::CreateDefaultDevice(data->allocator(), instance));
 
   {
     VkCommandPoolCreateInfo pool_info{
@@ -34,12 +34,12 @@ int main_entry(const entry::entry_data* data) {
         VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, 0};
 
     ::VkCommandPool raw_command_pool;
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                device->vkCreateCommandPool(device, &pool_info, nullptr,
                                            &raw_command_pool),
                VK_SUCCESS);
     vulkan::VkCommandPool command_pool(raw_command_pool, nullptr, &device);
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkResetCommandPool(device, command_pool, 0));
   }
 
@@ -49,12 +49,12 @@ int main_entry(const entry::entry_data* data) {
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, 0};
 
     ::VkCommandPool raw_command_pool;
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                device->vkCreateCommandPool(device, &pool_info, nullptr,
                                            &raw_command_pool),
                VK_SUCCESS);
     vulkan::VkCommandPool command_pool(raw_command_pool, nullptr, &device);
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkResetCommandPool(device, command_pool, 0));
   }
 
@@ -66,13 +66,13 @@ int main_entry(const entry::entry_data* data) {
         0};
 
     ::VkCommandPool raw_command_pool;
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                device->vkCreateCommandPool(device, &pool_info, nullptr,
                                            &raw_command_pool),
                VK_SUCCESS);
     vulkan::VkCommandPool command_pool(raw_command_pool, nullptr, &device);
     LOG_ASSERT(
-        ==, data->log, VK_SUCCESS,
+        ==, data->logger(), VK_SUCCESS,
         device->vkResetCommandPool(device, command_pool,
                                    VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
   }
@@ -82,17 +82,17 @@ int main_entry(const entry::entry_data* data) {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr, 0, 0};
 
     ::VkCommandPool raw_command_pool;
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                device->vkCreateCommandPool(device, &pool_info, nullptr,
                                            &raw_command_pool),
                VK_SUCCESS);
     vulkan::VkCommandPool command_pool(raw_command_pool, nullptr, &device);
     LOG_ASSERT(
-        ==, data->log, VK_SUCCESS,
+        ==, data->logger(), VK_SUCCESS,
         device->vkResetCommandPool(device, command_pool,
                                    VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

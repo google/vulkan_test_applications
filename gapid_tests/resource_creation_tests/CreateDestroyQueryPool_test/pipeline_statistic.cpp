@@ -19,8 +19,8 @@
 #include "vulkan_helpers/known_device_infos.h"
 #include "vulkan_helpers/vulkan_application.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
   {
     // A query pool with queryCount of value 4, queryType of value
@@ -31,7 +31,7 @@ int main_entry(const entry::entry_data* data) {
     // same physical device.
     VkPhysicalDeviceFeatures request_features = {0};
     request_features.pipelineStatisticsQuery = VK_TRUE;
-    vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+    vulkan::VulkanApplication application(data->allocator(), data->logger(),
                                           data, {}, request_features);
     if (application.device().is_valid()) {
       vulkan::VkDevice& device = application.device();
@@ -45,17 +45,17 @@ int main_entry(const entry::entry_data* data) {
               VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT),  // pipelineStatistics
       };
       ::VkQueryPool query_pool;
-      LOG_EXPECT(==, data->log,
+      LOG_EXPECT(==, data->logger(),
                  device->vkCreateQueryPool(device, &query_pool_create_info,
                                            nullptr, &query_pool),
                  VK_SUCCESS);
       device->vkDestroyQueryPool(device, query_pool, nullptr);
     } else {
-      data->log->LogInfo(
+      data->logger()->LogInfo(
           "Disabled test due to missing physical device feature: "
           "pipelineStatisticsQuery");
     }
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

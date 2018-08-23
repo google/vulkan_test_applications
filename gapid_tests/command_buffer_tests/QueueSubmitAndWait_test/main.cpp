@@ -20,16 +20,16 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/queue_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateDefaultInstance(data->root_allocator, &wrapper));
+      vulkan::CreateDefaultInstance(data->allocator(), &wrapper));
   vulkan::VkSurfaceKHR surface(vulkan::CreateDefaultSurface(&instance, data));
 
   uint32_t queues[2];
   vulkan::VkDevice device(vulkan::CreateDeviceForSwapchain(
-      data->root_allocator, &instance, &surface, &queues[0], &queues[1]));
+      data->allocator(), &instance, &surface, &queues[0], &queues[1]));
 
   vulkan::VkQueue queue = vulkan::GetQueue(&device, queues[0]);
   {  // 0 submits
@@ -57,7 +57,7 @@ int main_entry(const entry::entry_data* data) {
 
   {  // 1 submit, 1 command_buffer
     vulkan::VkCommandPool pool(
-        vulkan::CreateDefaultCommandPool(data->root_allocator, device));
+        vulkan::CreateDefaultCommandPool(data->allocator(), device));
     vulkan::VkCommandBuffer command_buffer =
         vulkan::CreateDefaultCommandBuffer(&pool, &device);
 
@@ -91,7 +91,7 @@ int main_entry(const entry::entry_data* data) {
 
   {  // 1 submit, 2 command_buffers
     vulkan::VkCommandPool pool(
-        vulkan::CreateDefaultCommandPool(data->root_allocator, device));
+        vulkan::CreateDefaultCommandPool(data->allocator(), device));
     vulkan::VkCommandBuffer command_buffer =
         vulkan::CreateDefaultCommandBuffer(&pool, &device);
 
@@ -128,6 +128,6 @@ int main_entry(const entry::entry_data* data) {
     queue->vkQueueWaitIdle(queue);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

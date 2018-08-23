@@ -51,13 +51,13 @@ struct FillFrameData {
 // for host, and device buffer sizes.
 class FillSample : public sample_application::Sample<FillFrameData> {
  public:
-  FillSample(const entry::entry_data* data)
+  FillSample(const entry::EntryData* data)
       : data_(data),
-        Sample<FillFrameData>(data->root_allocator, data, 1, 512, 1, 1,
+        Sample<FillFrameData>(data->allocator(), data, 1, 512, 1, 1,
                               sample_application::SampleOptions()
                                   .EnableDepthBuffer()
                                   .EnableMultisampling()),
-        cube_(data->root_allocator, data->log.get(), cube_data) {}
+        cube_(data->allocator(), data->logger(), cube_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
@@ -93,7 +93,7 @@ class FillSample : public sample_application::Sample<FillFrameData> {
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout(
             {{cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
               cube_descriptor_set_layouts_[2]}}));
@@ -104,7 +104,7 @@ class FillSample : public sample_application::Sample<FillFrameData> {
         1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                  0,                                 // flags
@@ -144,7 +144,7 @@ class FillSample : public sample_application::Sample<FillFrameData> {
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -160,11 +160,11 @@ class FillSample : public sample_application::Sample<FillFrameData> {
     cube_pipeline_->Commit();
 
     camera_data_ = containers::make_unique<vulkan::BufferFrameData<CameraData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     model_data_ = containers::make_unique<vulkan::BufferFrameData<ModelData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     float aspect =
@@ -204,7 +204,7 @@ class FillSample : public sample_application::Sample<FillFrameData> {
     const float update_data[4] = {1.0f, 0.0f, 0.5f, 1.0f};
     frame_data->update_command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
     (*frame_data->update_command_buffer_)
         ->vkBeginCommandBuffer((*frame_data->update_command_buffer_),
                                &sample_application::kBeginCommandBuffer);
@@ -245,11 +245,11 @@ class FillSample : public sample_application::Sample<FillFrameData> {
 
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     frame_data->cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
                                           cube_descriptor_set_layouts_[1],
                                           cube_descriptor_set_layouts_[2]}));
@@ -307,7 +307,7 @@ class FillSample : public sample_application::Sample<FillFrameData> {
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     (*frame_data->command_buffer_)
@@ -404,7 +404,7 @@ class FillSample : public sample_application::Sample<FillFrameData> {
     Mat44 transform;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   uint64_t frame_number = 0;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> cube_pipeline_;
@@ -416,16 +416,16 @@ class FillSample : public sample_application::Sample<FillFrameData> {
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   FillSample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->ShouldExit()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

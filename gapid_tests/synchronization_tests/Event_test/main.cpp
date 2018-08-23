@@ -90,7 +90,7 @@ void RunInTwoThreads(std::function<void(std::function<void()>)> run_first,
 }
 
 struct CommonHandles {
-  CommonHandles(const entry::entry_data* data, vulkan::VulkanApplication* app)
+  CommonHandles(const entry::EntryData* data, vulkan::VulkanApplication* app)
       : device(app->device()),
         queue(app->render_queue()),
         cmd_buf(app->GetCommandBuffer()),
@@ -107,9 +107,9 @@ struct CommonHandles {
 };
 }  // anonymous namespace
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   // Basic test of vkSetEvent, vkResetEvent and vkGetEventStatus
   {
     // Use "TAG" in the trace to figure out where we are supposed to be
@@ -117,15 +117,15 @@ int main_entry(const entry::entry_data* data) {
     CommonHandles t(data, &app);
 
     auto event = vulkan::CreateEvent(&t.device);
-    LOG_EXPECT(==, data->log, VK_EVENT_RESET,
+    LOG_EXPECT(==, data->logger(), VK_EVENT_RESET,
                t.device->vkGetEventStatus(t.device, event));
-    LOG_EXPECT(==, data->log, VK_SUCCESS,
+    LOG_EXPECT(==, data->logger(), VK_SUCCESS,
                t.device->vkSetEvent(t.device, event));
-    LOG_EXPECT(==, data->log, VK_EVENT_SET,
+    LOG_EXPECT(==, data->logger(), VK_EVENT_SET,
                t.device->vkGetEventStatus(t.device, event));
-    LOG_EXPECT(==, data->log, VK_SUCCESS,
+    LOG_EXPECT(==, data->logger(), VK_SUCCESS,
                t.device->vkResetEvent(t.device, event));
-    LOG_EXPECT(==, data->log, VK_EVENT_RESET,
+    LOG_EXPECT(==, data->logger(), VK_EVENT_RESET,
                t.device->vkGetEventStatus(t.device, event));
     // vkDestroyEvent will be called when 'event' is out of scope.
   }
@@ -141,7 +141,7 @@ int main_entry(const entry::entry_data* data) {
     // submit -> update -> set -> wait idle
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x00000000;
     app.BeginCommandBuffer(&t.cmd_buf);
-    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x},
+    AddCmdWaitEvents(data->allocator(), &t.cmd_buf, {event_x},
                      VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
@@ -156,7 +156,7 @@ int main_entry(const entry::entry_data* data) {
     *reinterpret_cast<uint32_t*>(t.src_buf->base_address()) = 0x22222222;
     app.BeginCommandBuffer(&t.cmd_buf);
     t.device->vkSetEvent(t.device, event_x);
-    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x},
+    AddCmdWaitEvents(data->allocator(), &t.cmd_buf, {event_x},
                      VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
@@ -171,7 +171,7 @@ int main_entry(const entry::entry_data* data) {
                              VK_PIPELINE_STAGE_TRANSFER_BIT);
     t.cmd_buf->vkCmdSetEvent(t.cmd_buf, event_y,
                              VK_PIPELINE_STAGE_TRANSFER_BIT);
-    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x, event_y},
+    AddCmdWaitEvents(data->allocator(), &t.cmd_buf, {event_x, event_y},
                      VK_PIPELINE_STAGE_TRANSFER_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
@@ -188,7 +188,7 @@ int main_entry(const entry::entry_data* data) {
                                   ::VkFence(VK_NULL_HANDLE));
     auto another_cmd_buf = app.GetCommandBuffer();
     app.BeginCommandBuffer(&another_cmd_buf);
-    AddCmdWaitEvents(data->root_allocator, &another_cmd_buf, {event_x},
+    AddCmdWaitEvents(data->allocator(), &another_cmd_buf, {event_x},
                      VK_PIPELINE_STAGE_TRANSFER_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&another_cmd_buf, *t.src_buf, *t.dst_buf);
@@ -209,7 +209,7 @@ int main_entry(const entry::entry_data* data) {
     // Thread 1: submit [vkCmdWaitEvents] ->        -> t.queue wait idle
     // Thread 2:                            setEvent
     app.BeginCommandBuffer(&t.cmd_buf);
-    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x},
+    AddCmdWaitEvents(data->allocator(), &t.cmd_buf, {event_x},
                      VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
@@ -231,7 +231,7 @@ int main_entry(const entry::entry_data* data) {
     // idle
     // Thread 2:                                           setEvent(s)
     app.BeginCommandBuffer(&t.cmd_buf);
-    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x, event_y},
+    AddCmdWaitEvents(data->allocator(), &t.cmd_buf, {event_x, event_y},
                      VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
@@ -252,7 +252,7 @@ int main_entry(const entry::entry_data* data) {
       vulkan::VkSemaphore semaphore = vulkan::CreateSemaphore(&t.device);
       VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
       app.BeginCommandBuffer(&t.cmd_buf);
-      AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x},
+      AddCmdWaitEvents(data->allocator(), &t.cmd_buf, {event_x},
                        VK_PIPELINE_STAGE_HOST_BIT,
                        VK_PIPELINE_STAGE_TRANSFER_BIT);
       AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
@@ -262,7 +262,7 @@ int main_entry(const entry::entry_data* data) {
                                     {semaphore.get_raw_object()}, fence);
       auto another_cmd_buf = app.GetCommandBuffer();
       app.BeginCommandBuffer(&another_cmd_buf);
-      AddCmdWaitEvents(data->root_allocator, &another_cmd_buf, {event_x},
+      AddCmdWaitEvents(data->allocator(), &another_cmd_buf, {event_x},
                        VK_PIPELINE_STAGE_HOST_BIT,
                        VK_PIPELINE_STAGE_TRANSFER_BIT);
       AddCmdCopyBuffer(&another_cmd_buf, *t.src_buf, *t.dst_buf);
@@ -286,10 +286,10 @@ int main_entry(const entry::entry_data* data) {
     // Thread 1: submit [wait x, wait y, copy]          -> idle
     // Thread 2:                         set y -> set x
     app.BeginCommandBuffer(&t.cmd_buf);
-    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_x},
+    AddCmdWaitEvents(data->allocator(), &t.cmd_buf, {event_x},
                      VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
-    AddCmdWaitEvents(data->root_allocator, &t.cmd_buf, {event_y},
+    AddCmdWaitEvents(data->allocator(), &t.cmd_buf, {event_y},
                      VK_PIPELINE_STAGE_HOST_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
     AddCmdCopyBuffer(&t.cmd_buf, *t.src_buf, *t.dst_buf);
@@ -382,6 +382,6 @@ int main_entry(const entry::entry_data* data) {
     };
     RunInTwoThreads(run_first, run_second);
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

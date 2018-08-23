@@ -24,17 +24,17 @@ inline const char* BoolString(VkBool32 value) {
   return value != 0 ? "true" : "false";
 }
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateDefaultInstance(data->root_allocator, &wrapper));
+      vulkan::CreateDefaultInstance(data->allocator(), &wrapper));
   containers::vector<VkPhysicalDevice> physical_devices(
-      vulkan::GetPhysicalDevices(data->root_allocator, instance));
+      vulkan::GetPhysicalDevices(data->allocator(), instance));
 
   {
     for (const auto& device : physical_devices) {
-      data->log->LogInfo("  Phyiscal Device: ", device);
+      data->logger()->LogInfo("  Phyiscal Device: ", device);
       uint32_t queue_count = 0;
       VkBool32 result = VK_FALSE;
       instance->vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_count,
@@ -43,30 +43,30 @@ int main_entry(const entry::entry_data* data) {
         continue;
       }
 #if defined __ANDROID__
-      data->log->LogInfo(
+      data->logger()->LogInfo(
           "According to Vulkan Spec, all physical devices and queue families "
           "on Android must be capable of presentation with any native window. "
           "So there is no Android-specific query for presentation support");
       break;
 #elif defined __linux__
-      data->log->LogInfo("API: vkGetPhysicalDeviceXcbPresentationSupportKHR");
+      data->logger()->LogInfo("API: vkGetPhysicalDeviceXcbPresentationSupportKHR");
       result = instance->vkGetPhysicalDeviceXcbPresentationSupportKHR(
-          device, 0, data->native_connection, data->native_window_handle);
+          device, 0, data->native_connection(), data->native_window_handle());
 #elif defined _WIN32
-      data->log->LogInfo("API: vkGetPhysicalDeviceWin32PresentationSupportKHR");
+      data->logger()->LogInfo("API: vkGetPhysicalDeviceWin32PresentationSupportKHR");
       result =
           instance->vkGetPhysicalDeviceWin32PresentationSupportKHR(device, 0);
 #else
-      data->log->LogInfo(
+      data->logger()->LogInfo(
           "Presentation Support test not available on target OS, test "
           "skipped.");
       break;
 #endif
-      data->log->LogInfo("  Physical Device: ", device);
-      data->log->LogInfo("    Return result: ", BoolString(result));
+      data->logger()->LogInfo("  Physical Device: ", device);
+      data->logger()->LogInfo("    Return result: ", BoolString(result));
     }
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

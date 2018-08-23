@@ -21,13 +21,13 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto& allocator = data->root_allocator;
-  vulkan::LibraryWrapper wrapper(allocator, data->log.get());
+  auto allocator = data->allocator();
+  vulkan::LibraryWrapper wrapper(allocator, data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(vulkan::CreateDefaultDevice(allocator, instance));
   vulkan::VkCommandPool pool(
       vulkan::CreateDefaultCommandPool(allocator, device));
@@ -43,10 +43,10 @@ int main_entry(const entry::entry_data* data) {
   for (VkCommandBufferLevel level :
        vulkan::AllVkCommandBufferLevels(allocator)) {
     for (uint32_t count : {uint32_t(1), uint32_t(2), max_count}) {
-      data->log->LogInfo("commandBufferLevel: ", level);
-      data->log->LogInfo("commandBufferCount: ", count);
+      data->logger()->LogInfo("commandBufferLevel: ", level);
+      data->logger()->LogInfo("commandBufferCount: ", count);
 
-      data->log->LogInfo("  API: vkAllocateCommandBuffers");
+      data->logger()->LogInfo("  API: vkAllocateCommandBuffers");
       const VkCommandBufferAllocateInfo create_info = {
           /* sType = */ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
           /* pNext = */ nullptr,
@@ -54,17 +54,17 @@ int main_entry(const entry::entry_data* data) {
           /* level = */ level,
           /* commandBufferCount = */ count,
       };
-      LOG_EXPECT(==, data->log,
+      LOG_EXPECT(==, data->logger(),
                  device->vkAllocateCommandBuffers(device, &create_info,
                                                   command_buffers.data()),
                  VK_SUCCESS);
       for (uint32_t i = 0; i < count; ++i) {
-        data->log->LogInfo("    handle: ", command_buffers[i]);
+        data->logger()->LogInfo("    handle: ", command_buffers[i]);
       }
 
-      data->log->LogInfo("  API: vkResetCommandBuffer");
+      data->logger()->LogInfo("  API: vkResetCommandBuffer");
       for (uint32_t i = 0; i < count; ++i) {
-        LOG_EXPECT(==, data->log,
+        LOG_EXPECT(==, data->logger(),
                    device->command_buffer_functions()->vkResetCommandBuffer(
                        command_buffers[i],
                        // Use reset flags in a circular way.
@@ -73,12 +73,12 @@ int main_entry(const entry::entry_data* data) {
                    VK_SUCCESS);
       }
 
-      data->log->LogInfo("  API: vkFreeCommandBuffers");
+      data->logger()->LogInfo("  API: vkFreeCommandBuffers");
       device->vkFreeCommandBuffers(device, pool.get_raw_object(), count,
                                    command_buffers.data());
     }
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

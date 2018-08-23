@@ -93,10 +93,10 @@ void EnqueueImageLayoutTransition(
 }
 }  // anonymous namespace
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data, {},
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {},
                                 {}, 1024 * 128, 1024 * 1024 * 1024);
   vulkan::VkDevice& device = app.device();
 
@@ -292,7 +292,7 @@ int main_entry(const entry::entry_data* data) {
       },
   };
   ::VkImageView raw_swapchain_image_view;
-  LOG_ASSERT(==, data->log, app.device()->vkCreateImageView(
+  LOG_ASSERT(==, data->logger(), app.device()->vkCreateImageView(
                                 app.device(), &swapchain_image_view_create_info,
                                 nullptr, &raw_swapchain_image_view),
              VK_SUCCESS);
@@ -323,7 +323,7 @@ int main_entry(const entry::entry_data* data) {
       swapchain_image_view_create_info;
   intermediate_image_view_create_info.image = *intermediate_image;
   ::VkImageView raw_intermediate_image_view;
-  LOG_ASSERT(==, data->log,
+  LOG_ASSERT(==, data->logger(),
              app.device()->vkCreateImageView(
                  app.device(), &intermediate_image_view_create_info, nullptr,
                  &raw_intermediate_image_view),
@@ -423,6 +423,6 @@ int main_entry(const entry::entry_data* data) {
   app.present_queue()->vkQueuePresentKHR(app.present_queue(), &present_info);
   app.device()->vkDeviceWaitIdle(app.device());
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -22,11 +22,11 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto& allocator = data->root_allocator;
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  auto allocator = data->allocator();
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
 
   {  // 1. Zero writes and zero copies.
@@ -266,6 +266,6 @@ int main_entry(const entry::entry_data* data) {
     device->vkUpdateDescriptorSets(device, 0, nullptr, 2, copies);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }
