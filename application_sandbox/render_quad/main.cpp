@@ -19,6 +19,7 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
 
+#include <array>
 #include <chrono>
 #include "mathfu/matrix.h"
 #include "mathfu/vector.h"
@@ -568,7 +569,7 @@ int main_entry(const entry::EntryData* data) {
   RenderQuadSample sample(data, requested_features);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->ShouldExit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();

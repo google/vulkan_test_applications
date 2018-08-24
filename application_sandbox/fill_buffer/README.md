@@ -23,7 +23,7 @@ int main_entry(const entry::EntryData* data) {
   MySample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->ShouldExit()) { !data->ShouldExit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) { !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();

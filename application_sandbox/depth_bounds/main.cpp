@@ -381,7 +381,7 @@ int main_entry(const entry::EntryData* data) {
   DepthBoundsSample sample(data, requested_features);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->ShouldExit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();

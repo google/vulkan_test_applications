@@ -74,29 +74,31 @@ class EntryData {
 
     // dtor of EntryData
     ~EntryData() {
-#if defined _WIN32
+#if defined __ANDROID__
+#elif defined _WIN32
       if (native_window_handle_) {
         DestroyWindow(native_window_handle_);
       }
-
 #elif defined __linux__
       free(delete_window_atom_);
       xcb_disconnect(native_connection_);
 #endif
     }
 
-#if defined _WIN32 || defined __linux__
+#if !defined __ANDROID__
     bool CreateWindow();
-    bool ShouldExit() const;
 #endif
+    bool WindowClosing() const;
 
-#if defined _WIN32
-    HWND native_window_handle() const { return native_window_handle_; }
-    HINSTANCE native_hinstance() const {return native_hinstance_; }
-#elif defined __ANDROID__
+#if defined __ANDROID__
     ANativeWindow* native_window_handle() const {
       return native_window_handle_;
     }
+    const char* os_version() const { return os_version_.c_str(); }
+    void CloseWindow() { window_closing_ = true; }
+#elif defined _WIN32
+    HWND native_window_handle() const { return native_window_handle_; }
+    HINSTANCE native_hinstance() const {return native_hinstance_; }
 #elif defined __linux__
     xcb_window_t native_window_handle() const { return native_window_handle_; }
     xcb_connection_t* native_connection() const { return native_connection_; }
@@ -126,6 +128,7 @@ class EntryData {
 #if defined __ANDROID__
     ANativeWindow* native_window_handle_;
     std::string os_version_;
+    bool window_closing_;
 #elif defined _WIN32
     HINSTANCE native_hinstance_;
     HWND native_window_handle_;

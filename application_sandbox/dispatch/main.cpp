@@ -462,7 +462,7 @@ int main_entry(const entry::EntryData* data) {
   DispatchSample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->ShouldExit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();

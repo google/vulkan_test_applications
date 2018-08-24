@@ -26,13 +26,13 @@
 #include "entry_config.h"
 #include "support/log/log.h"
 
-#if defined __linux__
-#include <unistd.h>
-
-#elif defined __ANDROID__
+#if defined __ANDROID__
 #include <android/window.h>
 #include <android_native_app_glue.h>
 #include <sys/system_properties.h>
+#include <unistd.h>
+
+#elif defined __linux__
 #include <unistd.h>
 
 #endif
@@ -65,6 +65,7 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
       ,
       native_window_handle_(app->window),
       os_version_(""),
+      window_closing_(false)
 #elif defined _WIN32
       ,
       native_hinstance_(0),
@@ -86,8 +87,10 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
 }
 
 // Returns true when window is to be closed.
-bool EntryData::ShouldExit() const {
-#if defined __linux__
+bool EntryData::WindowClosing() const {
+#if defined __ANDROID__
+  return window_closing_;
+#elif defined __linux__
   if (native_connection_ && delete_window_atom_) {
     // The memory of 'event' is 'new'ed by xcb call, so we cannot track it
     // in our allocator.
@@ -113,7 +116,7 @@ bool EntryData::ShouldExit() const {
 }
 };  // namespace entry
 
-#if defined __linux__ || defined _WIN32
+#if defined __linux__ || defined _WIN32 && !(defined __ANDROID__)
 struct CommandLineArgs {
   uint32_t window_width;
   uint32_t window_height;
@@ -159,7 +162,102 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
 }
 #endif
 
-#if defined __linux__
+#if defined __ANDROID__
+
+struct AppData {
+  // Poor-man's semaphore, c++11 is missing a semaphore.
+  std::mutex start_mutex;
+  entry::EntryData* entry_data;
+};
+
+// This is a  handler for all android app commands.
+// Only handles APP_CMD_INIT_WINDOW right now, which unblocks
+// the main thread, which needs the main window to be open
+// before it does any WSI integration.
+void HandleAppCommand(android_app* app, int32_t cmd) {
+  AppData* data = (AppData*)app->userData;
+  switch (cmd) {
+    case APP_CMD_INIT_WINDOW:
+      if (app->window != NULL) {
+        // Wake the thread that is ready to go.
+        data->start_mutex.unlock();
+      }
+      break;
+    case APP_CMD_TERM_WINDOW:
+      if (data->entry_data != nullptr) {
+        data->entry_data->CloseWindow();
+      }
+      break;
+  }
+};
+
+// This method is called by android_native_app_glue. This is the main entry
+// point for any native android activity.
+void android_main(android_app* app) {
+  int32_t output_frame = OUTPUT_FRAME;
+  const char* output_file = OUTPUT_FILE;
+  const char* shader_compiler = SHADER_COMPILER;
+
+  // Simply wait for 10 seconds, this is useful if we have to attach late.
+  if (access("/sdcard/wait-for-debugger.txt", F_OK) != -1) {
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+  }
+  ANativeActivity_setWindowFlags(
+      app->activity, AWINDOW_FLAG_FULLSCREEN | AWINDOW_FLAG_KEEP_SCREEN_ON, 0);
+  // Hack to make sure android_native_app_glue is not stripped.
+  app_dummy();
+  AppData data;
+  data.start_mutex.lock();
+  bool done = false;
+
+  std::thread main_thread([&]() {
+    data.start_mutex.lock();
+    int32_t width = output_frame >= 0 ? DEFAULT_WINDOW_WIDTH
+                                      : ANativeWindow_getWidth(app->window);
+    int32_t height = output_frame >= 0 ? DEFAULT_WINDOW_HEIGHT
+                                       : ANativeWindow_getHeight(app->window);
+
+    containers::LeakCheckAllocator root_allocator;
+    {
+      entry::EntryData entry_data(&root_allocator, static_cast<uint32_t>(width),
+                                  static_cast<uint32_t>(height), FIXED_TIMESTEP,
+                                  PREFER_SEPARATE_PRESENT, output_frame,
+                                  output_file, shader_compiler, app);
+      data.entry_data = &entry_data;
+      int return_value = main_entry(&entry_data);
+      // Do not modify this line, scripts may look for it in the output.
+      entry_data.logger()->LogInfo("RETURN: ", return_value);
+      done = true;
+    }
+    assert(root_allocator.currently_allocated_bytes_.load() == 0);
+  });
+
+  app->userData = &data;
+  app->onAppCmd = &HandleAppCommand;
+
+  while (!done) {
+    // Read all pending events.
+    int ident = 0;
+    int events = 0;
+    struct android_poll_source* source = nullptr;
+    while ((ident = ALooper_pollAll(-1, NULL, &events, (void**)&source)) >= 0) {
+      if (source) {
+        source->process(app, source);
+      }
+      if (app->destroyRequested) {
+        break;
+      }
+    }
+    if (app->destroyRequested) {
+      break;
+    }
+  }
+
+  main_thread.join();
+}
+
+
+#elif defined __linux__
 
 // Create Xcb window
 bool entry::EntryData::CreateWindow() {
@@ -363,91 +461,6 @@ int main(int argc, const char** argv) {
   main_thread.join();
   assert(root_allocator.currently_allocated_bytes_.load() == 0);
   return return_value;
-}
-
-#elif defined __ANDROID__
-
-struct AppData {
-  // Poor-man's semaphore, c++11 is missing a semaphore.
-  std::mutex start_mutex;
-};
-
-// This is a  handler for all android app commands.
-// Only handles APP_CMD_INIT_WINDOW right now, which unblocks
-// the main thread, which needs the main window to be open
-// before it does any WSI integration.
-void HandleAppCommand(android_app* app, int32_t cmd) {
-  AppData* data = (AppData*)app->userData;
-  switch (cmd) {
-    case APP_CMD_INIT_WINDOW:
-      if (app->window != NULL) {
-        // Wake the thread that is ready to go.
-        data->start_mutex.unlock();
-      }
-      break;
-  }
-};
-
-// This method is called by android_native_app_glue. This is the main entry
-// point for any native android activity.
-void android_main(android_app* app) {
-  int32_t output_frame = OUTPUT_FRAME;
-  const char* output_file = OUTPUT_FILE;
-  const char* shader_compiler = SHADER_COMPILER;
-
-  // Simply wait for 10 seconds, this is useful if we have to attach late.
-  if (access("/sdcard/wait-for-debugger.txt", F_OK) != -1) {
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-  }
-  ANativeActivity_setWindowFlags(
-      app->activity, AWINDOW_FLAG_FULLSCREEN | AWINDOW_FLAG_KEEP_SCREEN_ON, 0);
-  // Hack to make sure android_native_app_glue is not stripped.
-  app_dummy();
-  AppData data;
-  data.start_mutex.lock();
-
-  std::thread main_thread([&]() {
-    data.start_mutex.lock();
-    int32_t width = output_frame >= 0 ? DEFAULT_WINDOW_WIDTH
-                                      : ANativeWindow_getWidth(app->window);
-    int32_t height = output_frame >= 0 ? DEFAULT_WINDOW_HEIGHT
-                                       : ANativeWindow_getHeight(app->window);
-
-    containers::LeakCheckAllocator root_allocator;
-    {
-      entry::EntryData entry_data(&root_allocator, static_cast<uint32_t>(width),
-                                  static_cast<uint32_t>(height), FIXED_TIMESTEP,
-                                  PREFER_SEPARATE_PRESENT, output_frame,
-                                  output_file, shader_compiler, app);
-      int return_value = main_entry(&data);
-      // Do not modify this line, scripts may look for it in the output.
-      data.log->LogInfo("RETURN: ", return_value);
-    }
-    assert(root_allocator.currently_allocated_bytes_.load() == 0);
-  });
-
-  app->userData = &data;
-  app->onAppCmd = &HandleAppCommand;
-
-  while (1) {
-    // Read all pending events.
-    int ident = 0;
-    int events = 0;
-    struct android_poll_source* source = nullptr;
-    while ((ident = ALooper_pollAll(-1, NULL, &events, (void**)&source)) >= 0) {
-      if (source) {
-        source->process(app, source);
-      }
-      if (app->destroyRequested) {
-        break;
-      }
-    }
-    if (app->destroyRequested) {
-      break;
-    }
-  }
-
-  main_thread.join();
 }
 
 #endif
