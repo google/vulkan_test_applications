@@ -85,8 +85,12 @@ class EntryData {
 #endif
     }
 
-#if !defined __ANDROID__
+#if defined __ANDROID__
+	// Window is not created by the application on Android
+#elif defined __linux__
     bool CreateWindow();
+#elif defined _WIN32
+    bool CreateWindowWin32();
 #endif
     bool WindowClosing() const;
 

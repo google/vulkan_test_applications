@@ -354,7 +354,7 @@ void write_error(HANDLE handle, const char* message) {
 }
 
 // Create Win32 window
-bool entry::EntryData::CreateWindow() {
+bool entry::EntryData::CreateWindowWin32() {
   HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
   if (out_handle == INVALID_HANDLE_VALUE) {
     AllocConsole();
@@ -364,7 +364,7 @@ bool entry::EntryData::CreateWindow() {
     }
   }
 
-  if (output_frame_index_ == -1_) {
+  if (output_frame_index_ == -1) {
     WNDCLASSEX window_class;
     window_class.cbSize = sizeof(WNDCLASSEX);
     window_class.style = CS_HREDRAW | CS_VREDRAW;
@@ -440,7 +440,7 @@ int main(int argc, const char** argv) {
                               args.output_file, args.shader_compiler);
 
   if (args.output_frame == -1) {
-    bool window_created = entry_data.CreateWindow();
+    bool window_created = entry_data.CreateWindowWin32();
     if (!window_created) {
       entry_data.logger()->LogError("Window creation failed");
       return -1;
