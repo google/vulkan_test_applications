@@ -49,61 +49,102 @@ struct dummy {
 static internal::dummy __attribute__((used)) test_dummy;
 #endif
 
-// If output_frame is > -1, then the given image frame will be written
-// to output_file, otherwise the application will render to the screen.
-struct ApplicationOptions {
-  bool fixed_timestep;
-  bool prefer_separate_present;
-  const char* output_file;
-  int32_t output_frame;
-  const char* shader_compiler;
-};
+// EntryData contains the information about the window and application options
+// like fixed time step etc. On Windows and Linux it is used to create a
+// window and cache the handles of the window for display.
+class EntryData {
+  public:
+    EntryData(const EntryData&) = delete;
+    EntryData(EntryData&&) = delete;
+    EntryData& operator=(const EntryData&) = delete;
+    EntryData& operator=(EntryData&&) = delete;
 
-struct entry_data {
+    // For Android, the width and height should be the window size provided by
+    // the app pointer. For Linux and Windows, the window size should come from
+    // command line or the default value.
+    EntryData(containers::Allocator* allocator, uint32_t width, uint32_t height,
+              bool fixed_timestep, bool separate_present,
+              int64_t output_frame_index, const char* output_frame_file,
+              const char* shader_compiler
 #if defined __ANDROID__
-  ANativeWindow* native_window_handle;
-  std::string os_version;
-#elif defined _WIN32
-  HINSTANCE native_hinstance;
-  HWND native_window_handle;
-#elif defined __linux__
-  xcb_window_t native_window_handle;
-  xcb_connection_t* native_connection;
-  xcb_intern_atom_reply_t* atom_wm_delete_window;
+              ,
+              android_app* app
 #endif
-  // This is never null.
-  containers::unique_ptr<logging::Logger> log;
-  containers::Allocator* root_allocator;
-  uint32_t width;
-  uint32_t height;
-  ApplicationOptions options;
+    );
 
-  bool should_exit() const {
-#if defined __linux__
-    if (native_connection != nullptr && atom_wm_delete_window != nullptr) {
-      xcb_generic_event_t* event = xcb_poll_for_event(native_connection);
-      while(event) {
-        uint8_t event_code = event->response_type & 0x7f;
-        if (event_code == XCB_CLIENT_MESSAGE) {
-          if ((*(xcb_client_message_event_t*)event).data.data32[0] ==
-              atom_wm_delete_window->atom) {
-            free(event);
-            return true;
-          }
-        }
-        free(event);
-        event = xcb_poll_for_event(native_connection);
+    // dtor of EntryData
+    ~EntryData() {
+#if defined __ANDROID__
+#elif defined _WIN32
+      if (native_window_handle_) {
+        DestroyWindow(native_window_handle_);
       }
-    }
-    return false;
-#else
-    return false;
+#elif defined __linux__
+      free(delete_window_atom_);
+      xcb_disconnect(native_connection_);
 #endif
-  }
+    }
+
+#if defined __ANDROID__
+	// Window is not created by the application on Android
+#elif defined __linux__
+    bool CreateWindow();
+#elif defined _WIN32
+    bool CreateWindowWin32();
+#endif
+    bool WindowClosing() const;
+
+#if defined __ANDROID__
+    ANativeWindow* native_window_handle() const {
+      return native_window_handle_;
+    }
+    const char* os_version() const { return os_version_.c_str(); }
+    void CloseWindow() { window_closing_ = true; }
+#elif defined _WIN32
+    HWND native_window_handle() const { return native_window_handle_; }
+    HINSTANCE native_hinstance() const {return native_hinstance_; }
+#elif defined __linux__
+    xcb_window_t native_window_handle() const { return native_window_handle_; }
+    xcb_connection_t* native_connection() const { return native_connection_; }
+#endif
+
+    logging::Logger* logger() const { return log_.get(); }
+    containers::Allocator* allocator() const { return allocator_; }
+    bool fixed_timestep() const { return fixed_timestep_; }
+    bool prefer_separate_present() const { return prefer_separate_present_; }
+    uint32_t width() const { return width_; }
+    uint32_t height() const { return height_; }
+    int64_t output_frame_index() const { return output_frame_index_; }
+    const char* output_frame_file() const { return output_frame_file_; }
+    const char* shader_compiler() const { return shader_compiler_; }
+
+   private:
+    bool fixed_timestep_;
+    bool prefer_separate_present_;
+    uint32_t width_;
+    uint32_t height_;
+    int64_t output_frame_index_;
+    const char* output_frame_file_;
+    const char* shader_compiler_;
+    containers::unique_ptr<logging::Logger> log_;
+    containers::Allocator* allocator_;
+
+#if defined __ANDROID__
+    ANativeWindow* native_window_handle_;
+    std::string os_version_;
+    bool window_closing_;
+#elif defined _WIN32
+    HINSTANCE native_hinstance_;
+    HWND native_window_handle_;
+#elif defined __linux__
+    xcb_window_t native_window_handle_;
+    xcb_connection_t* native_connection_;
+    xcb_intern_atom_reply_t* delete_window_atom_;
+#endif
 };
 }  // namespace entry
 
 // This is the entry-point that every application should define.
-int main_entry(const entry::entry_data* data);
+int main_entry(const entry::EntryData* data);
 
 #endif  // SUPPORT_ENTRY_ENTRY_H_

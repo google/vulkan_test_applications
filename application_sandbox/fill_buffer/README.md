@@ -19,11 +19,11 @@ class MySample : public sample_application::Sample<PerFrameSampleData> {
     void Render(vulkan::VkQueue* queue, size_t frame_index,
                       FillFrameData* frame_data) {}
 }
-int main_entry(const entry::entry_data* data) {
+int main_entry(const entry::EntryData* data) {
   MySample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) { !data->should_exit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) { !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();

@@ -22,13 +22,13 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto& allocator = data->root_allocator;
-  vulkan::LibraryWrapper wrapper(allocator, data->log.get());
+  auto allocator = data->allocator();
+  vulkan::LibraryWrapper wrapper(allocator, data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(vulkan::CreateDefaultDevice(allocator, instance));
 
   {  // First test
@@ -45,7 +45,7 @@ int main_entry(const entry::entry_data* data) {
 
     VkBuffer raw_buffer;
 
-    LOG_ASSERT(==, data->log, device->vkCreateBuffer(device, &create_info,
+    LOG_ASSERT(==, data->logger(), device->vkCreateBuffer(device, &create_info,
                                                      nullptr, &raw_buffer),
                VK_SUCCESS);
     vulkan::VkBuffer buffer(raw_buffer, nullptr, &device);
@@ -53,7 +53,7 @@ int main_entry(const entry::entry_data* data) {
     device->vkGetBufferMemoryRequirements(device, buffer, &requirements);
 
     uint32_t memory_index = vulkan::GetMemoryIndex(
-        &device, data->log.get(), requirements.memoryTypeBits,
+        &device, data->logger(), requirements.memoryTypeBits,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
     VkMemoryAllocateInfo allocate_info{
@@ -63,18 +63,18 @@ int main_entry(const entry::entry_data* data) {
         memory_index};
 
     ::VkDeviceMemory raw_device_memory;
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkAllocateMemory(device, &allocate_info, nullptr,
                                         &raw_device_memory));
     vulkan::VkDeviceMemory device_memory(raw_device_memory, nullptr, &device);
 
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkBindBufferMemory(device, buffer, device_memory, 0));
     void* pData = nullptr;
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkMapMemory(device, device_memory, 0, VK_WHOLE_SIZE, 0,
                                    &pData));
-    LOG_ASSERT(!=, data->log, pData, static_cast<void*>(nullptr));
+    LOG_ASSERT(!=, data->logger(), pData, static_cast<void*>(nullptr));
 
     // Make sure that we could write to the new pData pointer.
     for (size_t i = 0; i < 1024; ++i) {
@@ -84,6 +84,6 @@ int main_entry(const entry::entry_data* data) {
     device->vkUnmapMemory(device, device_memory);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

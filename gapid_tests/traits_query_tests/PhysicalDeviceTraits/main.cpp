@@ -24,58 +24,58 @@ inline const char* BoolString(VkBool32 value) {
   return value != 0 ? "true" : "false";
 }
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   containers::vector<VkPhysicalDevice> physical_devices(
-      vulkan::GetPhysicalDevices(data->root_allocator, instance));
+      vulkan::GetPhysicalDevices(data->allocator(), instance));
 
   {
-    data->log->LogInfo("API: vkGetPhysicalDeviceFeatures");
+    data->logger()->LogInfo("API: vkGetPhysicalDeviceFeatures");
     VkPhysicalDeviceFeatures features;
     for (const auto& device : physical_devices) {
-      data->log->LogInfo("  Phyiscal Device: ", device);
+      data->logger()->LogInfo("  Phyiscal Device: ", device);
       instance->vkGetPhysicalDeviceFeatures(device, &features);
-      data->log->LogInfo("    shaderInt16: ", BoolString(features.shaderInt16));
-      data->log->LogInfo("    shaderInt64: ", BoolString(features.shaderInt64));
-      data->log->LogInfo("    logicOp: ", BoolString(features.logicOp));
+      data->logger()->LogInfo("    shaderInt16: ", BoolString(features.shaderInt16));
+      data->logger()->LogInfo("    shaderInt64: ", BoolString(features.shaderInt64));
+      data->logger()->LogInfo("    logicOp: ", BoolString(features.logicOp));
 
       // Test helper function: vulkan::SupportRequestPhysicalDeviceFeatures().
       // All the supported features returned before should still be considered
       // as "supported" by SupportRequestPhysicalDeviceFeatures().
-      LOG_EXPECT(==, data->log, true,
+      LOG_EXPECT(==, data->logger(), true,
                  vulkan::SupportRequestPhysicalDeviceFeatures(&instance, device,
                                                               features));
     }
   }
 
   {
-    data->log->LogInfo("API: vkGetPhysicalDeviceMemoryProperties");
+    data->logger()->LogInfo("API: vkGetPhysicalDeviceMemoryProperties");
     VkPhysicalDeviceMemoryProperties properties;
     for (const auto& device : physical_devices) {
-      data->log->LogInfo("  Phyiscal Device: ", device);
+      data->logger()->LogInfo("  Phyiscal Device: ", device);
       instance->vkGetPhysicalDeviceMemoryProperties(device, &properties);
-      data->log->LogInfo("    # memory types: ", properties.memoryTypeCount);
-      data->log->LogInfo("    # memory heaps: ", properties.memoryHeapCount);
+      data->logger()->LogInfo("    # memory types: ", properties.memoryTypeCount);
+      data->logger()->LogInfo("    # memory heaps: ", properties.memoryHeapCount);
     }
   }
 
   {
-    data->log->LogInfo("API: vkGetPhysicalDeviceProperties");
+    data->logger()->LogInfo("API: vkGetPhysicalDeviceProperties");
     VkPhysicalDeviceProperties properties;
     for (const auto& device : physical_devices) {
-      data->log->LogInfo("  Phyiscal Device: ", device);
+      data->logger()->LogInfo("  Phyiscal Device: ", device);
       instance->vkGetPhysicalDeviceProperties(device, &properties);
-      data->log->LogInfo("    apiVersion: ", properties.apiVersion);
-      data->log->LogInfo("    driverVersion: ", properties.driverVersion);
-      data->log->LogInfo("    vendorID: ", properties.vendorID);
-      data->log->LogInfo("    deviceID: ", properties.deviceID);
-      data->log->LogInfo("    deviceName: ", properties.deviceName);
+      data->logger()->LogInfo("    apiVersion: ", properties.apiVersion);
+      data->logger()->LogInfo("    driverVersion: ", properties.driverVersion);
+      data->logger()->LogInfo("    vendorID: ", properties.vendorID);
+      data->logger()->LogInfo("    deviceID: ", properties.deviceID);
+      data->logger()->LogInfo("    deviceName: ", properties.deviceName);
     }
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

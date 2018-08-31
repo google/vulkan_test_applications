@@ -18,10 +18,10 @@
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
 
   {
@@ -70,21 +70,21 @@ int main_entry(const entry::entry_data* data) {
     device->vkGetImageSubresourceLayout(device, *image, &layer, &layout);
 
     // offset
-    LOG_EXPECT(==, data->log, layout.offset, 0);
+    LOG_EXPECT(==, data->logger(), layout.offset, 0);
 
     // size
-    LOG_EXPECT(==, data->log, layout.size, 4 * 32 * 32);
+    LOG_EXPECT(==, data->logger(), layout.size, 4 * 32 * 32);
 
     // rowPitch
-    LOG_EXPECT(==, data->log, layout.rowPitch, 4 * 32);
+    LOG_EXPECT(==, data->logger(), layout.rowPitch, 4 * 32);
 
     // arrayPitch
     // arrayPitch is undefined.
 
     // depthPitch
-    LOG_EXPECT(==, data->log, layout.depthPitch, 4 * 32 * 32);
+    LOG_EXPECT(==, data->logger(), layout.depthPitch, 4 * 32 * 32);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

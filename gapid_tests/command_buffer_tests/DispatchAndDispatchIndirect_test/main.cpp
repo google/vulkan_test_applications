@@ -28,10 +28,10 @@ uint32_t compute_shader[] =
 #include "double_numbers.comp.spv"
     ;
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
 
   // Both input and output buffers have 512 32-bit integers.
@@ -62,7 +62,7 @@ int main_entry(const entry::entry_data* data) {
       nullptr,                            // pImmutableSamplers
   };
   auto compute_descriptor_set = containers::make_unique<vulkan::DescriptorSet>(
-      data->root_allocator,
+      data->allocator(),
       app.AllocateDescriptorSet({in_binding, out_binding}));
 
   const VkDescriptorBufferInfo buffer_infos[2] = {
@@ -85,11 +85,11 @@ int main_entry(const entry::entry_data* data) {
   // Create pipeline
   auto compute_pipeline_layout =
       containers::make_unique<vulkan::PipelineLayout>(
-          data->root_allocator,
+          data->allocator(),
           app.CreatePipelineLayout({{in_binding, out_binding}}));
   auto compute_pipeline =
       containers::make_unique<vulkan::VulkanComputePipeline>(
-          data->root_allocator,
+          data->allocator(),
           app.CreateComputePipeline(
               compute_pipeline_layout.get(),
               VkShaderModuleCreateInfo{
@@ -103,14 +103,14 @@ int main_entry(const entry::entry_data* data) {
 
     // Set inital values for the in-buffer and clear the out-buffer
     containers::vector<uint32_t> initial_in_buffer_value(kNumElements, 1,
-                                                         data->root_allocator);
+                                                         data->allocator());
     app.FillHostVisibleBuffer(
         &*in_buffer,
         reinterpret_cast<const char*>(initial_in_buffer_value.data()),
         initial_in_buffer_value.size() * sizeof(uint32_t), 0, &cmd_buf,
         VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     containers::vector<uint32_t> initial_out_buffer_value(kNumElements, 0,
-                                                          data->root_allocator);
+                                                          data->allocator());
     app.FillHostVisibleBuffer(
         &*out_buffer,
         reinterpret_cast<const char*>(initial_out_buffer_value.data()),
@@ -124,15 +124,15 @@ int main_entry(const entry::entry_data* data) {
         cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, *compute_pipeline_layout, 0, 1,
         &compute_descriptor_set->raw_set(), 0, nullptr);
     cmd_buf->vkCmdDispatch(cmd_buf, kNumElements, 1, 1);
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                app.EndAndSubmitCommandBufferAndWaitForQueueIdle(
                    &cmd_buf, &app.render_queue()));
 
     // Check the output values
     containers::vector<uint32_t> output =
-        vulkan::GetHostVisibleBufferData(data->root_allocator, &*out_buffer);
+        vulkan::GetHostVisibleBufferData(data->allocator(), &*out_buffer);
     std::for_each(output.begin(), output.end(),
-                  [data](uint32_t w) { LOG_EXPECT(==, data->log, 2, w); });
+                  [data](uint32_t w) { LOG_EXPECT(==, data->logger(), 2, w); });
   }
 
   {
@@ -147,14 +147,14 @@ int main_entry(const entry::entry_data* data) {
 
     // Set inital values for the in-buffer and clear the out-buffer
     containers::vector<uint32_t> initial_in_buffer_value(kNumElements, 1,
-                                                         data->root_allocator);
+                                                         data->allocator());
     app.FillHostVisibleBuffer(
         &*in_buffer,
         reinterpret_cast<const char*>(initial_in_buffer_value.data()),
         initial_in_buffer_value.size() * sizeof(uint32_t), 0, &cmd_buf,
         VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     containers::vector<uint32_t> initial_out_buffer_value(kNumElements, 0,
-                                                          data->root_allocator);
+                                                          data->allocator());
     app.FillHostVisibleBuffer(
         &*out_buffer,
         reinterpret_cast<const char*>(initial_out_buffer_value.data()),
@@ -176,17 +176,17 @@ int main_entry(const entry::entry_data* data) {
         cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, *compute_pipeline_layout, 0, 1,
         &compute_descriptor_set->raw_set(), 0, nullptr);
     cmd_buf->vkCmdDispatchIndirect(cmd_buf, *indirect_buffer, 0);
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                app.EndAndSubmitCommandBufferAndWaitForQueueIdle(
                    &cmd_buf, &app.render_queue()));
 
     // Check the output values
     containers::vector<uint32_t> output =
-        vulkan::GetHostVisibleBufferData(data->root_allocator, &*out_buffer);
+        vulkan::GetHostVisibleBufferData(data->allocator(), &*out_buffer);
     std::for_each(output.begin(), output.end(),
-                  [data](uint32_t w) { LOG_EXPECT(==, data->log, 2, w); });
+                  [data](uint32_t w) { LOG_EXPECT(==, data->logger(), 2, w); });
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

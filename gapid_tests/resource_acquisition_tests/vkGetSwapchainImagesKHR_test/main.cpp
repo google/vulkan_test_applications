@@ -19,41 +19,41 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateDefaultInstance(data->root_allocator, &wrapper));
+      vulkan::CreateDefaultInstance(data->allocator(), &wrapper));
   vulkan::VkSurfaceKHR surface(vulkan::CreateDefaultSurface(&instance, data));
 
   uint32_t queues[2];
   vulkan::VkDevice device(vulkan::CreateDeviceForSwapchain(
-      data->root_allocator, &instance, &surface, &queues[0], &queues[1]));
+      data->allocator(), &instance, &surface, &queues[0], &queues[1]));
   vulkan::VkSwapchainKHR swapchain(vulkan::CreateDefaultSwapchain(
-      &instance, &device, &surface, data->root_allocator, queues[0], queues[1],
+      &instance, &device, &surface, data->allocator(), queues[0], queues[1],
       data));
 
   uint32_t num_images;
 
   LOG_ASSERT(
-      ==, data->log,
+      ==, data->logger(),
       device->vkGetSwapchainImagesKHR(device, swapchain, &num_images, nullptr),
       VK_SUCCESS);
-  containers::vector<VkImage> images(data->root_allocator);
+  containers::vector<VkImage> images(data->allocator());
   images.resize(num_images);
-  LOG_EXPECT(==, data->log,
+  LOG_EXPECT(==, data->logger(),
              device->vkGetSwapchainImagesKHR(device, swapchain, &num_images,
                                              images.data()),
              VK_SUCCESS);
 
   if (num_images > 1) {
     num_images -= 1;
-    LOG_EXPECT(==, data->log,
+    LOG_EXPECT(==, data->logger(),
                device->vkGetSwapchainImagesKHR(device, swapchain, &num_images,
                                                images.data()),
                VK_INCOMPLETE);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -55,11 +55,11 @@ struct CubeFrameData {
 // for host, and device buffer sizes.
 class DispatchSample : public sample_application::Sample<CubeFrameData> {
  public:
-  DispatchSample(const entry::entry_data* data)
+  DispatchSample(const entry::EntryData* data)
       : data_(data),
-        Sample<CubeFrameData>(data->root_allocator, data, 1, 512, 2, 1,
+        Sample<CubeFrameData>(data->allocator(), data, 1, 512, 2, 1,
                               sample_application::SampleOptions()),
-        cube_(data->root_allocator, data->log.get(), cube_data) {}
+        cube_(data->allocator(), data->logger(), cube_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
@@ -88,7 +88,7 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
     };
 
     render_pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout({{
             render_descriptor_set_layouts_[0],
             render_descriptor_set_layouts_[1],
@@ -99,7 +99,7 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                 0,                                         // flags
@@ -128,7 +128,7 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
             ));
 
     render_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(render_pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     render_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -145,16 +145,16 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
 
     camera_data =
         containers::make_unique<vulkan::BufferFrameData<camera_data_>>(
-            data_->root_allocator, app(), num_swapchain_images,
+            data_->allocator(), app(), num_swapchain_images,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     model_data = containers::make_unique<vulkan::BufferFrameData<model_data_>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     dispatch_data_ =
         containers::make_unique<vulkan::BufferFrameData<DispatchData>>(
-            data_->root_allocator, app(), num_swapchain_images,
+            data_->allocator(), app(), num_swapchain_images,
             VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
@@ -178,10 +178,10 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
         nullptr                             // pImmutableSamplers
     };
     compute_pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout({{compute_descriptor_set_layout_}}));
     compute_pipeline_ = containers::make_unique<vulkan::VulkanComputePipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateComputePipeline(
             compute_pipeline_layout_.get(),
             VkShaderModuleCreateInfo{
@@ -195,7 +195,7 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
       size_t frame_index) override {
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     // Allocate the descriptors for the render pass
     VkBufferViewCreateInfo dispatch_data_buffer_view_create_info{
@@ -208,18 +208,18 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
         dispatch_data_->aligned_data_size(),                // range
     };
     ::VkBufferView raw_buf_view;
-    LOG_ASSERT(==, data_->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data_->logger(), VK_SUCCESS,
                app()->device()->vkCreateBufferView(
                    app()->device(), &dispatch_data_buffer_view_create_info,
                    nullptr, &raw_buf_view));
     frame_data->dispatch_data_buffer_view_ =
         containers::make_unique<vulkan::VkBufferView>(
-            data_->root_allocator,
+            data_->allocator(),
             vulkan::VkBufferView(raw_buf_view, nullptr, &app()->device()));
 
     frame_data->render_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet({
                 render_descriptor_set_layouts_[0],
                 render_descriptor_set_layouts_[1],
@@ -229,7 +229,7 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
     // Allocate the descriptors for the compute pipeline
     frame_data->compute_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet({compute_descriptor_set_layout_}));
 
     // Update the descriptor sets.
@@ -319,7 +319,7 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     (*frame_data->command_buffer_)
@@ -442,7 +442,7 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
     float value;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> render_pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> render_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
@@ -457,16 +457,16 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
   containers::unique_ptr<vulkan::BufferFrameData<DispatchData>> dispatch_data_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   DispatchSample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

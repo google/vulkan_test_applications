@@ -21,33 +21,33 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateDefaultInstance(data->root_allocator, &wrapper));
+      vulkan::CreateDefaultInstance(data->allocator(), &wrapper));
   vulkan::VkSurfaceKHR surface(vulkan::CreateDefaultSurface(&instance, data));
 
   uint32_t queues[2];
   vulkan::VkDevice device(vulkan::CreateDeviceForSwapchain(
-      data->root_allocator, &instance, &surface, &queues[0], &queues[1]));
+      data->allocator(), &instance, &surface, &queues[0], &queues[1]));
   bool has_multiple_queues = queues[0] != queues[1];
 
   VkSurfaceCapabilitiesKHR surface_caps;
-  LOG_ASSERT(==, data->log,
+  LOG_ASSERT(==, data->logger(),
              instance->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
                  device.physical_device(), surface, &surface_caps),
              VK_SUCCESS);
 
   uint32_t num_formats = 0;
-  LOG_ASSERT(==, data->log,
+  LOG_ASSERT(==, data->logger(),
              instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
                  device.physical_device(), surface, &num_formats, nullptr),
              VK_SUCCESS);
 
-  containers::vector<VkSurfaceFormatKHR> surface_formats(data->root_allocator);
+  containers::vector<VkSurfaceFormatKHR> surface_formats(data->allocator());
   surface_formats.resize(num_formats);
-  LOG_ASSERT(==, data->log,
+  LOG_ASSERT(==, data->logger(),
              instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
                  device.physical_device(), surface, &num_formats,
                  surface_formats.data()),
@@ -56,21 +56,21 @@ int main_entry(const entry::entry_data* data) {
   uint32_t num_present_modes = 0;
 
   LOG_ASSERT(
-      ==, data->log,
+      ==, data->logger(),
       instance->vkGetPhysicalDeviceSurfacePresentModesKHR(
           device.physical_device(), surface, &num_present_modes, nullptr),
       VK_SUCCESS);
-  containers::vector<VkPresentModeKHR> present_modes(data->root_allocator);
+  containers::vector<VkPresentModeKHR> present_modes(data->allocator());
   present_modes.resize(num_present_modes);
-  LOG_ASSERT(==, data->log,
+  LOG_ASSERT(==, data->logger(),
              instance->vkGetPhysicalDeviceSurfacePresentModesKHR(
                  device.physical_device(), surface, &num_present_modes,
                  present_modes.data()),
              VK_SUCCESS);
 
-  data->log->LogInfo("Created device for rendering to a swapchain");
-  data->log->LogInfo("   Graphics Queue: ", queues[0]);
-  data->log->LogInfo("   Present Queue: ", queues[1]);
+  data->logger()->LogInfo("Created device for rendering to a swapchain");
+  data->logger()->LogInfo("   Graphics Queue: ", queues[0]);
+  data->logger()->LogInfo("   Present Queue: ", queues[1]);
 
   uint32_t chosenAlpha =
       static_cast<uint32_t>(surface_caps.supportedCompositeAlpha);
@@ -106,17 +106,17 @@ int main_entry(const entry::entry_data* data) {
 
   VkSwapchainKHR swapchain;
 
-  LOG_ASSERT(==, data->log,
+  LOG_ASSERT(==, data->logger(),
              device->vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr,
                                           &swapchain),
              VK_SUCCESS);
 
   device->vkDestroySwapchainKHR(device, swapchain, nullptr);
 
-  data->log->LogInfo("Device ID: ", device.device_id());
-  data->log->LogInfo("Vendor ID: ", device.vendor_id());
-  data->log->LogInfo("driver version: ", device.driver_version());
+  data->logger()->LogInfo("Device ID: ", device.device_id());
+  data->logger()->LogInfo("Vendor ID: ", device.vendor_id());
+  data->logger()->LogInfo("driver version: ", device.driver_version());
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

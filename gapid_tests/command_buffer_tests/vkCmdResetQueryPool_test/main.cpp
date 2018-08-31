@@ -20,10 +20,10 @@
 
 #include <algorithm>
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
   {
     // Creates one query pool with 4 queries, another one with 7 queries, then
@@ -81,6 +81,6 @@ int main_entry(const entry::entry_data* data) {
     app.render_queue()->vkQueueWaitIdle(app.render_queue());
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

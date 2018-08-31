@@ -22,10 +22,10 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   // So we don't have to type app.device every time.
   vulkan::VkDevice& device = app.device();
   vulkan::VkQueue& render_queue = app.render_queue();
@@ -37,13 +37,13 @@ int main_entry(const entry::entry_data* data) {
         0                                     // flags
     };
     VkFence fence;
-    LOG_ASSERT(==, data->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkCreateFence(device, &create_info, nullptr, &fence));
     render_queue->vkQueueSubmit(render_queue, 0, nullptr, fence);
 
-    LOG_ASSERT(==, data->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkWaitForFences(device, 1, &fence, VK_FALSE, 1000000));
-    LOG_ASSERT(==, data->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkResetFences(device, 1, &fence));
 
     device->vkDestroyFence(device, fence, nullptr);
@@ -51,21 +51,21 @@ int main_entry(const entry::entry_data* data) {
 
   {  // Get fence status
     vulkan::VkFence fence = vulkan::CreateFence(&device, false);
-    LOG_ASSERT(==, data->log.get(), VK_NOT_READY,
+    LOG_ASSERT(==, data->logger(), VK_NOT_READY,
                device->vkGetFenceStatus(device, fence));
     render_queue->vkQueueSubmit(render_queue, 0, nullptr, fence);
     render_queue->vkQueueWaitIdle(render_queue);
-    LOG_ASSERT(==, data->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkGetFenceStatus(device, fence));
     device->vkResetFences(device, 1, &fence.get_raw_object());
-    LOG_ASSERT(==, data->log.get(), VK_NOT_READY,
+    LOG_ASSERT(==, data->logger(), VK_NOT_READY,
                device->vkGetFenceStatus(device, fence));
 
     vulkan::VkFence fence_signaled = vulkan::CreateFence(&device, true);
-    LOG_ASSERT(==, data->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkGetFenceStatus(device, fence_signaled));
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

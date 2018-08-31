@@ -26,13 +26,97 @@
 #include "entry_config.h"
 #include "support/log/log.h"
 
+#if defined __ANDROID__
+#include <android/window.h>
+#include <android_native_app_glue.h>
+#include <sys/system_properties.h>
+#include <unistd.h>
+
+#elif defined __linux__
+#include <unistd.h>
+
+#endif
+
 namespace entry {
+
 namespace internal {
 void dummy_function() {}
 }  // namespace internal
-}  // namespace entry
 
-#if defined __linux__ || defined _WIN32
+EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
+                     uint32_t height, bool fixed_timestep,
+                     bool separate_present, int64_t output_frame_index,
+                     const char* output_frame_file, const char* shader_compiler
+#if defined __ANDROID__
+                     ,
+                     android_app* app
+#endif
+                     )
+    : fixed_timestep_(fixed_timestep),
+      prefer_separate_present_(separate_present),
+      width_(width),
+      height_(height),
+      output_frame_index_(output_frame_index),
+      output_frame_file_(output_frame_file),
+      shader_compiler_(shader_compiler),
+      log_(logging::GetLogger(allocator)),
+      allocator_(allocator)
+#if defined __ANDROID__
+      ,
+      native_window_handle_(app->window),
+      os_version_(""),
+      window_closing_(false)
+#elif defined _WIN32
+      ,
+      native_hinstance_(0),
+      native_window_handle_(0)
+#elif defined __linux__
+      ,
+      native_window_handle_(0),
+      native_connection_(nullptr),
+      delete_window_atom_(nullptr)
+#endif
+{
+#if defined __ANDROID__
+  // Get the os version
+  char os_version_c_str[PROP_VALUE_MAX];
+  int os_version_length =
+      __system_property_get("ro.build.version.release", os_version_c_str);
+  os_version_ = os_version_length != 0 ? os_version_c_str : "";
+#endif
+}
+
+// Returns true when window is to be closed.
+bool EntryData::WindowClosing() const {
+#if defined __ANDROID__
+  return window_closing_;
+#elif defined __linux__
+  if (native_connection_ && delete_window_atom_) {
+    // The memory of 'event' is 'new'ed by xcb call, so we cannot track it
+    // in our allocator.
+    auto event = std::unique_ptr<xcb_generic_event_t>(
+        xcb_poll_for_event(native_connection_));
+    while (event) {
+      uint8_t event_code = event->response_type & 0x7f;
+      if (event_code == XCB_CLIENT_MESSAGE) {
+        auto client_msg =
+            reinterpret_cast<xcb_client_message_event_t*>(event.get());
+        if (client_msg->data.data32[0] == delete_window_atom_->atom) {
+          return true;
+        }
+      }
+      event.reset(xcb_poll_for_event(native_connection_));
+    }
+  }
+  return false;
+#elif defined _WIN32
+  // TODO: implement this for WIN32
+  return false;
+#endif
+}
+};  // namespace entry
+
+#if defined __linux__ || defined _WIN32 && !(defined __ANDROID__)
 struct CommandLineArgs {
   uint32_t window_width;
   uint32_t window_height;
@@ -79,14 +163,11 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
 #endif
 
 #if defined __ANDROID__
-#include <android/window.h>
-#include <android_native_app_glue.h>
-#include <sys/system_properties.h>
-#include <unistd.h>
 
 struct AppData {
   // Poor-man's semaphore, c++11 is missing a semaphore.
   std::mutex start_mutex;
+  entry::EntryData* entry_data;
 };
 
 // This is a  handler for all android app commands.
@@ -102,6 +183,11 @@ void HandleAppCommand(android_app* app, int32_t cmd) {
         data->start_mutex.unlock();
       }
       break;
+    case APP_CMD_TERM_WINDOW:
+      if (data->entry_data != nullptr) {
+        data->entry_data->CloseWindow();
+      }
+      break;
   }
 };
 
@@ -111,11 +197,6 @@ void android_main(android_app* app) {
   int32_t output_frame = OUTPUT_FRAME;
   const char* output_file = OUTPUT_FILE;
   const char* shader_compiler = SHADER_COMPILER;
-
-  // Get the os version
-  char os_version_c_str[PROP_VALUE_MAX];
-  int os_version_length =
-      __system_property_get("ro.build.version.release", os_version_c_str);
 
   // Simply wait for 10 seconds, this is useful if we have to attach late.
   if (access("/sdcard/wait-for-debugger.txt", F_OK) != -1) {
@@ -137,17 +218,15 @@ void android_main(android_app* app) {
 
     containers::LeakCheckAllocator root_allocator;
     {
-      entry::entry_data data{app->window,
-                             os_version_length != 0 ? os_version_c_str : "",
-                             logging::GetLogger(&root_allocator),
-                             &root_allocator,
-                             static_cast<uint32_t>(width),
-                             static_cast<uint32_t>(height),
-                             {FIXED_TIMESTEP, PREFER_SEPARATE_PRESENT,
-                              output_file, output_frame, shader_compiler}};
-      int return_value = main_entry(&data);
+      entry::EntryData entry_data(&root_allocator, static_cast<uint32_t>(width),
+                                  static_cast<uint32_t>(height), FIXED_TIMESTEP,
+                                  PREFER_SEPARATE_PRESENT, output_frame,
+                                  output_file, shader_compiler, app);
+      data.entry_data = &entry_data;
+      int return_value = main_entry(&entry_data);
       // Do not modify this line, scripts may look for it in the output.
-      data.log->LogInfo("RETURN: ", return_value);
+      entry_data.logger()->LogInfo("RETURN: ", return_value);
+      ANativeActivity_finish(app->activity);
     }
     assert(root_allocator.currently_allocated_bytes_.load() == 0);
   });
@@ -155,7 +234,7 @@ void android_main(android_app* app) {
   app->userData = &data;
   app->onAppCmd = &HandleAppCommand;
 
-  while (1) {
+  while (true) {
     // Read all pending events.
     int ident = 0;
     int events = 0;
@@ -175,9 +254,46 @@ void android_main(android_app* app) {
 
   main_thread.join();
 }
+
+
 #elif defined __linux__
-#include <unistd.h>
+
+// Create Xcb window
+bool entry::EntryData::CreateWindow() {
+  if (output_frame_index_ == -1) {
+    native_connection_ = xcb_connect(NULL, NULL);
+
+    const xcb_setup_t* setup = xcb_get_setup(native_connection_);
+    xcb_screen_iterator_t iter = xcb_setup_roots_iterator(setup);
+    xcb_screen_t* screen = iter.data;
+
+    native_window_handle_ = xcb_generate_id(native_connection_);
+    xcb_create_window(native_connection_, XCB_COPY_FROM_PARENT,
+                      native_window_handle_, screen->root, 0, 0, width_,
+                      height_, 1, XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                      screen->root_visual, 0, NULL);
+    /* Magic code that will send notification when window is destroyed */
+    xcb_intern_atom_cookie_t cookie =
+        xcb_intern_atom(native_connection_, 1, 12, "WM_PROTOCOLS");
+    auto reply = std::unique_ptr<xcb_intern_atom_reply_t>(
+        xcb_intern_atom_reply(native_connection_, cookie, 0));
+    xcb_intern_atom_cookie_t cookie2 =
+        xcb_intern_atom(native_connection_, 0, 16, "WM_DELETE_WINDOW");
+    delete_window_atom_ = xcb_intern_atom_reply(native_connection_, cookie2, 0);
+    xcb_change_property(native_connection_, XCB_PROP_MODE_REPLACE,
+                        native_window_handle_, reply->atom, 4, 32, 1,
+                        &delete_window_atom_->atom);
+
+    xcb_map_window(native_connection_, native_window_handle_);
+    xcb_flush(native_connection_);
+    return true;
+  }
+  return false;
+}
+
 static char file_path[1024 * 1024] = {};
+
+// Main for Linux
 // This creates an XCB connection and window for the application.
 // It maps it onto the screen and passes it on to the main_entry function.
 // -w=X will set the window width to X
@@ -205,61 +321,29 @@ int main(int argc, const char** argv) {
   CommandLineArgs args;
   parse_args(&args, argc, argv);
 
-  containers::LeakCheckAllocator root_allocator;
-  xcb_connection_t* connection;
-  xcb_window_t window;
-  xcb_intern_atom_reply_t* atom_wm_delete_window;
-  if (args.output_frame == -1) {
-    connection = xcb_connect(NULL, NULL);
-    const xcb_setup_t* setup = xcb_get_setup(connection);
-    xcb_screen_iterator_t iter = xcb_setup_roots_iterator(setup);
-    xcb_screen_t* screen = iter.data;
-
-    window = xcb_generate_id(connection);
-    xcb_create_window(connection, XCB_COPY_FROM_PARENT, window, screen->root, 0,
-                      0, args.window_width, args.window_height, 1,
-                      XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, 0,
-                      NULL);
-    /* Magic code that will send notification when window is destroyed */
-    xcb_intern_atom_cookie_t cookie =
-        xcb_intern_atom(connection, 1, 12, "WM_PROTOCOLS");
-    xcb_intern_atom_reply_t* reply =
-        xcb_intern_atom_reply(connection, cookie, 0);
-    xcb_intern_atom_cookie_t cookie2 =
-        xcb_intern_atom(connection, 0, 16, "WM_DELETE_WINDOW");
-    atom_wm_delete_window =
-        xcb_intern_atom_reply(connection, cookie2, 0);
-    xcb_change_property(connection, XCB_PROP_MODE_REPLACE, window,
-                        reply->atom, 4, 32, 1,
-                        &atom_wm_delete_window->atom);
-    free(reply);
-
-    xcb_map_window(connection, window);
-    xcb_flush(connection);
-  }
-
   int return_value = 0;
-
-  std::thread main_thread([&]() {
-    entry::entry_data data{
-        window,
-        connection,
-        atom_wm_delete_window,
-        logging::GetLogger(&root_allocator),
-        &root_allocator,
-        args.window_width,
-        args.window_height,
-        {args.fixed_timestep, args.prefer_separate_present, args.output_file,
-         args.output_frame, args.shader_compiler}};
-    return_value = main_entry(&data);
-  });
-  main_thread.join();
-  // TODO(awoloszyn): Handle other events here.
-  free(atom_wm_delete_window);
-  xcb_disconnect(connection);
+  containers::LeakCheckAllocator root_allocator;
+  {
+    entry::EntryData entry_data(&root_allocator, args.window_width,
+                                args.window_height, args.fixed_timestep,
+                                args.prefer_separate_present, args.output_frame,
+                                args.output_file, args.shader_compiler);
+    if (args.output_frame == -1) {
+      bool window_created = entry_data.CreateWindow();
+      if (!window_created) {
+        entry_data.logger()->LogError("Window creation failed");
+        return -1;
+      }
+    }
+    std::thread main_thread([&entry_data, &return_value]() {
+      return_value = main_entry(&entry_data);
+    });
+    main_thread.join();
+  }
   assert(root_allocator.currently_allocated_bytes_.load() == 0);
   return return_value;
 }
+
 #elif defined _WIN32
 
 void write_error(HANDLE handle, const char* message) {
@@ -268,23 +352,64 @@ void write_error(HANDLE handle, const char* message) {
                nullptr);
 }
 
-static char file_path[1024 * 1024] = {};
-static char layer_path[1024 * 1024] = {};
-int main(int argc, const char** argv) {
-  CommandLineArgs args;
-  parse_args(&args, argc, argv);
-
-  containers::LeakCheckAllocator root_allocator;
-  HINSTANCE instance = 0;
-  HWND window_handle = 0;
+// Create Win32 window
+bool entry::EntryData::CreateWindowWin32() {
   HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
   if (out_handle == INVALID_HANDLE_VALUE) {
     AllocConsole();
     out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
     if (out_handle == INVALID_HANDLE_VALUE) {
-      return -1;
+      return false;
     }
   }
+
+  if (output_frame_index_ == -1) {
+    WNDCLASSEX window_class;
+    window_class.cbSize = sizeof(WNDCLASSEX);
+    window_class.style = CS_HREDRAW | CS_VREDRAW;
+    window_class.lpfnWndProc = &DefWindowProc;
+    window_class.cbClsExtra = 0;
+    window_class.cbWndExtra = 0;
+    window_class.hInstance = GetModuleHandle(NULL);
+    window_class.hIcon = NULL;
+    window_class.hCursor = NULL;
+    window_class.hbrBackground = NULL;
+    window_class.lpszMenuName = NULL;
+    window_class.lpszClassName = "Sample application";
+    window_class.hIconSm = NULL;
+    if (!RegisterClassEx(&window_class)) {
+      DWORD num_written = 0;
+      write_error(out_handle, "Could not register class");
+      return false;
+    }
+    RECT rect = {0, 0, LONG(width_), LONG(height_)};
+
+    AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
+
+    native_window_handle_ = CreateWindowEx(
+        0, "Sample application", "", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+        CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, 0, 0,
+        GetModuleHandle(NULL), NULL);
+
+    if (!native_window_handle_) {
+      write_error(out_handle, "Could not create window");
+      return false;
+    }
+
+    native_hinstance_ = reinterpret_cast<HINSTANCE>(
+        GetWindowLongPtr(native_window_handle_, GWLP_HINSTANCE));
+    ShowWindow(native_window_handle_, SW_SHOW);
+    return true;
+  }
+  return false;
+}
+
+static char file_path[1024 * 1024] = {};
+static char layer_path[1024 * 1024] = {};
+// Main for WIN32
+int main(int argc, const char** argv) {
+  CommandLineArgs args;
+  parse_args(&args, argc, argv);
 
   DWORD path_len = GetModuleFileNameA(NULL, file_path, 1024 * 1024 - 1);
   if (path_len != -1) {
@@ -307,69 +432,34 @@ int main(int argc, const char** argv) {
     SetEnvironmentVariableA("VK_LAYER_PATH", lp.c_str());
   }
 
+  containers::LeakCheckAllocator root_allocator;
+  entry::EntryData entry_data(&root_allocator, args.window_width,
+                              args.window_height, args.fixed_timestep,
+                              args.prefer_separate_present, args.output_frame,
+                              args.output_file, args.shader_compiler);
+
   if (args.output_frame == -1) {
-    WNDCLASSEX window_class;
-    window_class.cbSize = sizeof(WNDCLASSEX);
-    window_class.style = CS_HREDRAW | CS_VREDRAW;
-    window_class.lpfnWndProc = &DefWindowProc;
-    window_class.cbClsExtra = 0;
-    window_class.cbWndExtra = 0;
-    window_class.hInstance = GetModuleHandle(NULL);
-    window_class.hIcon = NULL;
-    window_class.hCursor = NULL;
-    window_class.hbrBackground = NULL;
-    window_class.lpszMenuName = NULL;
-    window_class.lpszClassName = "Sample application";
-    window_class.hIconSm = NULL;
-    if (!RegisterClassEx(&window_class)) {
-      DWORD num_written = 0;
-      write_error(out_handle, "Could not register class");
+    bool window_created = entry_data.CreateWindowWin32();
+    if (!window_created) {
+      entry_data.logger()->LogError("Window creation failed");
       return -1;
     }
-
-    RECT rect = {0, 0, LONG(args.window_width), LONG(args.window_height)};
-
-    AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
-
-    window_handle = CreateWindowEx(
-        0, "Sample application", "", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-        CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, 0, 0,
-        GetModuleHandle(NULL), NULL);
-
-    if (!window_handle) {
-      write_error(out_handle, "Could not create window");
-    }
-
-    instance = reinterpret_cast<HINSTANCE>(
-        GetWindowLongPtr(window_handle, GWLP_HINSTANCE));
-    ShowWindow(window_handle, SW_SHOW);
   }
-
   int return_value = 0;
-
-  std::thread main_thread([&]() {
-    entry::entry_data data{instance,
-                           window_handle,
-                           logging::GetLogger(&root_allocator),
-                           &root_allocator,
-                           args.window_width,
-                           args.window_height,
-                           {args.fixed_timestep, args.prefer_separate_present,
-                            args.output_file, args.output_frame, args.shader_compiler}};
-    return_value = main_entry(&data);
+  std::thread main_thread([&entry_data, &return_value]() {
+    return_value = main_entry(&entry_data);
   });
 
   MSG msg;
-  while (window_handle && GetMessage(&msg, window_handle, 0, 0)) {
+  while (entry_data.native_window_handle() &&
+         GetMessage(&msg, entry_data.native_window_handle(), 0, 0)) {
     TranslateMessage(&msg);
     DispatchMessage(&msg);
   }
+
   main_thread.join();
-  if (window_handle) {
-    DestroyWindow(window_handle);
-  }
+  assert(root_allocator.currently_allocated_bytes_.load() == 0);
   return return_value;
 }
-#else
-#error Unsupported platform.
+
 #endif

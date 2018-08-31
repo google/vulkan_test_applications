@@ -21,26 +21,26 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateDefaultInstance(data->root_allocator, &wrapper));
+      vulkan::CreateDefaultInstance(data->allocator(), &wrapper));
   vulkan::VkSurfaceKHR surface(vulkan::CreateDefaultSurface(&instance, data));
 
   uint32_t queues[2];
   vulkan::VkDevice device(vulkan::CreateDeviceForSwapchain(
-      data->root_allocator, &instance, &surface, &queues[0], &queues[1]));
+      data->allocator(), &instance, &surface, &queues[0], &queues[1]));
   vulkan::VkSwapchainKHR swapchain(vulkan::CreateDefaultSwapchain(
-      &instance, &device, &surface, data->root_allocator, queues[0], queues[1],
+      &instance, &device, &surface, data->allocator(), queues[0], queues[1],
       data));
 
-  containers::vector<VkImage> images(data->root_allocator);
-  vulkan::LoadContainer(data->log.get(), device->vkGetSwapchainImagesKHR,
+  containers::vector<VkImage> images(data->allocator());
+  vulkan::LoadContainer(data->logger(), device->vkGetSwapchainImagesKHR,
                         &images, device, swapchain);
 
   vulkan::VkCommandPool command_pool =
-      vulkan::CreateDefaultCommandPool(data->root_allocator, device);
+      vulkan::CreateDefaultCommandPool(data->allocator(), device);
   vulkan::VkCommandBuffer command_buffer =
       vulkan::CreateDefaultCommandBuffer(&command_pool, &device);
 
@@ -82,6 +82,6 @@ int main_entry(const entry::entry_data* data) {
 
   command_buffer->vkEndCommandBuffer(command_buffer);
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

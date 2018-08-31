@@ -19,20 +19,20 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(
-      vulkan::CreateDefaultDevice(data->root_allocator, instance));
+      vulkan::CreateDefaultDevice(data->allocator(), instance));
 
   {
     VkQueue queue = {};
     device->vkGetDeviceQueue(device, 0, 0, &queue);
-    data->log->LogInfo("  VkQueue: ", queue);
+    data->logger()->LogInfo("  VkQueue: ", queue);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

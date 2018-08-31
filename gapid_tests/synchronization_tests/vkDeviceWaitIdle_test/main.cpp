@@ -19,10 +19,10 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_wrapper/queue_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   // So we don't have to type app.device every time.
   vulkan::VkDevice& device = app.device();
   vulkan::VkQueue& render_queue = app.render_queue();
@@ -35,19 +35,19 @@ int main_entry(const entry::entry_data* data) {
         0                                     // flags
     };
     VkFence fence;
-    LOG_ASSERT(==, data->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkCreateFence(device, &create_info, nullptr, &fence));
     render_queue->vkQueueSubmit(render_queue, 0, nullptr, fence);
 
-    LOG_ASSERT(==, data->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkDeviceWaitIdle(device));
 
     // vkWaitForFences() should return VK_SUCCESS immediately.
-    LOG_ASSERT(==, data->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkWaitForFences(device, 1, &fence, VK_FALSE, 0));
     device->vkDestroyFence(device, fence, nullptr);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

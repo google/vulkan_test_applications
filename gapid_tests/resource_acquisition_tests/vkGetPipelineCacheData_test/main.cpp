@@ -30,9 +30,9 @@ uint32_t vertex_shader[] =
 #include "simple_vertex.vert.spv"
     ;
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
 
   {
     vulkan::VkDevice& device = app.device();
@@ -47,21 +47,21 @@ int main_entry(const entry::entry_data* data) {
 
     VkPipelineCache cache;
     LOG_ASSERT(
-        ==, data->log,
+        ==, data->logger(),
         device->vkCreatePipelineCache(device, &create_info, nullptr, &cache),
         VK_SUCCESS);
 
     // pData is null
     size_t cache_data_size = 0;
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                device->vkGetPipelineCacheData(device, cache, &cache_data_size,
                                               nullptr),
                VK_SUCCESS);
 
     // pData is not null and pDataSize refer to the size of the cache data
     containers::vector<uint8_t> cache_data(cache_data_size, 0,
-                                           data->root_allocator);
-    LOG_ASSERT(==, data->log,
+                                           data->allocator());
+    LOG_ASSERT(==, data->logger(),
                device->vkGetPipelineCacheData(device, cache, &cache_data_size,
                                               cache_data.data()),
                VK_SUCCESS);
@@ -70,8 +70,8 @@ int main_entry(const entry::entry_data* data) {
     size_t cache_data_header_size =
         size_t(cache_data[0]) | (size_t(cache_data[1]) << 8) |
         (size_t(cache_data[2]) << 16) | (size_t(cache_data[3]) << 24);
-    LOG_ASSERT(==, data->log, cache_data_header_size, 16 + VK_UUID_SIZE);
-    LOG_ASSERT(==, data->log, cache_data[4],
+    LOG_ASSERT(==, data->logger(), cache_data_header_size, 16 + VK_UUID_SIZE);
+    LOG_ASSERT(==, data->logger(), cache_data[4],
                uint8_t(VK_PIPELINE_CACHE_HEADER_VERSION_ONE));
 
     device->vkDestroyPipelineCache(device, cache, nullptr);
@@ -341,21 +341,21 @@ int main_entry(const entry::entry_data* data) {
 
     VkPipeline raw_pipeline;
     LOG_ASSERT(
-        ==, data->log, VK_SUCCESS,
+        ==, data->logger(), VK_SUCCESS,
         dev->vkCreateGraphicsPipelines(dev, app.pipeline_cache(), 1,
                                        &create_info, nullptr, &raw_pipeline));
     dev->vkDestroyPipeline(dev, raw_pipeline, nullptr);
 
     // Get the pipeline cache data
     size_t cache_data_size = 0;
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                dev->vkGetPipelineCacheData(dev, app.pipeline_cache(),
                                            &cache_data_size, nullptr),
                VK_SUCCESS);
 
     containers::vector<uint8_t> cache_data(cache_data_size, 0,
-                                           data->root_allocator);
-    LOG_ASSERT(==, data->log,
+                                           data->allocator());
+    LOG_ASSERT(==, data->logger(),
                dev->vkGetPipelineCacheData(dev, app.pipeline_cache(),
                                            &cache_data_size, cache_data.data()),
                VK_SUCCESS);
@@ -364,11 +364,11 @@ int main_entry(const entry::entry_data* data) {
     size_t cache_data_header_size =
         size_t(cache_data[0]) | (size_t(cache_data[1]) << 8) |
         (size_t(cache_data[2]) << 16) | (size_t(cache_data[3]) << 24);
-    LOG_ASSERT(==, data->log, cache_data_header_size, 16 + VK_UUID_SIZE);
-    LOG_ASSERT(==, data->log, cache_data[4],
+    LOG_ASSERT(==, data->logger(), cache_data_header_size, 16 + VK_UUID_SIZE);
+    LOG_ASSERT(==, data->logger(), cache_data[4],
                uint8_t(VK_PIPELINE_CACHE_HEADER_VERSION_ONE));
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -56,7 +56,7 @@ DescriptorSet::DescriptorSet(
 
 VulkanApplication::VulkanApplication(
     containers::Allocator* allocator, logging::Logger* log,
-    const entry::entry_data* entry_data,
+    const entry::EntryData* entry_data,
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features, uint32_t host_buffer_size,
     uint32_t device_image_size, uint32_t device_buffer_size,
@@ -86,7 +86,7 @@ VulkanApplication::VulkanApplication(
     return;
   }
 
-  if (entry_data->options.output_frame >= 1) {
+  if (entry_data->output_frame_index() >= 1) {
     PFN_vkSetSwapchainCallback set_callback =
         reinterpret_cast<PFN_vkSetSwapchainCallback>(
             device_.getProcAddrFunction()(device_, "vkSetSwapchainCallback"));
@@ -95,13 +95,13 @@ VulkanApplication::VulkanApplication(
       uint32_t output_frame;
       const char* file_name;
       logging::Logger* log;
-      const entry::entry_data* dat;
+      const entry::EntryData* dat;
       std::atomic<bool>& should_exit;
       static void fn(void* obj, uint8_t* data, size_t size) {
         cb_data* d = reinterpret_cast<cb_data*>(obj);
         if (d->output_frame == 0) return;
 
-        if (size != d->dat->width * d->dat->height * 4) {
+        if (size != d->dat->width() * d->dat->height() * 4) {
           d->log->LogError("Invalid data size");
           exit(-1);
         }
@@ -110,7 +110,7 @@ VulkanApplication::VulkanApplication(
           // image size is 100x100, and the format is rgba
           std::ofstream ppm;
           ppm.open(d->file_name);
-          ppm << "P6 " << d->dat->width << " " << d->dat->height << " 255\n";
+          ppm << "P6 " << d->dat->width() << " " << d->dat->height() << " 255\n";
 
           for (size_t i = 0; i < size; ++i) {
             if (i % 4 == 3) continue;
@@ -122,8 +122,8 @@ VulkanApplication::VulkanApplication(
       }
     };
     auto cb = new cb_data{
-        static_cast<uint32_t>(entry_data->options.output_frame),
-        entry_data->options.output_file, log_, entry_data_, should_exit_};
+        static_cast<uint32_t>(entry_data->output_frame_index()),
+        entry_data->output_frame_file(), log_, entry_data_, should_exit_};
     set_callback(swapchain_, &cb_data::fn, cb);
   }
 
@@ -256,7 +256,7 @@ VkDevice VulkanApplication::CreateDevice(
   vulkan::VkDevice device(vulkan::CreateDeviceForSwapchain(
       allocator_, &instance_, &surface_, &render_queue_index_,
       &present_queue_index_, extensions, features,
-      entry_data_->options.prefer_separate_present,
+      entry_data_->prefer_separate_present(),
       create_async_compute_queue ? &compute_queue_index_ : nullptr,
       use_sparse_binding ? &sparse_binding_queue_index_ : nullptr));
   if (device.is_valid()) {

@@ -22,13 +22,13 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto& allocator = data->root_allocator;
-  vulkan::LibraryWrapper wrapper(allocator, data->log.get());
+  auto allocator = data->allocator();
+  vulkan::LibraryWrapper wrapper(allocator, data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(vulkan::CreateDefaultDevice(allocator, instance));
 
   {  // First test
@@ -44,7 +44,7 @@ int main_entry(const entry::entry_data* data) {
     };
 
     VkBuffer buffer;
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                device->vkCreateBuffer(device, &create_info, nullptr, &buffer),
                VK_SUCCESS);
 
@@ -52,12 +52,12 @@ int main_entry(const entry::entry_data* data) {
     device->vkGetBufferMemoryRequirements(device, buffer, &requirements);
 
     device->vkDestroyBuffer(device, buffer, nullptr);
-    data->log->LogInfo("Memory requirements for 1024 byte buffer:");
-    data->log->LogInfo("   Size      :", requirements.size);
-    data->log->LogInfo("   Alignment :", requirements.alignment);
-    data->log->LogInfo("   TypeBits  :", requirements.memoryTypeBits);
+    data->logger()->LogInfo("Memory requirements for 1024 byte buffer:");
+    data->logger()->LogInfo("   Size      :", requirements.size);
+    data->logger()->LogInfo("   Alignment :", requirements.alignment);
+    data->logger()->LogInfo("   TypeBits  :", requirements.memoryTypeBits);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

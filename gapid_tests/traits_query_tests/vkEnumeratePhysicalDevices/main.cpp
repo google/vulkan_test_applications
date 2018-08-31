@@ -20,48 +20,48 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
 
   uint32_t device_count = 0;
 
   LOG_EXPECT(
-      ==, data->log,
+      ==, data->logger(),
       instance->vkEnumeratePhysicalDevices(instance, &device_count, nullptr),
       VK_INCOMPLETE);
   // Actually it does not seem to be well defined what
   // vkEnumeratePhysicalDevices should return here. Strictly speaking
   // VK_INCOMPLETE, but I imagine drivers will return VK_SUCCESS.
 
-  LOG_ASSERT(>, data->log, device_count, 0u);
-  data->log->LogInfo("Device Count is ", device_count);
+  LOG_ASSERT(>, data->logger(), device_count, 0u);
+  data->logger()->LogInfo("Device Count is ", device_count);
 
-  containers::vector<VkPhysicalDevice> physical_devices(data->root_allocator);
+  containers::vector<VkPhysicalDevice> physical_devices(data->allocator());
   physical_devices.resize(device_count);
-  LOG_ASSERT(==, data->log,
+  LOG_ASSERT(==, data->logger(),
              instance->vkEnumeratePhysicalDevices(instance, &device_count,
                                                   physical_devices.data()),
              VK_SUCCESS);
 
   for (size_t i = 0; i < device_count; ++i) {
-    LOG_ASSERT(!=, data->log, physical_devices[i], VkPhysicalDevice(nullptr));
+    LOG_ASSERT(!=, data->logger(), physical_devices[i], VkPhysicalDevice(nullptr));
   }
 
   device_count -= 1;
-  LOG_EXPECT(==, data->log,
+  LOG_EXPECT(==, data->logger(),
              instance->vkEnumeratePhysicalDevices(instance, &device_count,
                                                   physical_devices.data()),
              VK_INCOMPLETE);
 
   device_count = 0;
-  LOG_EXPECT(==, data->log,
+  LOG_EXPECT(==, data->logger(),
              instance->vkEnumeratePhysicalDevices(instance, &device_count,
                                                   physical_devices.data()),
              VK_INCOMPLETE);
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

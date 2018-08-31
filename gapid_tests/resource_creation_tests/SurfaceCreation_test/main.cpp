@@ -21,34 +21,34 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  auto& allocator = data->root_allocator;
-  vulkan::LibraryWrapper wrapper(allocator, data->log.get());
+  auto allocator = data->allocator();
+  vulkan::LibraryWrapper wrapper(allocator, data->logger());
   vulkan::VkInstance instance(
       vulkan::CreateDefaultInstance(allocator, &wrapper));
   VkSurfaceKHR surface;
 
-  data->log->LogInfo("Instance: ", (VkInstance)instance);
+  data->logger()->LogInfo("Instance: ", (VkInstance)instance);
 
 #if defined __ANDROID__
   VkAndroidSurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR, 0, 0,
-      data->native_window_handle};
+      data->native_window_handle()};
 
   instance->vkCreateAndroidSurfaceKHR(instance, &create_info, nullptr,
                                       &surface);
 #elif defined __linux__
   VkXcbSurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR, 0, 0,
-      data->native_connection, data->native_window_handle};
+      data->native_connection(), data->native_window_handle()};
 
   instance->vkCreateXcbSurfaceKHR(instance, &create_info, nullptr, &surface);
 #elif defined _WIN32
   VkWin32SurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR, 0, 0,
-      data->native_hinstance, data->native_window_handle};
+      data->native_hinstance(), data->native_window_handle()};
 
   instance->vkCreateWin32SurfaceKHR(instance, &create_info, nullptr, &surface);
 #endif
@@ -59,6 +59,6 @@ int main_entry(const entry::entry_data* data) {
 
   instance->vkDestroySurfaceKHR(
       instance, static_cast<VkSurfaceKHR>(VK_NULL_HANDLE), nullptr);
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

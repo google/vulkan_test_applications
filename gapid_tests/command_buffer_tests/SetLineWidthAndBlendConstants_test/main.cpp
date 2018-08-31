@@ -35,9 +35,9 @@ const VkCommandBufferBeginInfo kBeginInfo{
     VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr};
 
 vulkan::VulkanGraphicsPipeline CreateAndCommitPipeline(
-    const entry::entry_data* data, vulkan::VulkanApplication* app_ptr,
+    const entry::EntryData* data, vulkan::VulkanApplication* app_ptr,
     std::initializer_list<VkDynamicState> dynamic_states) {
-  LOG_ASSERT(!=, data->log, 0, (uintptr_t)app_ptr);
+  LOG_ASSERT(!=, data->logger(), 0, (uintptr_t)app_ptr);
   vulkan::VulkanApplication& app = *app_ptr;
   vulkan::PipelineLayout pipeline_layout(app.CreatePipelineLayout(
       {{{
@@ -118,9 +118,9 @@ vulkan::VulkanGraphicsPipeline CreateAndCommitPipeline(
 }
 }  // anonymous namespace
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
 
   {
     // 1. Test vkCmdBlendConstants
@@ -157,6 +157,6 @@ int main_entry(const entry::entry_data* data) {
     cmd_buf->vkEndCommandBuffer(cmd_buf);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

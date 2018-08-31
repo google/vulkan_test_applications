@@ -16,10 +16,10 @@
 #include "support/entry/entry.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/vulkan_application.h"
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+  vulkan::VulkanApplication application(data->allocator(), data->logger(),
                                         data);
   {
     // 1. Render pass and framebuffer without attachments or dependencies. The
@@ -146,7 +146,7 @@ int main_entry(const entry::entry_data* data) {
         },
     };
     ::VkImageView raw_image_view;
-    LOG_EXPECT(==, data->log, application.device()->vkCreateImageView(
+    LOG_EXPECT(==, data->logger(), application.device()->vkCreateImageView(
                                   application.device(), &image_view_create_info,
                                   nullptr, &raw_image_view),
                VK_SUCCESS);
@@ -200,6 +200,6 @@ int main_entry(const entry::entry_data* data) {
     command_buffer->vkEndCommandBuffer(command_buffer);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

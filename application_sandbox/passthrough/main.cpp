@@ -106,23 +106,23 @@ struct PassthroughFrameData {
 class PassthroughSample
     : public sample_application::Sample<PassthroughFrameData> {
  public:
-  PassthroughSample(const entry::entry_data* data)
+  PassthroughSample(const entry::EntryData* data)
       : data_(data),
         Sample<PassthroughFrameData>(
-            data->root_allocator, data, 1, 512, 1, 1,
+            data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions().EnableMultisampling()) {}
 
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator, app()->CreatePipelineLayout({{}}));
+        data_->allocator(), app()->CreatePipelineLayout({{}}));
 
     VkAttachmentReference color_attachment = {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                 0,                                         // flags
@@ -152,11 +152,11 @@ class PassthroughSample
 
     passthrough_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                           render_pass_.get(), 0));
     vulkan::ShaderCollection shaders(
-        data_->log.get(), data_->options.shader_compiler,
+        data_->logger(), data_->shader_compiler(),
         glslc_glsl_vertex_shader, glslc_glsl_fragment_shader,
         glslc_hlsl_vertex_shader, glslc_hlsl_fragment_shader,
         dxc_hlsl_vertex_shader, dxc_hlsl_fragment_shader);
@@ -186,7 +186,7 @@ class PassthroughSample
       size_t frame_index) override {
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     ::VkImageView raw_view = color_view(frame_data);
 
@@ -207,7 +207,7 @@ class PassthroughSample
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     (*frame_data->command_buffer_)
@@ -287,22 +287,22 @@ class PassthroughSample
   }
 
  private:
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> passthrough_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   PassthroughSample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

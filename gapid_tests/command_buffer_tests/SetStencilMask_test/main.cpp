@@ -30,8 +30,8 @@ uint32_t vertex_shader[] =
     ;
 
 vulkan::VulkanGraphicsPipeline CreatePipeline(
-    const entry::entry_data* data, vulkan::VulkanApplication* app_ptr) {
-  LOG_ASSERT(!=, data->log, 0, (uintptr_t)app_ptr);
+    const entry::EntryData* data, vulkan::VulkanApplication* app_ptr) {
+  LOG_ASSERT(!=, data->logger(), 0, (uintptr_t)app_ptr);
   vulkan::VulkanApplication& app = *app_ptr;
   vulkan::PipelineLayout pipeline_layout(app.CreatePipelineLayout(
       {{{
@@ -110,10 +110,10 @@ vulkan::VulkanGraphicsPipeline CreatePipeline(
   return pipeline;
 }
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   auto pipeline = CreatePipeline(data, &app);
 
   {
@@ -144,6 +144,6 @@ int main_entry(const entry::entry_data* data) {
                                                      &app.render_queue());
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

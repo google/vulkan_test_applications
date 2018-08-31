@@ -98,7 +98,7 @@ VkInstance CreateDefaultInstance(containers::Allocator* allocator,
 
 VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
                                         LibraryWrapper* wrapper,
-                                        const entry::entry_data* data) {
+                                        const entry::EntryData* data) {
   // Similar to CreateDefaultInstance, but turns on the virtual swapchain
   // if the requested by entry_data.
 
@@ -130,7 +130,7 @@ VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
 
   VkInstanceCreateInfo info{
       VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &app_info,
-      uint32_t(data->options.output_frame >= 0
+      uint32_t(data->output_frame_index() >= 0
                    ? (sizeof(layers) / sizeof(layers[0]))
                    : 0),
       layers, (sizeof(extensions) / sizeof(extensions[0])), extensions};
@@ -592,26 +592,26 @@ VkCommandPool CreateDefaultCommandPool(containers::Allocator* allocator,
 }
 
 VkSurfaceKHR CreateDefaultSurface(VkInstance* instance,
-                                  const entry::entry_data* data) {
+                                  const entry::EntryData* data) {
   ::VkSurfaceKHR surface;
 #if defined __ANDROID__
   VkAndroidSurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR, 0, 0,
-      data->native_window_handle};
+      data->native_window_handle()};
 
   (*instance)->vkCreateAndroidSurfaceKHR(*instance, &create_info, nullptr,
                                          &surface);
 #elif defined __linux__
   VkXcbSurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR, 0, 0,
-      data->native_connection, data->native_window_handle};
+      data->native_connection(), data->native_window_handle()};
 
   (*instance)->vkCreateXcbSurfaceKHR(*instance, &create_info, nullptr,
                                      &surface);
 #elif defined _WIN32
   VkWin32SurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR, 0, 0,
-      data->native_hinstance, data->native_window_handle};
+      data->native_hinstance(), data->native_window_handle()};
 
   (*instance)->vkCreateWin32SurfaceKHR(*instance, &create_info, nullptr,
                                        &surface);
@@ -647,7 +647,7 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
                                       containers::Allocator* allocator,
                                       uint32_t graphics_queue_index,
                                       uint32_t present_queue_index,
-                                      const entry::entry_data* data) {
+                                      const entry::EntryData* data) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
   containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
@@ -702,7 +702,7 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
 
     image_extent = surface_caps.currentExtent;
     if (image_extent.width == 0xFFFFFFFF) {
-      image_extent = VkExtent2D{data->width, data->height};
+      image_extent = VkExtent2D{data->width(), data->height()};
     }
 
     uint32_t maxSwapchains =

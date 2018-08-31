@@ -19,10 +19,10 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
   {
     // 1. Present a queue with no semaphore and result array, but one swapchain.
@@ -42,7 +42,7 @@ int main_entry(const entry::entry_data* data) {
     uint32_t image_index = 0;
     device->vkAcquireNextImageKHR(device, app.swapchain(), 10u, semaphore,
                                   (::VkFence)VK_NULL_HANDLE, &image_index);
-    data->log->LogInfo("Next image index: ", image_index);
+    data->logger()->LogInfo("Next image index: ", image_index);
     // Get the image to be presented.
     ::VkImage raw_image_to_present = app.swapchain_images()[image_index];
 
@@ -121,11 +121,11 @@ int main_entry(const entry::entry_data* data) {
         &image_index,                        // pImageIndices
         nullptr,                             // pResults
     };
-    LOG_ASSERT(==, data->log, app.present_queue()->vkQueuePresentKHR(
+    LOG_ASSERT(==, data->logger(), app.present_queue()->vkQueuePresentKHR(
                                   app.present_queue(), &present_info),
                VK_SUCCESS);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -24,10 +24,10 @@ uint32_t compute_shader[] =
 
 // This sample will create N storage buffers, and bind them to successive
 // locations in a compute shader.
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
 
   const uint32_t kOutputBuffer =
@@ -43,7 +43,7 @@ int main_entry(const entry::entry_data* data) {
       nullptr,                            // pImmutableSamplers
   };
 
-  containers::vector<VkDescriptorBufferInfo> buffer_infos(data->root_allocator);
+  containers::vector<VkDescriptorBufferInfo> buffer_infos(data->allocator());
   buffer_infos.resize(kNumStorageBuffers);
   // Both input and output buffers have 512 32-bit integers.
   const uint32_t kBufferElements = 512;
@@ -60,7 +60,7 @@ int main_entry(const entry::entry_data* data) {
   }
 
   auto compute_descriptor_set = containers::make_unique<vulkan::DescriptorSet>(
-      data->root_allocator, app.AllocateDescriptorSet({binding}));
+      data->allocator(), app.AllocateDescriptorSet({binding}));
 
   const VkWriteDescriptorSet write_descriptor_set{
       VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,      // sType
@@ -79,10 +79,10 @@ int main_entry(const entry::entry_data* data) {
   // Create pipeline
   auto compute_pipeline_layout =
       containers::make_unique<vulkan::PipelineLayout>(
-          data->root_allocator, app.CreatePipelineLayout({{binding}}));
+          data->allocator(), app.CreatePipelineLayout({{binding}}));
   auto compute_pipeline =
       containers::make_unique<vulkan::VulkanComputePipeline>(
-          data->root_allocator,
+          data->allocator(),
           app.CreateComputePipeline(
               compute_pipeline_layout.get(),
               VkShaderModuleCreateInfo{
@@ -95,7 +95,7 @@ int main_entry(const entry::entry_data* data) {
     app.BeginCommandBuffer(&cmd_buf);
 
     // Set inital values for the in-buffer and clear the out-buffer
-    containers::vector<uint32_t> initial_buffer_values(data->root_allocator);
+    containers::vector<uint32_t> initial_buffer_values(data->allocator());
     initial_buffer_values.insert(initial_buffer_values.begin(), kBufferElements,
                                  1);
     for (size_t i = 0; i < kNumStorageBuffers; ++i) {
@@ -113,21 +113,21 @@ int main_entry(const entry::entry_data* data) {
         cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, *compute_pipeline_layout, 0, 1,
         &compute_descriptor_set->raw_set(), 0, nullptr);
     cmd_buf->vkCmdDispatch(cmd_buf, kBufferElements / kLocalXSize, 1, 1);
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                app.EndAndSubmitCommandBufferAndWaitForQueueIdle(
                    &cmd_buf, &app.render_queue()));
 
     // Check the output values
     containers::vector<uint32_t> output = vulkan::GetHostVisibleBufferData(
-        data->root_allocator, &*storage_buffers[kOutputBuffer]);
+        data->allocator(), &*storage_buffers[kOutputBuffer]);
     std::ostringstream str;
     str << "Output:";
     for (auto& v : output) {
       str << " " << v;
     }
-    data->log->LogInfo(str.str());
+    data->logger()->LogInfo(str.str());
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

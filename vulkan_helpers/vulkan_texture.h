@@ -185,7 +185,7 @@ struct VulkanTexture {
   void InitializationComplete() { upload_buffer_.reset(); }
 
   ::VkImage image() const {
-    return image_ != nullptr ? *image_ : *sparse_image_;
+    return image_ != nullptr ? ::VkImage(*image_) : ::VkImage(*sparse_image_);
   }
   ::VkImageView view() const { return *image_view_; }
 

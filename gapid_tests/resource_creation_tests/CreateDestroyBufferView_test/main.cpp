@@ -19,10 +19,10 @@
 #include "vulkan_helpers/known_device_infos.h"
 #include "vulkan_helpers/vulkan_application.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+  vulkan::VulkanApplication application(data->allocator(), data->logger(),
                                         data);
   vulkan::VkDevice& device = application.device();
 
@@ -101,6 +101,6 @@ int main_entry(const entry::entry_data* data) {
     device->vkDestroyBufferView(device, buffer_view, nullptr);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

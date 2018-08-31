@@ -74,12 +74,12 @@ struct StencilFrameData {
 // for host, and device buffer sizes.
 class StencilSample : public sample_application::Sample<StencilFrameData> {
  public:
-  StencilSample(const entry::entry_data* data)
+  StencilSample(const entry::EntryData* data)
       : data_(data),
-        Sample<StencilFrameData>(data->root_allocator, data, 1, 512, 1, 1,
+        Sample<StencilFrameData>(data->allocator(), data, 1, 512, 1, 1,
                                  sample_application::SampleOptions()),
-        cube_(data->root_allocator, data->log.get(), cube_data),
-        floor_(data->root_allocator, data->log.get(), floor_data) {}
+        cube_(data->allocator(), data->logger(), cube_data),
+        floor_(data->allocator(), data->logger(), floor_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
@@ -106,7 +106,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout(
             {{descriptor_set_layouts_[0], descriptor_set_layouts_[1]}}));
 
@@ -116,7 +116,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
         1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                  0,                                         // flags
@@ -157,7 +157,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
 
     // Initialize cube shaders
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -174,7 +174,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
 
     // Initialize floor shaders
     floor_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     floor_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -200,7 +200,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
 
     // Initialize mirror pipeline
     mirror_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     mirror_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -241,11 +241,11 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
 
     // Transformation data for viewing and cube/floor rotation.
     camera_data_ = containers::make_unique<vulkan::BufferFrameData<CameraData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     model_data_ = containers::make_unique<vulkan::BufferFrameData<ModelData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     float aspect =
@@ -294,7 +294,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
     // Initialize the descriptor sets
     frame_data->cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet(
                 {descriptor_set_layouts_[0], descriptor_set_layouts_[1]}));
 
@@ -346,13 +346,13 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     // Populate the render command buffer
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     (*frame_data->command_buffer_)
         ->vkBeginCommandBuffer((*frame_data->command_buffer_),
@@ -450,7 +450,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
     Mat44 transform;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> cube_pipeline_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> floor_pipeline_;
@@ -464,16 +464,16 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   StencilSample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

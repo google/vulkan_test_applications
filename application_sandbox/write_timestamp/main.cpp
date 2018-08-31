@@ -51,21 +51,21 @@ struct WriteTimestampFrameData {
 class WriteTimestampSample
     : public sample_application::Sample<WriteTimestampFrameData> {
  public:
-  WriteTimestampSample(const entry::entry_data* data,
+  WriteTimestampSample(const entry::EntryData* data,
                        const VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
-        Sample<WriteTimestampFrameData>(data->root_allocator, data, 1, 512, 1,
+        Sample<WriteTimestampFrameData>(data->allocator(), data, 1, 512, 1,
                                         1, sample_application::SampleOptions()
                                                .EnableDepthBuffer()
                                                .EnableMultisampling(),
                                         requested_features),
-        torus_(data->root_allocator, data->log.get(), torus_data),
+        torus_(data->allocator(), data->logger(), torus_data),
         grey_scale_(0u),
         num_frames_(0u) {
     // Check the timestamp valid bits for the render queue
     uint32_t queue_family_index = app()->render_queue().index();
     auto queue_family_properties = vulkan::GetQueueFamilyProperties(
-        data->root_allocator, app()->instance(),
+        data->allocator(), app()->instance(),
         app()->device().physical_device());
     timestamp_valid_bits_ =
         queue_family_properties[queue_family_index].timestampValidBits;
@@ -78,7 +78,7 @@ class WriteTimestampSample
 
     // Create a occlusion query pool that contains a query for each frame.
     query_pool_ = containers::make_unique<vulkan::VkQueryPool>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::CreateQueryPool(
             &app()->device(),
             {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, 0,
@@ -111,7 +111,7 @@ class WriteTimestampSample
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout({{
             torus_descriptor_set_layouts_[0], torus_descriptor_set_layouts_[1],
             torus_descriptor_set_layouts_[2],
@@ -123,7 +123,7 @@ class WriteTimestampSample
         1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                  0,                                 // flags
@@ -163,7 +163,7 @@ class WriteTimestampSample
             ));
 
     torus_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     torus_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -182,11 +182,11 @@ class WriteTimestampSample
     torus_pipeline_->Commit();
 
     camera_data_ = containers::make_unique<vulkan::BufferFrameData<CameraData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     model_data_ = containers::make_unique<vulkan::BufferFrameData<ModelData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     float aspect =
@@ -201,7 +201,7 @@ class WriteTimestampSample
 
     timestamp_data_ =
         containers::make_unique<vulkan::BufferFrameData<TimestampData>>(
-            data_->root_allocator, app(), num_swapchain_images,
+            data_->allocator(), app(), num_swapchain_images,
             VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     timestamp_data_->data().value = 0.0;
@@ -234,11 +234,11 @@ class WriteTimestampSample
     // Populate the command buffer
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     frame_data->torus_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator, app()->AllocateDescriptorSet({
+            data_->allocator(), app()->AllocateDescriptorSet({
                                        torus_descriptor_set_layouts_[0],
                                        torus_descriptor_set_layouts_[1],
                                        torus_descriptor_set_layouts_[2],
@@ -306,7 +306,7 @@ class WriteTimestampSample
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     (*frame_data->command_buffer_)
@@ -418,7 +418,7 @@ class WriteTimestampSample
     uint32_t value;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> torus_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
@@ -437,24 +437,24 @@ class WriteTimestampSample
   uint32_t timestamp_valid_bits_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   VkPhysicalDeviceFeatures requested_features = {0};
   requested_features.fillModeNonSolid = VK_TRUE;
   WriteTimestampSample sample(data, requested_features);
   if (!sample.IsValidForTimestamp()) {
-    data->log->LogInfo(
+    data->logger()->LogInfo(
         "Disabled sample due to zero valid bits for timestamp in physical "
         "device queue family property");
   } else {
     sample.Initialize();
 
-    while (!sample.should_exit() && !data->should_exit()) {
+    while (!sample.should_exit() && !data->WindowClosing()) {
       sample.ProcessFrame();
     }
     sample.WaitIdle();
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

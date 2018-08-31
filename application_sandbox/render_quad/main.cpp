@@ -19,6 +19,7 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
 
+#include <array>
 #include <chrono>
 #include "mathfu/matrix.h"
 #include "mathfu/vector.h"
@@ -106,15 +107,15 @@ struct RenderQuadFrameData {
 class RenderQuadSample
     : public sample_application::Sample<RenderQuadFrameData> {
  public:
-  RenderQuadSample(const entry::entry_data* data,
+  RenderQuadSample(const entry::EntryData* data,
                    const VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
         Sample<RenderQuadFrameData>(
             // Each copy of color unpacked source data is: 400*400*4 bytes.
-            data->root_allocator, data, 10, 512, 10, 1,
+            data->allocator(), data, 10, 512, 10, 1,
             sample_application::SampleOptions().EnableDepthBuffer(),
             requested_features),
-        plane_(data->root_allocator, data->log.get(), plane_data) {}
+        plane_(data->allocator(), data->logger(), plane_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
@@ -129,7 +130,7 @@ class RenderQuadSample
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout({{descriptor_set_layout_binding_}}));
 
     VkAttachmentReference depth_attachment = {
@@ -142,7 +143,7 @@ class RenderQuadSample
     };
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {
                 {
@@ -206,7 +207,7 @@ class RenderQuadSample
             ));
 
     pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main", vertex_shader);
@@ -222,16 +223,16 @@ class RenderQuadSample
 
     // TODO: initialize depth and color init data.
     color_data_ = containers::make_unique<vulkan::BufferFrameData<Data>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     depth_data_ = containers::make_unique<vulkan::BufferFrameData<Data>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
-    populateData(data_->log.get(), color_data_->data().data.data(),
+    populateData(data_->logger(), color_data_->data().data.data(),
                  color_data_->data().data.size(), VK_FORMAT_R8G8B8A8_UINT,
                  app()->swapchain().format());
-    populateData(data_->log.get(), depth_data_->data().data.data(),
+    populateData(data_->logger(), depth_data_->data().data.data(),
                  depth_data_->data().data.size(), VK_FORMAT_R32_UINT,
                  VK_FORMAT_D16_UNORM);
   }
@@ -242,7 +243,7 @@ class RenderQuadSample
       size_t frame_index) override {
     frame_data->render_command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     // Create the color and depth staging images
     VkImageCreateInfo img_info{
@@ -285,12 +286,12 @@ class RenderQuadSample
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
     ::VkImageView raw_color_input_view;
     LOG_ASSERT(
-        ==, data_->log.get(), VK_SUCCESS,
+        ==, data_->logger(), VK_SUCCESS,
         app()->device()->vkCreateImageView(app()->device(), &view_info, nullptr,
                                            &raw_color_input_view));
     frame_data->color_input_view_ =
         containers::make_unique<vulkan::VkImageView>(
-            data_->root_allocator,
+            data_->allocator(),
             vulkan::VkImageView(raw_color_input_view, nullptr,
                                 &app()->device()));
     // depth input view
@@ -298,12 +299,12 @@ class RenderQuadSample
     view_info.format = frame_data->depth_staging_img_->format();
     ::VkImageView raw_depth_input_view;
     LOG_ASSERT(
-        ==, data_->log.get(), VK_SUCCESS,
+        ==, data_->logger(), VK_SUCCESS,
         app()->device()->vkCreateImageView(app()->device(), &view_info, nullptr,
                                            &raw_depth_input_view));
     frame_data->depth_input_view_ =
         containers::make_unique<vulkan::VkImageView>(
-            data_->root_allocator,
+            data_->allocator(),
             vulkan::VkImageView(raw_depth_input_view, nullptr,
                                 &app()->device()));
 
@@ -330,13 +331,13 @@ class RenderQuadSample
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     // Update the descriptor set with input attachment info
     frame_data->descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet({descriptor_set_layout_binding_}));
     VkDescriptorImageInfo input_attachment_infos[2] = {
         {
@@ -431,8 +432,8 @@ class RenderQuadSample
         );
     // copy from buf to img. The swapchain image must be larger in both
     // dimensions.
-    LOG_ASSERT(>=, data_->log, app()->swapchain().width(), src_data.width);
-    LOG_ASSERT(>=, data_->log, app()->swapchain().height(), src_data.height);
+    LOG_ASSERT(>=, data_->logger(), app()->swapchain().width(), src_data.width);
+    LOG_ASSERT(>=, data_->logger(), app()->swapchain().height(), src_data.height);
     uint32_t copy_width = src_data.width;
     uint32_t copy_height = src_data.height;
     VkBufferImageCopy copy_region{
@@ -550,7 +551,7 @@ class RenderQuadSample
     std::array<uint8_t, sizeof(src_data.data)> data;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
@@ -562,17 +563,17 @@ class RenderQuadSample
   vulkan::VulkanModel plane_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   VkPhysicalDeviceFeatures requested_features = {0};
   RenderQuadSample sample(data, requested_features);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -19,14 +19,14 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data,
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
                                 {VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME});
   vulkan::VkDevice& device = app.device();
   if (device.is_valid()) {
-    data->log->LogInfo(VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME, " found.");
+    data->logger()->LogInfo(VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME, " found.");
 
     {  // 1. Image Test
       VkDedicatedAllocationImageCreateInfoNV dedicated_image_info = {
@@ -53,7 +53,7 @@ int main_entry(const entry::entry_data* data) {
           VK_IMAGE_LAYOUT_UNDEFINED             // initialLayout
       };
       ::VkImage raw_image;
-      LOG_ASSERT(==, data->log, VK_SUCCESS,
+      LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                  device->vkCreateImage(device, &image_create_info, nullptr,
                                        &raw_image));
       vulkan::VkImage image(raw_image, nullptr, &device);
@@ -69,7 +69,7 @@ int main_entry(const entry::entry_data* data) {
           VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,  // sType
           &dedicated_allocate_info,                // pNext
           memory_requirements.size,                // size
-          GetMemoryIndex(&device, data->log.get(),
+          GetMemoryIndex(&device, data->logger(),
                          memory_requirements.memoryTypeBits, 0)};
       ::VkDeviceMemory raw_memory;
       device->vkAllocateMemory(device, &memoryAllocateInfo, nullptr,
@@ -97,7 +97,7 @@ int main_entry(const entry::entry_data* data) {
           nullptr                                // pQueueFamilyIndices
       };
       ::VkBuffer raw_buffer;
-      LOG_ASSERT(==, data->log, VK_SUCCESS,
+      LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                  device->vkCreateBuffer(device, &buffer_create_info, nullptr,
                                         &raw_buffer));
       vulkan::VkBuffer buffer(raw_buffer, nullptr, &device);
@@ -114,7 +114,7 @@ int main_entry(const entry::entry_data* data) {
           VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,  // sType
           &dedicated_allocate_info,                // pNext
           memory_requirements.size,                // size
-          GetMemoryIndex(&device, data->log.get(),
+          GetMemoryIndex(&device, data->logger(),
                          memory_requirements.memoryTypeBits, 0)};
 
       ::VkDeviceMemory raw_memory;
@@ -125,9 +125,9 @@ int main_entry(const entry::entry_data* data) {
       device->vkBindBufferMemory(device, buffer, memory, 0);
     }
   } else {
-    data->log->LogInfo("Disabled test due to missing ",
+    data->logger()->LogInfo("Disabled test due to missing ",
                        VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME);
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

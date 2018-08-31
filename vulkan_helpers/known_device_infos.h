@@ -119,7 +119,7 @@ bool IsDeviceWithLowerDriverVersion(
 // OS.
 #ifdef __ANDROID__
 #define NOT_ANDROID_VERSION(entry_data, check_os_version)                     \
-  (!EqualOrLowerAndroidVersion(entry_data->log.get(), entry_data->os_version, \
+  (!EqualOrLowerAndroidVersion(entry_data->logger(), entry_data->os_version(), \
                                check_os_version, __FILE__, __LINE__))
 #else
 #define NOT_ANDROID_VERSION(entry_data, check_os_version) true

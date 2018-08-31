@@ -22,12 +22,12 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
-  containers::vector<char> pseudo_data(16, 0xba, data->root_allocator);
+  containers::vector<char> pseudo_data(16, 0xba, data->allocator());
 
   // Create pipeline layout
   // Frist, create descriptor set layout bindings
@@ -39,7 +39,7 @@ int main_entry(const entry::entry_data* data) {
       nullptr};
   // Second, create descriptor set layout
   vulkan::VkDescriptorSetLayout descriptor_set_layout =
-      vulkan::CreateDescriptorSetLayout(data->root_allocator, &device,
+      vulkan::CreateDescriptorSetLayout(data->allocator(), &device,
                                         {vertex_binding, fragement_binding});
   // Third, create push constant range
   VkPushConstantRange ranges[2]{
@@ -114,15 +114,15 @@ int main_entry(const entry::entry_data* data) {
     VkSubmitInfo submit{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0,      nullptr, nullptr, 1,
         &raw_primary_cmd_buf,          0,       nullptr};
-    LOG_ASSERT(==, data->log, app.render_queue()->vkQueueSubmit(
+    LOG_ASSERT(==, data->logger(), app.render_queue()->vkQueueSubmit(
                                   app.render_queue(), 1, &submit,
                                   static_cast<VkFence>(VK_NULL_HANDLE)),
                VK_SUCCESS);
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                app.render_queue()->vkQueueWaitIdle(app.render_queue()),
                VK_SUCCESS);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

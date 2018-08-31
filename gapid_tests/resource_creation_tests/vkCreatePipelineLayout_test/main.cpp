@@ -22,10 +22,10 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   // So we don't have to type app.device every time.
   vulkan::VkDevice& device = app.device();
 
@@ -41,7 +41,7 @@ int main_entry(const entry::entry_data* data) {
         nullptr  // pPushConstantRanges
     };
     VkPipelineLayout raw_pipeline_layout;
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkCreatePipelineLayout(device, &create_info, nullptr,
                                               &raw_pipeline_layout));
     device->vkDestroyPipelineLayout(device, raw_pipeline_layout, nullptr);
@@ -50,7 +50,7 @@ int main_entry(const entry::entry_data* data) {
   {
     // Single layout
     vulkan::VkDescriptorSetLayout layout = vulkan::CreateDescriptorSetLayout(
-        data->root_allocator, &device,
+        data->allocator(), &device,
         {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL,
           nullptr}});
     VkDescriptorSetLayout raw_layouts[1] = {layout};
@@ -64,7 +64,7 @@ int main_entry(const entry::entry_data* data) {
         nullptr  // pPushConstantRanges
     };
     VkPipelineLayout raw_pipeline_layout;
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkCreatePipelineLayout(device, &create_info, nullptr,
                                               &raw_pipeline_layout));
     device->vkDestroyPipelineLayout(device, raw_pipeline_layout, nullptr);
@@ -73,11 +73,11 @@ int main_entry(const entry::entry_data* data) {
   {
     // Two layouts
     vulkan::VkDescriptorSetLayout layout = vulkan::CreateDescriptorSetLayout(
-        data->root_allocator, &device,
+        data->allocator(), &device,
         {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL,
           nullptr}});
     vulkan::VkDescriptorSetLayout layout2 = vulkan::CreateDescriptorSetLayout(
-        data->root_allocator, &device,
+        data->allocator(), &device,
         {{0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_ALL,
           nullptr}});
     VkDescriptorSetLayout raw_layouts[2] = {layout, layout2};
@@ -92,12 +92,12 @@ int main_entry(const entry::entry_data* data) {
         nullptr  // pPushConstantRanges
     };
     VkPipelineLayout raw_pipeline_layout;
-    LOG_ASSERT(==, data->log, VK_SUCCESS,
+    LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkCreatePipelineLayout(device, &create_info, nullptr,
                                               &raw_pipeline_layout));
     device->vkDestroyPipelineLayout(device, raw_pipeline_layout, nullptr);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

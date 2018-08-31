@@ -25,13 +25,13 @@ uint32_t test_shader[] =
 #include "test.vert.spv"
     ;
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateDefaultInstance(data->root_allocator, &wrapper));
+      vulkan::CreateDefaultInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(
-      vulkan::CreateDefaultDevice(data->root_allocator, instance, true));
+      vulkan::CreateDefaultDevice(data->allocator(), instance, true));
 
   {  // Valid usage
 
@@ -44,13 +44,13 @@ int main_entry(const entry::entry_data* data) {
     };
 
     VkShaderModule shader_module;
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                device->vkCreateShaderModule(device, &create_info, nullptr,
                                             &shader_module),
                VK_SUCCESS);
     device->vkDestroyShaderModule(device, shader_module, nullptr);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

@@ -20,10 +20,10 @@
 
 #include <algorithm>
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
   {
     // 1. Clear a 2D single layer, single mip level depth/stencil image
@@ -110,7 +110,7 @@ int main_entry(const entry::entry_data* data) {
     app.render_queue()->vkQueueWaitIdle(app.render_queue());
 
     // Dump the data in the cleared image
-    containers::vector<uint8_t> dump_data(data->root_allocator);
+    containers::vector<uint8_t> dump_data(data->allocator());
     app.DumpImageLayersData(
         image_ptr.get(), {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 0, 1}, {0, 0, 0},
         image_extent, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &dump_data, {});
@@ -119,17 +119,17 @@ int main_entry(const entry::entry_data* data) {
     containers::vector<unsigned short> expected_data(
         vulkan::GetImageExtentSizeInBytes(image_extent, VK_FORMAT_D16_UNORM) /
             sizeof(unsigned short),
-        depth_clear_unorm, data->root_allocator);
-    LOG_ASSERT(==, data->log, expected_data.size(),
+        depth_clear_unorm, data->allocator());
+    LOG_ASSERT(==, data->logger(), expected_data.size(),
                dump_data.size() / sizeof(unsigned short));
     unsigned short* dump_data_ptr =
         reinterpret_cast<unsigned short*>(dump_data.data());
     std::for_each(expected_data.begin(), expected_data.end(),
                   [&data, &dump_data_ptr](unsigned short d) {
-                    LOG_ASSERT(==, data->log, d, *dump_data_ptr++);
+                    LOG_ASSERT(==, data->logger(), d, *dump_data_ptr++);
                   });
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

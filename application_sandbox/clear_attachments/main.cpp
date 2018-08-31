@@ -50,12 +50,12 @@ struct CubeFrameData {
 class ClearAttachmentsSample
     : public sample_application::Sample<CubeFrameData> {
  public:
-  ClearAttachmentsSample(const entry::entry_data* data)
+  ClearAttachmentsSample(const entry::EntryData* data)
       : data_(data),
         Sample<CubeFrameData>(
-            data->root_allocator, data, 1, 512, 1, 1,
+            data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions().EnableMultisampling()),
-        cube_(data->root_allocator, data->log.get(), cube_data) {}
+        cube_(data->allocator(), data->logger(), cube_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
@@ -77,7 +77,7 @@ class ClearAttachmentsSample
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout({{cube_descriptor_set_layouts_[0],
                                       cube_descriptor_set_layouts_[1]}}));
 
@@ -85,7 +85,7 @@ class ClearAttachmentsSample
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                 0,                                         // flags
@@ -114,7 +114,7 @@ class ClearAttachmentsSample
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -131,11 +131,11 @@ class ClearAttachmentsSample
 
     camera_data =
         containers::make_unique<vulkan::BufferFrameData<camera_data_>>(
-            data_->root_allocator, app(), num_swapchain_images,
+            data_->allocator(), app(), num_swapchain_images,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     model_data = containers::make_unique<vulkan::BufferFrameData<model_data_>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     float aspect =
@@ -153,11 +153,11 @@ class ClearAttachmentsSample
       size_t frame_index) override {
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     frame_data->cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
                                           cube_descriptor_set_layouts_[1]}));
 
@@ -208,7 +208,7 @@ class ClearAttachmentsSample
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     (*frame_data->command_buffer_)
@@ -313,7 +313,7 @@ class ClearAttachmentsSample
     Mat44 transform;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> cube_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
@@ -324,16 +324,16 @@ class ClearAttachmentsSample
   containers::unique_ptr<vulkan::BufferFrameData<model_data_>> model_data;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   ClearAttachmentsSample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

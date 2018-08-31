@@ -57,19 +57,19 @@ const vulkan::VulkanGraphicsPipeline::InputStream kUVStream{
 const uint32_t kIndex[] = {0, 1, 2};
 }  // anonymous namespace
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
   uint32_t queue_family_index = app.render_queue().index();
   auto queue_family_properties = vulkan::GetQueueFamilyProperties(
-      data->root_allocator, app.instance(), device.physical_device());
+      data->allocator(), app.instance(), device.physical_device());
   uint32_t time_stamp_valid_bits =
       queue_family_properties[queue_family_index].timestampValidBits;
-  data->log->LogInfo("    Timestamp valid bits: ", time_stamp_valid_bits);
+  data->logger()->LogInfo("    Timestamp valid bits: ", time_stamp_valid_bits);
   if (time_stamp_valid_bits == 0) {
-    data->log->LogInfo(
+    data->logger()->LogInfo(
         "Disable test due to zero valid bits of timestamp in physical device "
         "queue family property");
   } else {
@@ -170,7 +170,7 @@ int main_entry(const entry::entry_data* data) {
         },
     };
     ::VkImageView raw_image_view;
-    LOG_ASSERT(==, data->log, app.device()->vkCreateImageView(
+    LOG_ASSERT(==, data->logger(), app.device()->vkCreateImageView(
                                   app.device(), &image_view_create_info,
                                   nullptr, &raw_image_view),
                VK_SUCCESS);
@@ -242,7 +242,7 @@ int main_entry(const entry::entry_data* data) {
       cmd_buf->vkCmdWriteTimestamp(
           cmd_buf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, query_pool, 1);
       cmd_buf->vkCmdEndRenderPass(cmd_buf);
-      LOG_ASSERT(==, data->log, VK_SUCCESS,
+      LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                  app.EndAndSubmitCommandBufferAndWaitForQueueIdle(
                      &cmd_buf, &app.render_queue()));
       uint64_t time_stamps[2] = {0ULL, 0ULL};
@@ -250,12 +250,12 @@ int main_entry(const entry::entry_data* data) {
           device, query_pool, 0, 2, sizeof(time_stamps),
           reinterpret_cast<void*>(time_stamps), sizeof(uint64_t),
           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-      data->log->LogInfo("    Vertex shader timestamp for vkCmdDraw: ",
+      data->logger()->LogInfo("    Vertex shader timestamp for vkCmdDraw: ",
                          time_stamps[0]);
-      LOG_ASSERT(!=, data->log, 0, time_stamps[0]);
-      data->log->LogInfo("    Fragment shader timestamp for vkCmdDraw: ",
+      LOG_ASSERT(!=, data->logger(), 0, time_stamps[0]);
+      data->logger()->LogInfo("    Fragment shader timestamp for vkCmdDraw: ",
                          time_stamps[1]);
-      LOG_ASSERT(!=, data->log, 0, time_stamps[1]);
+      LOG_ASSERT(!=, data->logger(), 0, time_stamps[1]);
     }
 
     {
@@ -296,7 +296,7 @@ int main_entry(const entry::entry_data* data) {
       cmd_buf->vkCmdWriteTimestamp(
           cmd_buf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, query_pool, 1);
       cmd_buf->vkCmdEndRenderPass(cmd_buf);
-      LOG_ASSERT(==, data->log, VK_SUCCESS,
+      LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                  app.EndAndSubmitCommandBufferAndWaitForQueueIdle(
                      &cmd_buf, &app.render_queue()));
       uint64_t time_stamps[2] = {0ULL, 0ULL};
@@ -304,15 +304,15 @@ int main_entry(const entry::entry_data* data) {
           device, query_pool, 0, 2, sizeof(time_stamps),
           reinterpret_cast<void*>(time_stamps), sizeof(uint64_t),
           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-      data->log->LogInfo("    Vertex shader timestamp for vkCmdDrawIndexed: ",
+      data->logger()->LogInfo("    Vertex shader timestamp for vkCmdDrawIndexed: ",
                          time_stamps[0]);
-      LOG_ASSERT(!=, data->log, 0, time_stamps[0]);
-      data->log->LogInfo("    Fragment shader timestamp for vkCmdDrawIndexed: ",
+      LOG_ASSERT(!=, data->logger(), 0, time_stamps[0]);
+      data->logger()->LogInfo("    Fragment shader timestamp for vkCmdDrawIndexed: ",
                          time_stamps[1]);
-      LOG_ASSERT(!=, data->log, 0, time_stamps[1]);
+      LOG_ASSERT(!=, data->logger(), 0, time_stamps[1]);
     }
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

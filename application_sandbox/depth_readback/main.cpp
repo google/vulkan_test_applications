@@ -65,14 +65,14 @@ struct DepthFrameData {
 
 class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
  public:
-  DepthReadbackSample(const entry::entry_data* data)
+  DepthReadbackSample(const entry::EntryData* data)
       : data_(data),
-        Sample<DepthFrameData>(data->root_allocator, data, 1, 512, 1, 1,
+        Sample<DepthFrameData>(data->allocator(), data, 1, 512, 1, 1,
                                sample_application::SampleOptions()
                                    .EnableMultisampling()
                                    .EnableDepthBuffer()),
-        cube_(data->root_allocator, data->log.get(), cube_data),
-        plane_(data->root_allocator, data->log.get(), plane_data) {}
+        cube_(data->allocator(), data->logger(), cube_data),
+        plane_(data->allocator(), data->logger(), plane_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
@@ -99,7 +99,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
 
     render_cube_pipeline_layout_ =
         containers::make_unique<vulkan::PipelineLayout>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->CreatePipelineLayout(
                 {{render_cube_descriptor_set_layout_bindings_[0],
                   render_cube_descriptor_set_layout_bindings_[1]}}));
@@ -112,7 +112,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
         0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL};
 
     render_cube_render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                  0,                                 // flags
@@ -152,7 +152,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
             ));
 
     depth_read_render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                  0,                                 // flags
@@ -193,7 +193,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
 
     render_cube_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->CreateGraphicsPipeline(render_cube_pipeline_layout_.get(),
                                           render_cube_render_pass_.get(), 0));
     render_cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -218,13 +218,13 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
 
     depth_read_pipeline_layout_ =
         containers::make_unique<vulkan::PipelineLayout>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->CreatePipelineLayout(
                 {{depth_read_pipeline_layout_bindings_}}));
 
     depth_read_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->CreateGraphicsPipeline(depth_read_pipeline_layout_.get(),
                                           depth_read_render_pass_.get(), 0));
     depth_read_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -240,11 +240,11 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
     depth_read_pipeline_->Commit();
 
     camera_data_ = containers::make_unique<vulkan::BufferFrameData<CameraData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     model_data_ = containers::make_unique<vulkan::BufferFrameData<ModelData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     float aspect = (float)width / (float)height;
@@ -264,11 +264,11 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
     const uint32_t height = app()->swapchain().height();
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     frame_data->render_cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet(
                 {render_cube_descriptor_set_layout_bindings_[0],
                  render_cube_descriptor_set_layout_bindings_[1]}));
@@ -303,7 +303,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
 
     frame_data->read_depth_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet(
                 {depth_read_pipeline_layout_bindings_}));
     VkDescriptorImageInfo image_info = {
@@ -338,7 +338,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     (*frame_data->command_buffer_)
@@ -448,7 +448,7 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
     Mat44 transform;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> render_cube_pipeline_layout_;
   containers::unique_ptr<vulkan::PipelineLayout> depth_read_pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> render_cube_pipeline_;
@@ -465,16 +465,16 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   DepthReadbackSample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

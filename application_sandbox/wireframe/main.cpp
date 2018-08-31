@@ -49,15 +49,15 @@ struct WireframeFrameData {
 // for host, and device buffer sizes.
 class WireframeSample : public sample_application::Sample<WireframeFrameData> {
  public:
-  WireframeSample(const entry::entry_data* data,
+  WireframeSample(const entry::EntryData* data,
                   VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
-        Sample<WireframeFrameData>(data->root_allocator, data, 1, 512, 1, 1,
+        Sample<WireframeFrameData>(data->allocator(), data, 1, 512, 1, 1,
                                    sample_application::SampleOptions()
                                        .EnableDepthBuffer()
                                        .EnableMultisampling(),
                                    requested_features),
-        torus_(data->root_allocator, data->log.get(), torus_data) {}
+        torus_(data->allocator(), data->logger(), torus_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
@@ -79,7 +79,7 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreatePipelineLayout({{torus_descriptor_set_layouts_[0],
                                       torus_descriptor_set_layouts_[1]}}));
 
@@ -89,7 +89,7 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
         1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {{
                  0,                                 // flags
@@ -129,7 +129,7 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
             ));
 
     torus_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                       render_pass_.get(), 0));
     torus_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -148,11 +148,11 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
     torus_pipeline_->Commit();
 
     camera_data_ = containers::make_unique<vulkan::BufferFrameData<CameraData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     model_data_ = containers::make_unique<vulkan::BufferFrameData<ModelData>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     float aspect =
@@ -172,11 +172,11 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
       size_t frame_index) override {
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     frame_data->torus_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet({torus_descriptor_set_layouts_[0],
                                           torus_descriptor_set_layouts_[1]}));
 
@@ -228,7 +228,7 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
     app()->device()->vkCreateFramebuffer(
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->root_allocator,
+        data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     (*frame_data->command_buffer_)
@@ -309,7 +309,7 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
     Mat44 transform;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> torus_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
@@ -320,18 +320,18 @@ class WireframeSample : public sample_application::Sample<WireframeFrameData> {
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   VkPhysicalDeviceFeatures requested_features = {0};
   requested_features.fillModeNonSolid = VK_TRUE;
   WireframeSample sample(data, requested_features);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

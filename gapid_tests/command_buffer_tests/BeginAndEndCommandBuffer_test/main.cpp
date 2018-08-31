@@ -21,15 +21,15 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
-  vulkan::LibraryWrapper wrapper(data->root_allocator, data->log.get());
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
+  vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
-      vulkan::CreateEmptyInstance(data->root_allocator, &wrapper));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(
-      vulkan::CreateDefaultDevice(data->root_allocator, instance));
+      vulkan::CreateDefaultDevice(data->allocator(), instance));
   vulkan::VkCommandPool pool(
-      vulkan::CreateDefaultCommandPool(data->root_allocator, device));
+      vulkan::CreateDefaultCommandPool(data->allocator(), device));
   vulkan::VkCommandBuffer command_buffer =
       vulkan::CreateDefaultCommandBuffer(&pool, &device);
 
@@ -67,6 +67,6 @@ int main_entry(const entry::entry_data* data) {
     command_buffer->vkEndCommandBuffer(command_buffer);
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

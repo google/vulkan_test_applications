@@ -35,7 +35,7 @@ uint32_t vertex_shader[] =
 
 namespace {
 vulkan::VkQueryPool QueryWithoutDrawingAnything(
-    const entry::entry_data* data, vulkan::VulkanApplication* app,
+    const entry::EntryData* data, vulkan::VulkanApplication* app,
     const VkQueryPoolCreateInfo& query_pool_create_info) {
   vulkan::VkDevice& device = app->device();
 
@@ -219,7 +219,7 @@ vulkan::VkQueryPool QueryWithoutDrawingAnything(
   };
 
   VkPipeline raw_pipeline;
-  LOG_EXPECT(==, data->log, device->vkCreateGraphicsPipelines(
+  LOG_EXPECT(==, data->logger(), device->vkCreateGraphicsPipelines(
                                 device, app->pipeline_cache(), 1, &create_info,
                                 nullptr, &raw_pipeline),
              VK_SUCCESS);
@@ -248,7 +248,7 @@ vulkan::VkQueryPool QueryWithoutDrawingAnything(
       },
   };
   ::VkImageView raw_image_view;
-  LOG_EXPECT(==, data->log, app->device()->vkCreateImageView(
+  LOG_EXPECT(==, data->logger(), app->device()->vkCreateImageView(
                                 app->device(), &image_view_create_info, nullptr,
                                 &raw_image_view),
              VK_SUCCESS);
@@ -339,10 +339,10 @@ vulkan::VkQueryPool QueryWithoutDrawingAnything(
 }
 }
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->root_allocator, data->log.get(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
 
   {
     // 1. Get 32-bit results from all the queries in a four-query pool,
@@ -355,7 +355,7 @@ int main_entry(const entry::entry_data* data) {
     std::array<uint32_t, num_queries> query_results{0xFFFFFFFF, 0xFFFFFFFF,
                                                     0xFFFFFFFF, 0xFFFFFFFF};
 
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                app.device()->vkGetQueryPoolResults(
                    app.device(),                    // device
                    query_pool,                      // queryPool
@@ -370,7 +370,7 @@ int main_entry(const entry::entry_data* data) {
 
     std::for_each(
         std::begin(query_results), std::end(query_results),
-        [data](uint32_t result) { LOG_ASSERT(==, data->log, result, 0x0); });
+        [data](uint32_t result) { LOG_ASSERT(==, data->logger(), result, 0x0); });
   }
 
   {
@@ -384,7 +384,7 @@ int main_entry(const entry::entry_data* data) {
     std::array<uint64_t, get_result_num_queries> query_results{
         0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF,
         0xFFFFFFFFFFFFFFFF};
-    LOG_ASSERT(==, data->log,
+    LOG_ASSERT(==, data->logger(),
                app.device()->vkGetQueryPoolResults(
                    app.device(),                                // device
                    query_pool,                                  // queryPool
@@ -399,7 +399,7 @@ int main_entry(const entry::entry_data* data) {
 
     std::for_each(
         query_results.begin(), query_results.end(),
-        [data](uint64_t result) { LOG_ASSERT(==, data->log, result, 0x0); });
+        [data](uint64_t result) { LOG_ASSERT(==, data->logger(), result, 0x0); });
   }
 
   {
@@ -413,8 +413,8 @@ int main_entry(const entry::entry_data* data) {
                      VK_QUERY_TYPE_OCCLUSION, num_queries, 0});
     containers::vector<uint32_t> query_results(
         stride / sizeof(uint32_t) * num_queries, 0xFFFFFFFF,
-        data->root_allocator);
-    LOG_ASSERT(==, data->log,
+        data->allocator());
+    LOG_ASSERT(==, data->logger(),
                app.device()->vkGetQueryPoolResults(
                    app.device(),                             // device
                    query_pool,                               // queryPool
@@ -430,14 +430,14 @@ int main_entry(const entry::entry_data* data) {
 
     for (size_t i = 0; i < query_results.size();) {
       // query result
-      LOG_ASSERT(==, data->log, query_results[i], 0x0);
+      LOG_ASSERT(==, data->logger(), query_results[i], 0x0);
       // availability status
-      LOG_ASSERT(==, data->log, query_results[i + 1], 0x1);
+      LOG_ASSERT(==, data->logger(), query_results[i + 1], 0x1);
       // data should not be touched.
-      LOG_ASSERT(==, data->log, query_results[i + 2], 0xFFFFFFFF);
+      LOG_ASSERT(==, data->logger(), query_results[i + 2], 0xFFFFFFFF);
       i += 3;
     }
   }
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

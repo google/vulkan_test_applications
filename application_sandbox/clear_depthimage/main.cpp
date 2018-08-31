@@ -67,13 +67,13 @@ struct CubeDepthFrameData {
 class ClearDepthImageSample
     : public sample_application::Sample<CubeDepthFrameData> {
  public:
-  ClearDepthImageSample(const entry::entry_data* data)
+  ClearDepthImageSample(const entry::EntryData* data)
       : data_(data),
         Sample<CubeDepthFrameData>(
-            data->root_allocator, data, 1, 512, 1, 1,
+            data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions().EnableDepthBuffer()),
-        cube_(data->root_allocator, data->log.get(), cube_data),
-        plane_(data->root_allocator, data->log.get(), plane_data) {}
+        cube_(data->allocator(), data->logger(), cube_data),
+        plane_(data->allocator(), data->logger(), plane_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
@@ -104,13 +104,13 @@ class ClearDepthImageSample
 
     cube_render_pipeline_layout_ =
         containers::make_unique<vulkan::PipelineLayout>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->CreatePipelineLayout(
                 {{cube_render_descriptor_set_layout_bindings_[0],
                   cube_render_descriptor_set_layout_bindings_[1]}}));
     depth_render_pipeline_layout_ =
         containers::make_unique<vulkan::PipelineLayout>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->CreatePipelineLayout(
                 {{depth_render_descriptor_set_layout_binding_}}));
 
@@ -122,7 +122,7 @@ class ClearDepthImageSample
         0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL};
 
     cube_render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {
                 {
@@ -164,7 +164,7 @@ class ClearDepthImageSample
             ));
 
     depth_render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->root_allocator,
+        data_->allocator(),
         app()->CreateRenderPass(
             {
                 {
@@ -207,7 +207,7 @@ class ClearDepthImageSample
 
     cube_render_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->CreateGraphicsPipeline(cube_render_pipeline_layout_.get(),
                                           cube_render_pass_.get(), 0));
     cube_render_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -224,7 +224,7 @@ class ClearDepthImageSample
 
     depth_render_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->CreateGraphicsPipeline(depth_render_pipeline_layout_.get(),
                                           depth_render_pass_.get(), 0));
     depth_render_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
@@ -241,11 +241,11 @@ class ClearDepthImageSample
 
     camera_data =
         containers::make_unique<vulkan::BufferFrameData<camera_data_>>(
-            data_->root_allocator, app(), num_swapchain_images,
+            data_->allocator(), app(), num_swapchain_images,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     model_data = containers::make_unique<vulkan::BufferFrameData<model_data_>>(
-        data_->root_allocator, app(), num_swapchain_images,
+        data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     float aspect =
@@ -302,23 +302,23 @@ class ClearDepthImageSample
          VK_COMPONENT_SWIZZLE_A},
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
     ::VkImageView raw_view;
-    LOG_ASSERT(==, data_->log.get(), VK_SUCCESS,
+    LOG_ASSERT(==, data_->logger(), VK_SUCCESS,
                app()->device()->vkCreateImageView(
                    app()->device(), &cube_render_color_image_view_create_info,
                    nullptr, &raw_view));
     frame_data->cube_render_color_image_view_ =
         containers::make_unique<vulkan::VkImageView>(
-            data_->root_allocator,
+            data_->allocator(),
             vulkan::VkImageView(raw_view, nullptr, &app()->device()));
 
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
-            data_->root_allocator, app()->GetCommandBuffer());
+            data_->allocator(), app()->GetCommandBuffer());
 
     // Initialize cube rendering descriptor set.
     frame_data->cube_render_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet(
                 {cube_render_descriptor_set_layout_bindings_[0],
                  cube_render_descriptor_set_layout_bindings_[1]}));
@@ -354,7 +354,7 @@ class ClearDepthImageSample
     // Initiailize depth rendering descriptor set
     frame_data->depth_render_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->root_allocator,
+            data_->allocator(),
             app()->AllocateDescriptorSet(
                 {depth_render_descriptor_set_layout_binding_}));
     VkDescriptorImageInfo depth_input_image_info{
@@ -390,7 +390,7 @@ class ClearDepthImageSample
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->cube_render_framebuffer_ =
         containers::make_unique<vulkan::VkFramebuffer>(
-            data_->root_allocator,
+            data_->allocator(),
             vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     // Create a framebuffer for depth rendering
@@ -401,7 +401,7 @@ class ClearDepthImageSample
         app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
     frame_data->depth_render_framebuffer_ =
         containers::make_unique<vulkan::VkFramebuffer>(
-            data_->root_allocator,
+            data_->allocator(),
             vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     // Populate the render command buffer
@@ -537,7 +537,7 @@ class ClearDepthImageSample
     Mat44 transform;
   };
 
-  const entry::entry_data* data_;
+  const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> cube_render_pipeline_layout_;
   containers::unique_ptr<vulkan::PipelineLayout> depth_render_pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> cube_render_pipeline_;
@@ -553,16 +553,16 @@ class ClearDepthImageSample
   containers::unique_ptr<vulkan::BufferFrameData<model_data_>> model_data;
 };
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
   ClearDepthImageSample sample(data);
   sample.Initialize();
 
-  while (!sample.should_exit() && !data->should_exit()) {
+  while (!sample.should_exit() && !data->WindowClosing()) {
     sample.ProcessFrame();
   }
   sample.WaitIdle();
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }

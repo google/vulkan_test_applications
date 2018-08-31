@@ -21,8 +21,8 @@
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 
-int main_entry(const entry::entry_data* data) {
-  data->log->LogInfo("Application Startup");
+int main_entry(const entry::EntryData* data) {
+  data->logger()->LogInfo("Application Startup");
 
   const VkExtent3D sample_image_extent{32, 32, 1};
   const VkFormat sample_format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -48,7 +48,7 @@ int main_entry(const entry::entry_data* data) {
   size_t sample_image_data_size =
       vulkan::GetImageExtentSizeInBytes(sample_image_extent, sample_format);
   containers::vector<uint8_t> sample_image_data(sample_image_data_size, 0,
-                                                data->root_allocator);
+                                                data->allocator());
   for (size_t i = 0; i < sample_image_data_size; i++) {
     sample_image_data[i] = i & 0xFF;
   }
@@ -57,7 +57,7 @@ int main_entry(const entry::entry_data* data) {
     // 1. Copy from an uncompressed 2D color image, with only 1 layer, 1
     // miplevel and 0 offsets in all dimensions to another 2D image created
     // with same create info.
-    vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+    vulkan::VulkanApplication application(data->allocator(), data->logger(),
                                           data, {}, {0}, 1024 * 100, 1024 * 100,
                                           1024 * 100);
     vulkan::VkDevice& device = application.device();
@@ -101,7 +101,7 @@ int main_entry(const entry::entry_data* data) {
     bool fill_succeeded = std::get<0>(fill_result);
     // Before the all the image filling commands are executed, the command
     // buffer must not be freed.
-    LOG_ASSERT(==, data->log, true, fill_succeeded);
+    LOG_ASSERT(==, data->logger(), true, fill_succeeded);
     vulkan::VkCommandBuffer fill_image_cmd_buf(
         std::move(std::get<1>(fill_result)));
 
@@ -166,7 +166,7 @@ int main_entry(const entry::entry_data* data) {
     application.render_queue()->vkQueueWaitIdle(application.render_queue());
 
     // Dump the data from the destination image
-    containers::vector<uint8_t> dump_data(data->root_allocator);
+    containers::vector<uint8_t> dump_data(data->allocator());
     application.DumpImageLayersData(
         dst_image.get(),
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},  // subresourcelayer
@@ -176,8 +176,8 @@ int main_entry(const entry::entry_data* data) {
         &dump_data,                            // data
         {}                                     // wait_semaphores
         );
-    LOG_ASSERT(==, data->log, sample_image_data.size(), dump_data.size());
-    LOG_ASSERT(==, data->log, true,
+    LOG_ASSERT(==, data->logger(), sample_image_data.size(), dump_data.size());
+    LOG_ASSERT(==, data->logger(), true,
                std::equal(sample_image_data.begin(), sample_image_data.end(),
                           dump_data.begin()));
   }
@@ -188,7 +188,7 @@ int main_entry(const entry::entry_data* data) {
     // dimensions but in BC3 format.
     VkPhysicalDeviceFeatures requested_features = {0};
     requested_features.textureCompressionBC = VK_TRUE;
-    vulkan::VulkanApplication application(data->root_allocator, data->log.get(),
+    vulkan::VulkanApplication application(data->allocator(), data->logger(),
                                           data, {}, requested_features,
                                           1024 * 100, 1024 * 100, 1024 * 100);
     vulkan::VkDevice& device = application.device();
@@ -228,7 +228,7 @@ int main_entry(const entry::entry_data* data) {
       size_t copy_image_data_size = vulkan::GetImageExtentSizeInBytes(
           copy_extent, src_image_create_info.format);
       containers::vector<uint8_t> copy_image_data(copy_image_data_size, 0,
-                                                  data->root_allocator);
+                                                  data->allocator());
       for (size_t i = 0; i < copy_image_data_size; i++) {
         copy_image_data[i] = i & 0xFF;
       }
@@ -248,7 +248,7 @@ int main_entry(const entry::entry_data* data) {
       bool fill_succeeded = std::get<0>(fill_result);
       // Before the all the image filling commands are executed, the command
       // buffer must not be freed.
-      LOG_ASSERT(==, data->log, true, fill_succeeded);
+      LOG_ASSERT(==, data->logger(), true, fill_succeeded);
       vulkan::VkCommandBuffer fill_image_cmd_buf(
           std::move(std::get<1>(fill_result)));
 
@@ -314,7 +314,7 @@ int main_entry(const entry::entry_data* data) {
       application.render_queue()->vkQueueWaitIdle(application.render_queue());
 
       // Dump the data from the destination image
-      containers::vector<uint8_t> dump_data(data->root_allocator);
+      containers::vector<uint8_t> dump_data(data->allocator());
       application.DumpImageLayersData(
           dst_image.get(),
           {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},  // subresourcelayer
@@ -324,17 +324,17 @@ int main_entry(const entry::entry_data* data) {
           &dump_data,                            // data
           {}                                     // wait_semaphores
           );
-      LOG_ASSERT(==, data->log, copy_image_data.size(), dump_data.size());
-      LOG_ASSERT(==, data->log, true,
+      LOG_ASSERT(==, data->logger(), copy_image_data.size(), dump_data.size());
+      LOG_ASSERT(==, data->logger(), true,
                  std::equal(copy_image_data.begin(), copy_image_data.end(),
                             dump_data.begin()));
     } else {
-      data->log->LogInfo(
+      data->logger()->LogInfo(
           "Disable test due to missing physical device feature: "
           "textureCompressionBC");
     }
   }
 
-  data->log->LogInfo("Application Shutdown");
+  data->logger()->LogInfo("Application Shutdown");
   return 0;
 }
