@@ -208,7 +208,6 @@ void android_main(android_app* app) {
   app_dummy();
   AppData data;
   data.start_mutex.lock();
-  bool done = false;
 
   std::thread main_thread([&]() {
     data.start_mutex.lock();
@@ -227,7 +226,7 @@ void android_main(android_app* app) {
       int return_value = main_entry(&entry_data);
       // Do not modify this line, scripts may look for it in the output.
       entry_data.logger()->LogInfo("RETURN: ", return_value);
-      done = true;
+      ANativeActivity_finish(app->activity);
     }
     assert(root_allocator.currently_allocated_bytes_.load() == 0);
   });
@@ -235,7 +234,7 @@ void android_main(android_app* app) {
   app->userData = &data;
   app->onAppCmd = &HandleAppCommand;
 
-  while (!done) {
+  while (true) {
     // Read all pending events.
     int ident = 0;
     int events = 0;
