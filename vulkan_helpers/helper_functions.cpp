@@ -128,12 +128,16 @@ VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
     wrapper->GetLogger()->LogInfo("    ", extension);
   }
 
-  VkInstanceCreateInfo info{
-      VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &app_info,
-      uint32_t(data->output_frame_index() >= 0
-                   ? (sizeof(layers) / sizeof(layers[0]))
-                   : 0),
-      layers, (sizeof(extensions) / sizeof(extensions[0])), extensions};
+  VkInstanceCreateInfo info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+                            nullptr,
+                            0,
+                            &app_info,
+                            uint32_t(data->output_frame_index() >= 0
+                                         ? (sizeof(layers) / sizeof(layers[0]))
+                                         : 0),
+                            layers,
+                            (sizeof(extensions) / sizeof(extensions[0])),
+                            extensions};
 
   ::VkInstance raw_instance;
   LOG_ASSERT(==, wrapper->GetLogger(),
@@ -534,13 +538,13 @@ VkDevice CreateDeviceForSwapchain(
     }
 
     VkDeviceCreateInfo info{
-        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,  // stype
-        nullptr,                               // pNext
-        0,                                     // flags
-        raw_queue_infos.size(),                // queueCreateInfoCount
-        raw_queue_infos.data(),                // pQueueCreateInfos
-        0,                                     // enabledLayerCount
-        nullptr,                               // ppEnabledLayerNames
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // stype
+        nullptr,                                        // pNext
+        0,                                              // flags
+        static_cast<uint32_t>(raw_queue_infos.size()),  // queueCreateInfoCount
+        raw_queue_infos.data(),                         // pQueueCreateInfos
+        0,                                              // enabledLayerCount
+        nullptr,                                        // ppEnabledLayerNames
         static_cast<uint32_t>(
             enabled_extensions.size()),  // enabledExtensionCount
         enabled_extensions.data(),       // ppEnabledExtensionNames
@@ -636,9 +640,10 @@ VkCommandBuffer CreateCommandBuffer(VkCommandPool* pool,
       /* commandBufferCount = */ 1,
   };
   ::VkCommandBuffer raw_command_buffer;
-  LOG_ASSERT(==, device->GetLogger(), (*device)->vkAllocateCommandBuffers(
-                                          *device, &info, &raw_command_buffer),
-             VK_SUCCESS);
+  LOG_ASSERT(
+      ==, device->GetLogger(),
+      (*device)->vkAllocateCommandBuffers(*device, &info, &raw_command_buffer),
+      VK_SUCCESS);
   return vulkan::VkCommandBuffer(raw_command_buffer, pool, device);
 }
 
@@ -897,9 +902,10 @@ VkDescriptorPool CreateDescriptorPool(VkDevice* device, uint32_t num_pool_size,
       /* pPoolSizes = */ pool_sizes};
 
   ::VkDescriptorPool raw_pool;
-  LOG_ASSERT(==, device->GetLogger(), (*device)->vkCreateDescriptorPool(
-                                          *device, &info, nullptr, &raw_pool),
-             VK_SUCCESS);
+  LOG_ASSERT(
+      ==, device->GetLogger(),
+      (*device)->vkCreateDescriptorPool(*device, &info, nullptr, &raw_pool),
+      VK_SUCCESS);
   return vulkan::VkDescriptorPool(raw_pool, nullptr, device);
 }
 
@@ -922,8 +928,9 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice* device,
   };
 
   ::VkDescriptorSetLayout raw_layout;
-  LOG_ASSERT(==, device->GetLogger(), (*device)->vkCreateDescriptorSetLayout(
-                                          *device, &info, nullptr, &raw_layout),
+  LOG_ASSERT(==, device->GetLogger(),
+             (*device)->vkCreateDescriptorSetLayout(*device, &info, nullptr,
+                                                    &raw_layout),
              VK_SUCCESS);
   return vulkan::VkDescriptorSetLayout(raw_layout, nullptr, device);
 }
@@ -938,9 +945,10 @@ VkDescriptorSet AllocateDescriptorSet(VkDevice* device, ::VkDescriptorPool pool,
       /* pSetLayouts = */ &layout,
   };
   ::VkDescriptorSet raw_set;
-  LOG_ASSERT(==, device->GetLogger(), (*device)->vkAllocateDescriptorSets(
-                                          *device, &alloc_info, &raw_set),
-             VK_SUCCESS);
+  LOG_ASSERT(
+      ==, device->GetLogger(),
+      (*device)->vkAllocateDescriptorSets(*device, &alloc_info, &raw_set),
+      VK_SUCCESS);
   return vulkan::VkDescriptorSet(raw_set, pool, device);
 }
 
