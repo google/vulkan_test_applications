@@ -42,7 +42,7 @@ int main_entry(const entry::EntryData* data) {
     render_queue->vkQueueSubmit(render_queue, 0, nullptr, fence);
 
     LOG_ASSERT(==, data->logger(), VK_SUCCESS,
-               device->vkWaitForFences(device, 1, &fence, VK_FALSE, 1000000));
+               device->vkWaitForFences(device, 1, &fence, VK_FALSE, 100000000));
     LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                device->vkResetFences(device, 1, &fence));
 

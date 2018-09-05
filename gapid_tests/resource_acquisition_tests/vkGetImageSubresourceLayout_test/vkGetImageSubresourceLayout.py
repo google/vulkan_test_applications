@@ -54,8 +54,6 @@ class GetImageSubResourceLayout(GapitTest):
         require_equal(0, subresource.mipLevel)
         require_equal(0, subresource.arrayLayer)
 
-        require_equal(0, layout.offset)
-        require_equal(4 * 32 * 32, layout.size)
-        require_equal(4 * 32, layout.rowPitch)
-        # ArrayPitch is undefined
-        require_equal(4 * 32 * 32, layout.depthPitch)
+        require_not_equal(0, layout.size)
+        require_not_equal(0, layout.rowPitch)
+        # ArrayPitch and DepthPitch may be undefined
