@@ -56,7 +56,7 @@ class CreateDestroyWaitTest(GapitTest):
         require_equal(1, wait_for_fences.int_fenceCount)
         require_not_equal(1, wait_for_fences.hex_pFences)
         require_equal(0, wait_for_fences.int_waitAll)
-        require_equal(1000000, wait_for_fences.int_timeout)
+        require_equal(100000000, wait_for_fences.int_timeout)
 
         waited_for_fence = little_endian_bytes_to_int(
             require(

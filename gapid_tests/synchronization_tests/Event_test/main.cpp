@@ -352,16 +352,16 @@ int main_entry(const entry::EntryData* data) {
         }};
     VkImageSubresourceRange rng{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
     VkImageMemoryBarrier image_barrier{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,    // sType
-        nullptr,                                   // pNext
-        0,                                         // srcAccessMask
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,      // dstAccessMask
-        VK_IMAGE_LAYOUT_UNDEFINED,                 // oldLayout
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // newLayout
-        VK_QUEUE_FAMILY_IGNORED,                   // srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,                   // dstQueueFamilyIndex
-        img,                                       // image
-        rng,                                       // subresourceRange
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,  // sType
+        nullptr,                                 // pNext
+        0,                                       // srcAccessMask
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,    // dstAccessMask
+        VK_IMAGE_LAYOUT_UNDEFINED,               // oldLayout
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,    // newLayout
+        VK_QUEUE_FAMILY_IGNORED,                 // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                 // dstQueueFamilyIndex
+        img,                                     // image
+        rng,                                     // subresourceRange
     };
 
     app.BeginCommandBuffer(&t.cmd_buf);

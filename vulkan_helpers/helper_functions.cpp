@@ -260,6 +260,10 @@ VkDevice CreateDefaultDevice(containers::Allocator* allocator,
       /* queueCount */ 1,
       /* pQueuePriorities = */ &priority};
 
+  const char* extensions[] = {
+      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+  };
+
   VkDeviceCreateInfo info{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                           nullptr,
                           0,
@@ -267,8 +271,8 @@ VkDevice CreateDefaultDevice(containers::Allocator* allocator,
                           &queue_info,
                           0,
                           nullptr,
-                          0,
-                          nullptr,
+                          sizeof(extensions) / sizeof(extensions[0]),
+                          extensions,
                           nullptr};
 
   ::VkDevice raw_device;
@@ -1000,7 +1004,7 @@ void RecordImageLayoutTransition(
           nullptr,                             // pBufferMemoryBarriers
           1,                                   // imageMemoryBarrierCount
           &image_memory_barrier                // pImageMemoryBarriers
-          );
+      );
 }
 
 namespace {

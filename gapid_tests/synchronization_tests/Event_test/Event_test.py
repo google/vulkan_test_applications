@@ -379,7 +379,7 @@ class MemoryBarrierTest(GapitTest):
         require_equal(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                       image_barrier.dstAccessMask)
         require_equal(VK_IMAGE_LAYOUT_UNDEFINED, image_barrier.oldLayout)
-        require_equal(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        require_equal(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                       image_barrier.newLayout)
         require_equal(VK_QUEUE_FAMILY_IGNORED,
                       image_barrier.srcQueueFamilyIndex)

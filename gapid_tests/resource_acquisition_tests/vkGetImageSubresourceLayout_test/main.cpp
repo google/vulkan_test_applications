@@ -24,30 +24,71 @@ int main_entry(const entry::EntryData* data) {
   vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
   vulkan::VkDevice& device = app.device();
 
+  const VkImageType type = VK_IMAGE_TYPE_2D;
+  const VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+  const VkDeviceSize pixel_size = 4;  // match with the format
+  const VkImageTiling tiling = VK_IMAGE_TILING_LINEAR;
+  const VkImageUsageFlags usage =
+      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  uint32_t width = 32;
+  uint32_t height = 32;
+  uint32_t depth = 1; // becaue of 2D image
+  uint32_t mip_level = 6;
+  uint32_t array_layer = 3;
+
+  VkImageFormatProperties props;
+  app.instance()->vkGetPhysicalDeviceImageFormatProperties(
+      app.device().physical_device(), format, type, tiling, usage, 0, &props);
+  data->logger()->LogInfo("Physical device image format properties:");
+  data->logger()->LogInfo("\tmaxExtent.width: ", props.maxExtent.width);
+  data->logger()->LogInfo("\tmaxExtent.height: ", props.maxExtent.height);
+  data->logger()->LogInfo("\tmaxExtent.depth: ", props.maxExtent.depth);
+  data->logger()->LogInfo("\tmaxMipLevels: ", props.maxMipLevels);
+  data->logger()->LogInfo("\tmaxArrayLayers: ", props.maxArrayLayers);
+  data->logger()->LogInfo("\tsampleCounts: ", props.sampleCounts);
+
+  width = props.maxExtent.width < width ? props.maxExtent.width : width;
+  height = props.maxExtent.height < height ? props.maxExtent.height : height;
+  depth = props.maxExtent.depth < depth ? props.maxExtent.depth : depth;
+  mip_level = props.maxMipLevels < mip_level ? props.maxMipLevels : mip_level;
+  array_layer =
+      props.maxArrayLayers < array_layer ? props.maxArrayLayers : array_layer;
+
+  if (width == 0 || height == 0 || depth == 0 || mip_level == 0 ||
+      array_layer == 0 || (props.sampleCounts & VK_SAMPLE_COUNT_1_BIT) == 0) {
+    data->logger()->LogInfo(
+        "Linear tiling image with following type/format/usage/sample not "
+        "supported");
+    data->logger()->LogInfo("\tformat: ", format);
+    data->logger()->LogInfo("\ttype: ", type);
+    data->logger()->LogInfo("\tusage: ", usage);
+    data->logger()->LogInfo("\tsample count: VK_SAMPLE_COUNT_1_BIT");
+    return 0;
+  }
+
   {
     // Creates an image with two layers
     VkImageCreateInfo create_info{
         /* sType = */ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         /* pNext = */ nullptr,
         /* flags = */ 0,
-        /* imageType = */ VK_IMAGE_TYPE_2D,
-        /* format = */ VK_FORMAT_R8G8B8A8_UNORM,
+        /* imageType = */ type,
+        /* format = */ format,
         /* extent = */
         {
-            /* width = */ 32,
-            /* height = */ 32,
-            /* depth = */ 1,
+            /* width = */ width,
+            /* height = */ height,
+            /* depth = */ depth,
         },
-        /* mipLevels = */ 1,
-        /* arrayLayers = */ 1,
+        /* mipLevels = */ mip_level,
+        /* arrayLayers = */ array_layer,
         /* samples = */ VK_SAMPLE_COUNT_1_BIT,
         /* tiling = */ VK_IMAGE_TILING_LINEAR,
-        /* usage = */ VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        /* usage = */ usage,
         /* sharingMode = */ VK_SHARING_MODE_EXCLUSIVE,
         /* queueFamilyIndexCount = */ 0,
         /* pQueueFamilyIndices = */ nullptr,
-        /* initialLayout = */ VK_IMAGE_LAYOUT_UNDEFINED,
+        /* initialLayout = */ VK_IMAGE_LAYOUT_PREINITIALIZED,
     };
 
     auto image = app.CreateAndBindImage(&create_info);
@@ -61,28 +102,58 @@ int main_entry(const entry::EntryData* data) {
     app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmdbuf,
                                                      &app.render_queue());
 
+    uint32_t query_level = mip_level > 1 ? 1 : 0;
+    uint32_t query_layer = array_layer > 1 ? 1 : 0;
     VkImageSubresource layer{
         VK_IMAGE_ASPECT_COLOR_BIT,  // aspectMask
-        0,                          // mipLevel
-        0,                          // arrayLayer
+        query_level,                // mipLevel
+        query_layer,                // arrayLayer
     };
     VkSubresourceLayout layout;
     device->vkGetImageSubresourceLayout(device, *image, &layer, &layout);
 
-    // offset
-    LOG_EXPECT(==, data->logger(), layout.offset, 0);
+    VkMemoryRequirements req;
+    device->vkGetImageMemoryRequirements(device, *image, &req);
 
-    // size
-    LOG_EXPECT(==, data->logger(), layout.size, 4 * 32 * 32);
+    data->logger()->LogInfo("Image subresource layout info:");
+    data->logger()->LogInfo("\tMip level: ", query_level);
+    data->logger()->LogInfo("\tArray layer: ", query_layer);
+    data->logger()->LogInfo("\tSubresourceLayout.offset: ", layout.offset);
+    data->logger()->LogInfo("\tSubresourceLayout.size: ", layout.size);
+    data->logger()->LogInfo("\tSubresourceLayout.rowPitch: ", layout.rowPitch);
+    data->logger()->LogInfo("\tSubresourceLayout.arrayPitch: ", layout.arrayPitch);
+    data->logger()->LogInfo("\tSubresourceLayout.depthPitch: ", layout.depthPitch);
 
-    // rowPitch
-    LOG_EXPECT(==, data->logger(), layout.rowPitch, 4 * 32);
+    // offset, must be within the valid range.
+    LOG_EXPECT(<=, data->logger(), layout.offset + layout.size, req.size);
 
-    // arrayPitch
-    // arrayPitch is undefined.
+    uint32_t mip_width =
+        width / (1 << query_level) == 0 ? 1 : width / (1 << query_level);
+    uint32_t mip_height =
+        height / (1 << query_level) == 0 ? 1 : height / (1 << query_level);
+    uint32_t mip_depth =
+        depth / (1 << query_level) == 0 ? 1 : depth / (1 << query_level);
 
-    // depthPitch
-    LOG_EXPECT(==, data->logger(), layout.depthPitch, 4 * 32 * 32);
+    // size, must be greater than or equal to a tightly packed pixel data blob.
+    LOG_EXPECT(>=, data->logger(), layout.size,
+               pixel_size * mip_width * mip_height * mip_depth);
+
+    // rowPitch, must be greater than or equal to a tightly packed 1D row.
+    LOG_EXPECT(>=, data->logger(), layout.rowPitch, pixel_size * mip_width);
+
+    if (depth > 1) {
+      // depthPitch, must be greater than or equal to a tightly packed 2D slice.
+      LOG_EXPECT(>=, data->logger(), layout.depthPitch,
+                 pixel_size * mip_width * mip_height);
+    }
+
+    if (array_layer > 1) {
+      // arrayPitch, must be greater than or equal to a tightly packed 3D
+      // subresource. But there is no guarantee that one layer contains multiple
+      // mip levels, nor the other way around.
+      LOG_EXPECT(>=, data->logger(), layout.arrayPitch,
+                 pixel_size * mip_width * mip_height);
+    }
   }
 
   data->logger()->LogInfo("Application Shutdown");
