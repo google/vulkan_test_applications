@@ -31,10 +31,7 @@ int main_entry(const entry::EntryData* data) {
   LOG_EXPECT(
       ==, data->logger(),
       instance->vkEnumeratePhysicalDevices(instance, &device_count, nullptr),
-      VK_INCOMPLETE);
-  // Actually it does not seem to be well defined what
-  // vkEnumeratePhysicalDevices should return here. Strictly speaking
-  // VK_INCOMPLETE, but I imagine drivers will return VK_SUCCESS.
+      VK_SUCCESS);
 
   LOG_ASSERT(>, data->logger(), device_count, 0u);
   data->logger()->LogInfo("Device Count is ", device_count);
