@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2018 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ uint32_t cube_fragment_shader[] =
 #include "cube.frag.spv"
     ;
 
-struct CubeFrameData {
+struct ManyCommandbuffersCubeFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
   containers::unique_ptr<vulkan::DescriptorSet> cube_descriptor_set_;
@@ -51,11 +51,12 @@ const int dummy_command_buffer_num = 257;
 
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
-class CubeSample : public sample_application::Sample<CubeFrameData> {
+class ManyCommandbuffersCube
+    : public sample_application::Sample<ManyCommandbuffersCubeFrameData> {
  public:
-  CubeSample(const entry::EntryData* data)
+  ManyCommandbuffersCube(const entry::EntryData* data)
       : data_(data),
-        Sample<CubeFrameData>(
+        Sample<ManyCommandbuffersCubeFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions().EnableMultisampling()),
         cube_(data->allocator(), data->logger(), cube_data) {}
@@ -117,9 +118,8 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -151,7 +151,8 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
   }
 
   virtual void InitializeFrameData(
-      CubeFrameData* frame_data, vulkan::VkCommandBuffer* initialization_buffer,
+      ManyCommandbuffersCubeFrameData* frame_data,
+      vulkan::VkCommandBuffer* initialization_buffer,
       size_t frame_index) override {
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
@@ -250,7 +251,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
 
     frame_data->dummy_command_buffers_.clear();
     for (int i = 0; i < dummy_command_buffer_num; i++) {
-        frame_data->dummy_command_buffers_.push_back(app()->GetCommandBuffer());
+      frame_data->dummy_command_buffers_.push_back(app()->GetCommandBuffer());
     }
   }
 
@@ -262,7 +263,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
-                      CubeFrameData* frame_data) override {
+                      ManyCommandbuffersCubeFrameData* frame_data) override {
     // Update our uniform buffers.
     camera_data_->UpdateBuffer(queue, frame_index);
     model_data_->UpdateBuffer(queue, frame_index);
@@ -301,10 +302,9 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     };
     submit_info_list.push_back(cube_submit_info);
 
-    app()->render_queue()->vkQueueSubmit(app()->render_queue(),
-                                         submit_info_list.size(),
-                                         submit_info_list.data(),
-                                         static_cast<VkFence>(VK_NULL_HANDLE));
+    app()->render_queue()->vkQueueSubmit(
+        app()->render_queue(), submit_info_list.size(), submit_info_list.data(),
+        static_cast<VkFence>(VK_NULL_HANDLE));
   }
 
  private:
@@ -329,13 +329,13 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
-  CubeSample sample(data);
-  sample.Initialize();
+  ManyCommandbuffersCube cube(data);
+  cube.Initialize();
 
-  while (!sample.should_exit() && !data->WindowClosing()) {
-    sample.ProcessFrame();
+  while (!cube.should_exit() && !data->WindowClosing()) {
+    cube.ProcessFrame();
   }
-  sample.WaitIdle();
+  cube.WaitIdle();
 
   data->logger()->LogInfo("Application Shutdown");
   return 0;
