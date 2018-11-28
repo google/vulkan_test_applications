@@ -37,7 +37,7 @@ ninja glslc_exe && ninja glslc/install
 WORKDIR /root/sdk
 RUN wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip && \
 unzip -qq sdk-tools-linux-4333796.zip && rm -f sdk-tools-linux-4333796.zip && \
-yes | ./tools/bin/sdkmanager "platforms;android-23" "build-tools;24.0.1" ndk-bundle > /dev/null && \
+yes | ./tools/bin/sdkmanager "platforms;android-26" "build-tools;25.0.0" ndk-bundle > /dev/null && \
 yes | ./tools/bin/sdkmanager "cmake;3.6.4111459" > /dev/null
 
 WORKDIR /root/vulkan_test_applications/build-android
