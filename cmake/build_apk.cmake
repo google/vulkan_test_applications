@@ -58,7 +58,8 @@ SET(DEFAULT_WINDOW_WIDTH ${DEFAULT_WINDOW_WIDTH} CACHE INT
     "Default window width for platforms that have resizable windows")
 
 if(BUILD_APKS)
-  # Create a dummy-target that we can use to gather all of our dependencies
+  # Use the dummy target to pull down all of our dependencies
+  set(target "dummy")
   set(TARGET_SOURCES)
   set(ANDROID_TARGET_NAME ${target})
   set(${target}_SOURCES ${EXE_SOURCES})
@@ -87,7 +88,7 @@ if(BUILD_APKS)
   add_custom_command(
       OUTPUT ${target_config}
       COMMENT "Gathering gradle dependencies"
-      COMMAND ./gradlew --no-rebuild --gradle-user-home
+      COMMAND ./gradlew assembleDebug assembleRelease -no-rebuild --gradle-user-home
         ${VulkanTestApplications_BINARY_DIR}/.gradle
       COMMAND ${CMAKE_COMMAND} -E touch ${target_config}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/dummyapk
@@ -315,10 +316,10 @@ function(add_vulkan_executable target)
     endforeach()
 
     if (CMAKE_BUILD_TYPE STREQUAL Debug)
-      set(apk_build_location "${APK_BUILD_ROOT}/app/build/outputs/apk/app-debug.apk")
+      set(apk_build_location "${APK_BUILD_ROOT}/app/build/outputs/apk/debug/app-debug.apk")
       set(ASSEMBLE_COMMAND assembleDebug)
     else()
-      set(apk_build_location "${APK_BUILD_ROOT}/app/build/outputs/apk/app-release-unsigned.apk")
+      set(apk_build_location "${APK_BUILD_ROOT}/app/build/outputs/apk/release/app-release-unsigned.apk")
       set(ASSEMBLE_COMMAND assembleRelease)
     endif()
 

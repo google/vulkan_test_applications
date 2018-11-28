@@ -27,6 +27,8 @@ macro(add_vulkan_sample_application name)
     set(ALL_SAMPLE_NAMES ${T} PARENT_SCOPE)
 endmacro()
 
+add_vulkan_subdirectory(dummy)
+
 add_vulkan_subdirectory(async_compute)
 add_vulkan_subdirectory(blend_constants)
 add_vulkan_subdirectory(blit_image)
