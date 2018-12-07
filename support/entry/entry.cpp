@@ -86,6 +86,8 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
 #endif
 }
 
+void EntryData::NotifyReady() const {}
+
 // Returns true when window is to be closed.
 bool EntryData::WindowClosing() const {
 #if defined __ANDROID__
@@ -125,6 +127,7 @@ struct CommandLineArgs {
   int32_t output_frame;
   const char* output_file;
   const char* shader_compiler;
+  bool wait_for_debugger;
 };
 
 void parse_args(CommandLineArgs* args, int argc, const char** argv) {
@@ -135,6 +138,7 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
   args->output_frame = OUTPUT_FRAME;
   args->output_file = OUTPUT_FILE;
   args->shader_compiler = SHADER_COMPILER;
+  args->wait_for_debugger = false;
 
   for (int i = 0; i < argc; ++i) {
     if (strncmp(argv[i], "-w=", 3) == 0) {
@@ -157,6 +161,9 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
     }
     if (strncmp(argv[i], "-shader-compiler=", 17) == 0) {
       args->shader_compiler = argv[i] + 17;
+    }
+    if (strncmp(argv[i], "--wait-for-debugger", 19) == 0) {
+      args->wait_for_debugger = true;
     }
   }
 }
@@ -320,6 +327,8 @@ int main(int argc, const char** argv) {
   }
   CommandLineArgs args;
   parse_args(&args, argc, argv);
+  while (args.wait_for_debugger)
+    ;
 
   int return_value = 0;
   containers::LeakCheckAllocator root_allocator;

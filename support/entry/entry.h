@@ -94,6 +94,8 @@ class EntryData {
 #endif
     bool WindowClosing() const;
 
+    void NotifyReady() const;
+
 #if defined __ANDROID__
     ANativeWindow* native_window_handle() const {
       return native_window_handle_;

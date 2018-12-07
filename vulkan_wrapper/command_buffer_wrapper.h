@@ -58,6 +58,12 @@ class VkCommandBuffer {
 
   logging::Logger* GetLogger() { return log_; }
 
+  void set_device_mask(uint32_t device_mask) {
+    device_mask_ = device_mask;
+    functions_->vkCmdSetDeviceMask(command_buffer_, device_mask);
+  }
+  uint32_t get_device_mask() { return device_mask_; }
+
  private:
   ::VkCommandBuffer command_buffer_;
   ::VkCommandPool pool_;
@@ -66,6 +72,7 @@ class VkCommandBuffer {
   LazyFunction<PFN_vkFreeCommandBuffers, ::VkDevice, DeviceFunctions>*
       destruction_function_;
   CommandBufferFunctions* functions_;
+  uint32_t device_mask_ = 0;
 
  public:
   const ::VkCommandBuffer& get_command_buffer() const { return command_buffer_; }
