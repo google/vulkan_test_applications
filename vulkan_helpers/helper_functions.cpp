@@ -96,9 +96,9 @@ VkInstance CreateDefaultInstance(containers::Allocator* allocator,
   return vulkan::VkInstance(allocator, raw_instance, nullptr, wrapper);
 }
 
-VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
-                                        LibraryWrapper* wrapper,
-                                        const entry::EntryData* data) {
+VkInstance CreateVerisonedInstanceForApplicaiton(
+    containers::Allocator* allocator, LibraryWrapper* wrapper,
+    const entry::EntryData* data, uint32_t version) {
   // Similar to CreateDefaultInstance, but turns on the virtual swapchain
   // if the requested by entry_data.
 
@@ -108,7 +108,7 @@ VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
                              1,
                              "Engine",
                              0,
-                             VK_MAKE_VERSION(1, 0, 0)};
+                             version};
 
   const char* extensions[] = {
     VK_KHR_SURFACE_EXTENSION_NAME,
@@ -145,6 +145,20 @@ VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
              VK_SUCCESS);
   // vulkan::VkInstance will handle destroying the instance
   return vulkan::VkInstance(allocator, raw_instance, nullptr, wrapper);
+}
+
+VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
+                                        LibraryWrapper* wrapper,
+                                        const entry::EntryData* data) {
+  return CreateVerisonedInstanceForApplicaiton(allocator, wrapper, data,
+                                               VK_MAKE_VERSION(1, 0, 0));
+}
+
+VkInstance Create11InstanceForApplication(containers::Allocator* allocator,
+                                          LibraryWrapper* wrapper,
+                                          const entry::EntryData* data) {
+  return CreateVerisonedInstanceForApplicaiton(allocator, wrapper, data,
+                                               VK_MAKE_VERSION(1, 1, 0));
 }
 
 containers::vector<VkPhysicalDevice> GetPhysicalDevices(
@@ -373,6 +387,26 @@ struct QueueCreateInfo {
         queue_count(0),
         priorities(allocator) {}
 
+  QueueCreateInfo(QueueCreateInfo&& _other)
+      : flags(_other.flags),
+        queue_family_index(_other.queue_family_index),
+        queue_count(_other.queue_count),
+        priorities(std::move(_other.priorities)) {}
+
+  QueueCreateInfo(const QueueCreateInfo& _other)
+      : flags(_other.flags),
+        queue_family_index(_other.queue_family_index),
+        queue_count(_other.queue_count),
+        priorities(_other.priorities) {}
+
+  QueueCreateInfo& operator=(const QueueCreateInfo& _other) {
+    flags = _other.flags;
+    queue_family_index = _other.queue_family_index;
+    queue_count = _other.queue_count;
+    priorities = _other.priorities;
+    return *this;
+  }
+
   inline void AddQueue(float priority) {
     queue_count++;
     priorities.push_back(priority);
@@ -386,8 +420,8 @@ struct QueueCreateInfo {
                                    priorities.data()};
   };
 
-  const VkDeviceQueueCreateFlags flags;
-  const uint32_t queue_family_index;
+  VkDeviceQueueCreateFlags flags;
+  uint32_t queue_family_index;
   uint32_t queue_count;
   containers::vector<float> priorities;
 };
@@ -570,6 +604,272 @@ VkDevice CreateDeviceForSwapchain(
     *graphics_queue_index = graphics_queue_family_index;
     return vulkan::VkDevice(allocator, raw_device, nullptr, instance,
                             &physical_device_properties, physical_device);
+  }
+  instance->GetLogger()->LogError(
+      "Could not find physical device or queue that can present");
+
+  VkPhysicalDeviceProperties throwaway_properties;
+  return vulkan::VkDevice(allocator, VK_NULL_HANDLE, nullptr, instance,
+                          &throwaway_properties, VK_NULL_HANDLE);
+}
+
+containers::vector<QueueCreateInfo> GetAcceptableQueues(
+    containers::Allocator* allocator, VkPhysicalDevice physical_device,
+    VkInstance* instance, VkSurfaceKHR* surface, uint32_t* present_queue_index,
+    uint32_t* graphics_queue_index,
+    const std::initializer_list<const char*> extensions,
+    const VkPhysicalDeviceFeatures& features,
+    bool try_to_find_separate_present_queue,
+    uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index) {
+  if (!SupportRequestPhysicalDeviceFeatures(instance, physical_device,
+                                            features)) {
+    return containers::vector<QueueCreateInfo>();
+  }
+
+  VkPhysicalDeviceProperties physical_device_properties;
+  (*instance)->vkGetPhysicalDeviceProperties(physical_device,
+                                             &physical_device_properties);
+
+  containers::vector<VkExtensionProperties> available_extensions(allocator);
+  uint32_t num_extensions = 0;
+  (*instance)->vkEnumerateDeviceExtensionProperties(physical_device, nullptr,
+                                                    &num_extensions, nullptr);
+
+  available_extensions.resize(num_extensions);
+  (*instance)->vkEnumerateDeviceExtensionProperties(
+      physical_device, nullptr, &num_extensions, available_extensions.data());
+
+  bool valid_extensions = true;
+  for (auto ext : extensions) {
+    if (std::find_if(available_extensions.begin(), available_extensions.end(),
+                     [&](const VkExtensionProperties& dat) {
+                       return strcmp(ext, dat.extensionName) == 0;
+                     }) == available_extensions.end()) {
+      valid_extensions = false;
+      break;
+    }
+  }
+  if (!valid_extensions) {
+    return containers::vector<QueueCreateInfo>();
+  }
+
+  auto properties =
+      GetQueueFamilyProperties(allocator, *instance, physical_device);
+  const uint32_t graphics_queue_family_index =
+      GetGraphicsAndComputeQueueFamily(allocator, *instance, physical_device);
+  uint32_t present_queue_family_index = 0;
+  uint32_t backup_present_queue_family_index = 0xFFFFFFFF;
+  for (; present_queue_family_index < properties.size();
+       ++present_queue_family_index) {
+    VkBool32 supports_swapchain = false;
+    LOG_EXPECT(==, instance->GetLogger(),
+               (*instance)->vkGetPhysicalDeviceSurfaceSupportKHR(
+                   physical_device, present_queue_family_index, *surface,
+                   &supports_swapchain),
+               VK_SUCCESS);
+    if (supports_swapchain) {
+      if (!try_to_find_separate_present_queue) {
+        break;
+      }
+      if (backup_present_queue_family_index != 0xFFFFFFFF) {
+        break;
+      }
+      if (present_queue_family_index != graphics_queue_family_index) {
+        break;
+      }
+      backup_present_queue_family_index = present_queue_family_index;
+    }
+  }
+
+  if (present_queue_family_index == properties.size() &&
+      backup_present_queue_family_index == 0xFFFFFFFF) {
+    return containers::vector<QueueCreateInfo>();
+  }
+  if (present_queue_family_index == properties.size()) {
+    present_queue_family_index = backup_present_queue_family_index;
+  }
+
+  containers::vector<QueueCreateInfo> queue_create_infos(allocator);
+  queue_create_infos.reserve(4);
+  queue_create_infos.emplace_back(
+      QueueCreateInfo(allocator, graphics_queue_family_index, 0));
+  queue_create_infos.back().AddQueue(1.0f);
+  if (graphics_queue_family_index != present_queue_family_index) {
+    queue_create_infos.emplace_back(
+        QueueCreateInfo(allocator, present_queue_family_index, 0));
+    queue_create_infos.back().AddQueue(1.0f);
+  }
+  if (async_compute_queue_index != nullptr) {
+    *async_compute_queue_index =
+        GetAsyncComputeQueueFamilyIndex(allocator, *instance, physical_device);
+    if (*async_compute_queue_index != 0xFFFFFFFF) {
+      bool added = false;
+      for (auto& qi : queue_create_infos) {
+        if (qi.queue_family_index == *async_compute_queue_index) {
+          qi.AddQueue(0.5f);
+          added = true;
+          break;
+        }
+      }
+      if (!added) {
+        queue_create_infos.emplace_back(
+            QueueCreateInfo(allocator, *async_compute_queue_index, 0));
+        queue_create_infos.back().AddQueue(0.5f);
+      }
+    }
+  }
+  if (sparse_binding_queue_index != nullptr) {
+    *sparse_binding_queue_index = GetQueueFamily(
+        allocator, *instance, physical_device, VK_QUEUE_SPARSE_BINDING_BIT);
+    if (*sparse_binding_queue_index != 0xFFFFFFFF) {
+      bool exist = false;
+      for (auto& qi : queue_create_infos) {
+        if (qi.queue_family_index == *sparse_binding_queue_index) {
+          // no need to create new separate queue for sparse binding.
+          exist = true;
+          break;
+        }
+      }
+      if (!exist) {
+        queue_create_infos.emplace_back(
+            QueueCreateInfo(allocator, *sparse_binding_queue_index, 0));
+        queue_create_infos.back().AddQueue(1.0f);
+      }
+    }
+  }
+  *present_queue_index = present_queue_family_index;
+  *graphics_queue_index = graphics_queue_family_index;
+  return std::move(queue_create_infos);
+}
+
+VkDevice CreateDeviceGroupForSwapchain(
+    containers::Allocator* allocator, VkInstance* instance,
+    VkSurfaceKHR* surface, uint32_t* present_queue_index,
+    uint32_t* graphics_queue_index,
+    const std::initializer_list<const char*> extensions,
+    const VkPhysicalDeviceFeatures& features,
+    bool try_to_find_separate_present_queue,
+    uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index) {
+  uint32_t count = 0;
+  LOG_ASSERT(
+      ==, instance->GetLogger(), VK_SUCCESS,
+      (*instance)->vkEnumeratePhysicalDeviceGroups(*instance, &count, nullptr));
+
+  containers::vector<VkPhysicalDeviceGroupProperties> props(allocator);
+  props.resize(count);
+  LOG_ASSERT(==, instance->GetLogger(), VK_SUCCESS,
+             (*instance)->vkEnumeratePhysicalDeviceGroups(*instance, &count,
+                                                          props.data()));
+
+  float priority = 1.f;
+  containers::vector<float> additional_priorities(allocator);
+  additional_priorities.push_back(1.0f);
+  for (auto& group : props) {
+    uint32_t present_queue_indices[VK_MAX_DEVICE_GROUP_SIZE];
+    uint32_t graphics_queue_indices[VK_MAX_DEVICE_GROUP_SIZE];
+    uint32_t async_compute_queue_indices[VK_MAX_DEVICE_GROUP_SIZE];
+    uint32_t sparse_binding_queue_indices[VK_MAX_DEVICE_GROUP_SIZE];
+
+    containers::vector<QueueCreateInfo> queue_create_infos(allocator);
+
+    for (size_t i = 0; i < group.physicalDeviceCount; ++i) {
+      auto newQueueCreateInfos = GetAcceptableQueues(
+          allocator, group.physicalDevices[i], instance, surface,
+          &present_queue_indices[i], &graphics_queue_indices[i], extensions,
+          features, try_to_find_separate_present_queue,
+          async_compute_queue_index ? &async_compute_queue_indices[i] : nullptr,
+          sparse_binding_queue_index ? &sparse_binding_queue_indices[i]
+                                     : nullptr);
+      if (newQueueCreateInfos.size() == 0) {
+        continue;
+      }
+
+      if (queue_create_infos.size() == 0) {
+        queue_create_infos = std::move(newQueueCreateInfos);
+      } else {
+        if (present_queue_indices[i] != present_queue_indices[0]) {
+          instance->GetLogger()->LogError(
+              "Device group presentation queues do not match");
+          continue;
+        }
+        if (graphics_queue_indices[i] != graphics_queue_indices[0]) {
+          instance->GetLogger()->LogError(
+              "Device group graphics queues do not match");
+          continue;
+        }
+        if (async_compute_queue_index && (async_compute_queue_indices[i] !=
+                                          async_compute_queue_indices[0])) {
+          instance->GetLogger()->LogError(
+              "Device group async queues do not match");
+          continue;
+        }
+        if (sparse_binding_queue_index && (sparse_binding_queue_indices[i] !=
+                                           sparse_binding_queue_indices[0])) {
+          instance->GetLogger()->LogError(
+              "Device group sparse queues do not match");
+          continue;
+        }
+      }
+    }
+
+    const char* forced_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    containers::vector<const char*> enabled_extensions(allocator);
+    for (auto ext : forced_extensions) {
+      enabled_extensions.push_back(ext);
+    }
+    for (auto ext : extensions) {
+      enabled_extensions.push_back(ext);
+    }
+
+    containers::vector<VkDeviceQueueCreateInfo> raw_queue_infos(allocator);
+    raw_queue_infos.reserve(4);
+    for (const auto& qi : queue_create_infos) {
+      raw_queue_infos.emplace_back(qi.GetVkDeviceQueueCreateInfo());
+    }
+    // For now we create 1 or 2 devices, more can be done in the future, but
+    // we should plumb down the number of devices.
+    VkDeviceGroupDeviceCreateInfo device_group{
+        VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, nullptr,
+        group.physicalDeviceCount > 2 ? 2 : group.physicalDeviceCount,
+        &group.physicalDevices[0]};
+
+    VkDeviceCreateInfo info{
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // stype
+        &device_group,                                  // pNext
+        0,                                              // flags
+        static_cast<uint32_t>(raw_queue_infos.size()),  // queueCreateInfoCount
+        raw_queue_infos.data(),                         // pQueueCreateInfos
+        0,                                              // enabledLayerCount
+        nullptr,                                        // ppEnabledLayerNames
+        static_cast<uint32_t>(
+            enabled_extensions.size()),  // enabledExtensionCount
+        enabled_extensions.data(),       // ppEnabledExtensionNames
+        &features                        // ppEnabledFeatures
+    };
+
+    ::VkDevice raw_device;
+    LOG_ASSERT(==, instance->GetLogger(),
+               (*instance)->vkCreateDevice(group.physicalDevices[0], &info,
+                                           nullptr, &raw_device),
+               VK_SUCCESS);
+
+    instance->GetLogger()->LogInfo("Enabled Device Extensions: ");
+    for (auto& extension : enabled_extensions) {
+      instance->GetLogger()->LogInfo("    ", extension);
+    }
+
+    *present_queue_index = present_queue_indices[0];
+    *graphics_queue_index = graphics_queue_indices[0];
+    if (async_compute_queue_index) {
+      *async_compute_queue_index = async_compute_queue_indices[0];
+    }
+    if (sparse_binding_queue_index) {
+      *sparse_binding_queue_index = sparse_binding_queue_indices[0];
+    }
+
+    return vulkan::VkDevice(allocator, raw_device, nullptr, instance, nullptr,
+                            group.physicalDevices[0],
+                            group.physicalDeviceCount);
   }
   instance->GetLogger()->LogError(
       "Could not find physical device or queue that can present");

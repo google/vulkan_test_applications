@@ -43,7 +43,8 @@ class VkDevice {
   VkDevice(containers::Allocator* container_allocator, ::VkDevice device,
            VkAllocationCallbacks* allocator, VkInstance* instance,
            VkPhysicalDeviceProperties* properties = nullptr,
-           ::VkPhysicalDevice physical_device = VK_NULL_HANDLE)
+           ::VkPhysicalDevice physical_device = VK_NULL_HANDLE,
+           uint32_t num_devices = 1)
       : device_(device),
         physical_device_(physical_device),
         has_allocator_(allocator != nullptr),
@@ -51,7 +52,8 @@ class VkDevice {
         device_id_(0),
         vendor_id_(0),
         driver_version_(0),
-        physical_device_memory_properties_({0}) {
+        physical_device_memory_properties_({0}),
+        num_devices_(num_devices) {
     if (has_allocator_) {
       allocator_ = *allocator;
     } else {
@@ -89,6 +91,8 @@ class VkDevice {
   uint32_t device_id() const { return device_id_; }
   uint32_t vendor_id() const { return vendor_id_; }
   uint32_t driver_version() const { return driver_version_; }
+  uint32_t num_devices() const { return num_devices_; }
+
   bool is_valid() { return device_ != VK_NULL_HANDLE; }
 
   logging::Logger* GetLogger() { return log_; }
@@ -117,6 +121,7 @@ class VkDevice {
   uint32_t device_id_;
   uint32_t vendor_id_;
   uint32_t driver_version_;
+  uint32_t num_devices_;
   VkPhysicalDeviceMemoryProperties physical_device_memory_properties_;
 
  public:
