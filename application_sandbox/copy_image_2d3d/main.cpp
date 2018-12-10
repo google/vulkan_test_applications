@@ -183,7 +183,8 @@ class CopyImage2D3DSample
         /* tiling = */
         VK_IMAGE_TILING_OPTIMAL,
         /* usage = */
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+            VK_IMAGE_USAGE_SAMPLED_BIT,
         /* sharingMode = */
         VK_SHARING_MODE_EXCLUSIVE,
         /* queueFamilyIndexCount = */ 0,
@@ -232,7 +233,8 @@ class CopyImage2D3DSample
         /* tiling = */
         VK_IMAGE_TILING_OPTIMAL,
         /* usage = */
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+            VK_IMAGE_USAGE_SAMPLED_BIT,
         /* sharingMode = */
         VK_SHARING_MODE_EXCLUSIVE,
         /* queueFamilyIndexCount = */ 0,
