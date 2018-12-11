@@ -16,6 +16,7 @@ output that demonstrates the feature.
 [clear_colorimage](clear_colorimage/README.md)
 [clear_depthimage](clear_depthimage/README.md)
 [copy_image_buffer](copy_image_buffer/README.md)
+[copy_image_2d3d](copy_image_2d3d/README.md)
 [copy_querypool_results](copy_querypool_results/README.md)
 [cube](cube/README.md)
 [depth_bounds](depth_bounds/README.md)
