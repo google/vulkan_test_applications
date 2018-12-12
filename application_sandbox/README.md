@@ -25,6 +25,7 @@ output that demonstrates the feature.
 [dispatch_indirect](dispatch_indirect/README.md)
 [execute_commands](execute_commands/README.md)
 [fill_buffer](fill_buffer/README.md)
+[render_3d_image](render_3d_image/README.md)
 [set_event](set_event/README.md)
 [sparse_binding](sparse_binding/README.md)
 [stencil](stencil/README.md)
