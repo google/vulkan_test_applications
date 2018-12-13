@@ -31,12 +31,16 @@ namespace cube_model {
 }
 const auto& cube_data = cube_model::model;
 
-uint32_t cube_vertex_shader[] =
-#include "cube.vert.spv"
+uint32_t layered_vertex_shader[] =
+#include "layered.vert.spv"
     ;
 
-uint32_t cube_fragment_shader[] =
-#include "cube.frag.spv"
+uint32_t layered_fragment_shader[] =
+#include "layered.frag.spv"
+    ;
+
+uint32_t layered_geometry_shader[] =
+#include "layered.geom.spv"
     ;
 
 struct Render3DImageSliceFrameData {
@@ -49,21 +53,23 @@ struct Render3DImageSliceFrameData {
 
 namespace {
 const uint32_t k3DImageDepth2DImageLayers = 8;
-const uint32_t kRenderLayer = 4;
+const uint32_t kRenderBaseLayer = 3;
+const uint32_t kRenderLayerCount = 4;
 }  // namespace
 
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
-class CopyImage2D3DSample
+class LayeredRenderSample
     : public sample_application::Sample<Render3DImageSliceFrameData> {
  public:
-  CopyImage2D3DSample(const entry::EntryData* data)
+  LayeredRenderSample(const entry::EntryData* data,
+                      const VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
         Sample<Render3DImageSliceFrameData>(
             data->allocator(), data, 1, 512,
             128,  // Larger device buffer space may be required
             // if the swapchain image is large
-            1, sample_application::SampleOptions(), VkPhysicalDeviceFeatures{},
+            1, sample_application::SampleOptions(), requested_features,
             {"VK_KHR_maintenance1"}),
         cube_(data->allocator(), data->logger(), cube_data) {}
   virtual void InitializeApplicationData(
@@ -98,16 +104,16 @@ class CopyImage2D3DSample
         data_->allocator(),
         app()->CreateRenderPass(
             {{
-                0,                                         // flags
-                render_format(),                           // format
-                num_samples(),                             // samples
-                VK_ATTACHMENT_LOAD_OP_CLEAR,               // loadOp
-                VK_ATTACHMENT_STORE_OP_STORE,              // storeOp
-                VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // stenilLoadOp
-                VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stenilStoreOp
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // initialLayout
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL   // finalLayout
-            }},  // AttachmentDescriptions
+                0,                                    // flags
+                render_format(),                      // format
+                num_samples(),                        // samples
+                VK_ATTACHMENT_LOAD_OP_CLEAR,          // loadOp
+                VK_ATTACHMENT_STORE_OP_STORE,         // storeOp
+                VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // stenilLoadOp
+                VK_ATTACHMENT_STORE_OP_DONT_CARE,     // stenilStoreOp
+                VK_IMAGE_LAYOUT_UNDEFINED,            // initialLayout
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL  // finalLayout
+            }},                                       // AttachmentDescriptions
             {{
                 0,                                // flags
                 VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
@@ -127,9 +133,11 @@ class CopyImage2D3DSample
         data_->allocator(), app()->CreateGraphicsPipeline(
                                 pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
-                              cube_vertex_shader);
+                              layered_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
-                              cube_fragment_shader);
+                              layered_fragment_shader);
+    cube_pipeline_->AddShader(VK_SHADER_STAGE_GEOMETRY_BIT, "main",
+                              layered_geometry_shader);
     cube_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     cube_pipeline_->SetInputStreams(&cube_);
     cube_pipeline_->SetViewport(viewport());
@@ -161,15 +169,16 @@ class CopyImage2D3DSample
       Render3DImageSliceFrameData* frame_data,
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t frame_index) override {
-    static_assert(k3DImageDepth2DImageLayers > kRenderLayer,
-                  "The depth of the 3D image must be larger than the render "
-                  "target image view layer");
+    static_assert(
+        k3DImageDepth2DImageLayers > kRenderBaseLayer + kRenderLayerCount,
+        "The depth of the 3D image must be larger than the render "
+        "image view base layer + layer count");
     // Creates the render image and its ImageView.
     VkImageCreateInfo render_img_create_info{
         /* sType = */
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         /* pNext = */ nullptr,
-        /* flags = */ 0,
+        /* flags = */ VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,
         /* imageType = */ VK_IMAGE_TYPE_3D,
         /* format = */ app()->swapchain().format(),
         /* extent = */
@@ -199,11 +208,11 @@ class CopyImage2D3DSample
         nullptr,                                   // pNext
         0,                                         // flags
         *frame_data->render_img_,                  // image
-        VK_IMAGE_VIEW_TYPE_2D,                     // viewType
+        VK_IMAGE_VIEW_TYPE_2D_ARRAY,               // viewType
         app()->swapchain().format(),               // format
         {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
          VK_COMPONENT_SWIZZLE_A},
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, kRenderLayer, 1}};
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, kRenderBaseLayer, kRenderLayerCount}};
     ::VkImageView raw_view;
     LOG_ASSERT(
         ==, data_->logger(), VK_SUCCESS,
@@ -261,7 +270,7 @@ class CopyImage2D3DSample
         &frame_data->render_img_view_->get_raw_object(),  // attachments
         app()->swapchain().width(),                       // width
         app()->swapchain().height(),                      // height
-        1                                                 // layers
+        kRenderLayerCount                                 // layers
     };
 
     ::VkFramebuffer raw_framebuffer;
@@ -278,41 +287,6 @@ class CopyImage2D3DSample
     VkClearValue clear;
     // Make the clear color white.
     clear.color = {1.0, 1.0, 1.0, 1.0};
-
-    // Image barriers for the render image, UNDEFINED ->
-    // COLOR_ATTACHMENT_OPTIMAL and COLOR_ATTACHMENT_OPTIMAL ->
-    // TRANSFER_SRC_OPTIMAL
-    VkImageMemoryBarrier undef_to_attach{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,    // sType
-        nullptr,                                   // pNext
-        0,                                         // srcAccessMask
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,      // dstAccessMask
-        VK_IMAGE_LAYOUT_UNDEFINED,                 // oldLayout
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // newLayout
-        VK_QUEUE_FAMILY_IGNORED,                   // srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,                   // dstQueueFamilyIndex
-        *frame_data->render_img_,                  // image
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
-
-    VkImageMemoryBarrier attach_to_src{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,    // sType
-        nullptr,                                   // pNext
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,      // srcAccessMask
-        VK_ACCESS_TRANSFER_READ_BIT,               // dstAccessMask
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // oldLayout
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,      // newLayout
-        VK_QUEUE_FAMILY_IGNORED,                   // srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,                   // dstQueueFamilyIndex
-        *frame_data->render_img_,                  // image
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
-
-    // Change the layout of render image to COLOR_ATTACHMENT_OPTIMAL
-    cmdBuffer->vkCmdPipelineBarrier(
-        cmdBuffer,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,                 // srcStageMask
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // dstStageMask
-        0,                                              // dependencyFlags
-        0, nullptr, 0, nullptr, 1, &undef_to_attach);
 
     VkRenderPassBeginInfo pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
@@ -337,21 +311,6 @@ class CopyImage2D3DSample
         &frame_data->cube_descriptor_set_->raw_set(), 0, nullptr);
     cube_.Draw(&cmdBuffer);
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
-
-    // Change the layout of render image to TRANSFER_SRC_OPTIMAL, and insert
-    // buffer memory barrier for the staging buffer.
-    cmdBuffer->vkCmdPipelineBarrier(
-        cmdBuffer,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // srcStageMask
-        VK_PIPELINE_STAGE_TRANSFER_BIT,                 // dstStageMask
-        0,                                              // dependencyFlags
-        0,                                              // memoryBarrierCount
-        nullptr,                                        // pMemoryBarriers
-        0,              // bufferMemoryBarrierCount
-        nullptr,        // pBufferMemoryBarriers
-        1,              // imageMemoryBarrierCount
-        &attach_to_src  // pImageMemoryBarriers
-    );
 
     // Image barriers for swapchain image, COLOR_ATTACHMENT_OPTIMAL ->
     // TRANSFER_DST_OPTIMAL and TRANSFER_DST_OPTIMAL ->
@@ -394,19 +353,51 @@ class CopyImage2D3DSample
         &attach_to_dst  // pImageMemoryBarriers
     );
 
-    // Copy the rendered 3D image data to the swapchain image.
-    VkImageCopy copy_region{
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        {int(app()->swapchain().width() / 3),
-         int(app()->swapchain().width() / 3), kRenderLayer},
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-        {int(app()->swapchain().width() / 3),
-         int(app()->swapchain().width() / 3), 0},
-        {app()->swapchain().width() / 3, app()->swapchain().height() / 3, 1}};
-    cmdBuffer->vkCmdCopyImage(
-        cmdBuffer, *frame_data->render_img_,
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapchain_image(frame_data),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
+    // Blit the layered rendered 3D image to the swapchain image.
+    VkImageBlit blit_regions[4] = {
+        // Blit to top left corner
+        {{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+         {{0, 0, kRenderBaseLayer},
+          {int(app()->swapchain().width()), int(app()->swapchain().height()),
+           int(kRenderBaseLayer + 1)}},
+         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+         {{0, 0, 0},
+          {int(app()->swapchain().width() / 2),
+           int(app()->swapchain().height() / 2), 1}}},
+        // Blit to top right corner
+        {{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+         {{0, 0, kRenderBaseLayer + 1},
+          {int(app()->swapchain().width()), int(app()->swapchain().height()),
+           int(kRenderBaseLayer + 2)}},
+         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+         {{int(app()->swapchain().width() / 2), 0, 0},
+          {int(app()->swapchain().width()),
+           int(app()->swapchain().height() / 2), 1}}},
+        // Blit to bottom left corner
+        {{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+         {{0, 0, kRenderBaseLayer + 2},
+          {int(app()->swapchain().width()), int(app()->swapchain().height()),
+           int(kRenderBaseLayer + 3)}},
+         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+         {{0, int(app()->swapchain().height() / 2), 0},
+          {int(app()->swapchain().width() / 2),
+           int(app()->swapchain().height()), 1}}},
+        // Blit to bottom right corner
+        {{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+         {{0, 0, kRenderBaseLayer + 3},
+          {int(app()->swapchain().width()), int(app()->swapchain().height()),
+           int(kRenderBaseLayer + 4)}},
+         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+         {{int(app()->swapchain().height() / 2),
+           int(app()->swapchain().height() / 2), 0},
+          {int(app()->swapchain().width()), int(app()->swapchain().height()),
+           1}}},
+    };
+    cmdBuffer->vkCmdBlitImage(cmdBuffer, *frame_data->render_img_,
+                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                              swapchain_image(frame_data),
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 4,
+                              blit_regions, VK_FILTER_NEAREST);
 
     // Change the layout of swapchain image to COLOR_ATTACHMENT_OPTIMAL
     cmdBuffer->vkCmdPipelineBarrier(
@@ -472,7 +463,9 @@ class CopyImage2D3DSample
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
-  CopyImage2D3DSample sample(data);
+  VkPhysicalDeviceFeatures requested_features = {0};
+  requested_features.geometryShader = VK_TRUE;
+  LayeredRenderSample sample(data, requested_features);
   sample.Initialize();
 
   while (!sample.should_exit() && !data->WindowClosing()) {

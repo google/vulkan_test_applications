@@ -14,8 +14,9 @@
 
 add_shader_library(render_3d_image_shaders
   SOURCES
-    cube.frag
-    cube.vert
+    layered.frag
+    layered.vert
+    layered.geom
   SHADER_DEPS
     shader_library
 )

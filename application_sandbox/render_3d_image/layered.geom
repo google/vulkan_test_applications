@@ -15,11 +15,20 @@
 
 #version 450
 
-layout(location = 0) out vec4 out_color;
-layout (location = 1) in vec2 texcoord;
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 3 * 4) out;
 
+layout (location = 1) in vec2 texcoords[];
+layout (location = 1) out vec2 texcoord;
 
-
-void main() {
-    out_color = vec4(texcoord, 0.0, 1.0);
+void main(void) {
+  for (int face = 0; face < 4; face++) {
+    gl_Layer = face;
+    for (int i = 0; i<gl_in.length(); i++) {
+      gl_Position = gl_in[i].gl_Position;
+      texcoord = texcoords[i];
+      EmitVertex();
+    }
+    EndPrimitive();
+  }
 }
