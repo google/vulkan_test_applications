@@ -44,13 +44,33 @@ class BufferFrameData {
   // along with |usage| to guarantee data can be copied to the underlying
   // VkBuffer(s).
   BufferFrameData(VulkanApplication* application, size_t buffered_data_count,
-                  VkBufferUsageFlags usage)
+                  VkBufferUsageFlags usage, uint32_t device_mask = 0)
       : application_(application),
         uninitialized_(application->GetAllocator()),
-        update_commands_(application->GetAllocator()) {
+        update_commands_(application->GetAllocator()),
+        device_mask_(device_mask) {
+    uint32_t dm = device_mask;
     uninitialized_.insert(uninitialized_.begin(), buffered_data_count, true);
     const size_t aligned_data_size =
         RoundUp(sizeof(set_value_), kMaxOffsetAlignment);
+
+    uint32_t indices[VK_MAX_DEVICE_GROUP_SIZE];
+
+    uint32_t set = 0;
+    for (size_t i = 0; dm != 0; ++i) {
+      if (dm & 0x1) {
+        // Host visible buffers can only exist on one GPU
+        LOG_ASSERT(==, application_->GetLogger(), 0, set);
+        set = i + 1;
+      }
+      dm >>= 1;
+    }
+    dm = device_mask;
+    if (set != 0) {
+      for (size_t i = 0; i < application_->device().num_devices(); ++i) {
+        indices[i] = set - 1;
+      }
+    }
 
     VkBufferCreateInfo create_info = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,      // sType
@@ -61,10 +81,12 @@ class BufferFrameData {
         VK_SHARING_MODE_EXCLUSIVE,
         0,
         nullptr};
-    buffer_ = application_->CreateAndBindDeviceBuffer(&create_info);
+    buffer_ = application_->CreateAndBindDeviceBuffer(
+        &create_info, set == 0 ? nullptr : &indices[0]);
 
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    host_buffer_ = application_->CreateAndBindHostBuffer(&create_info);
+    host_buffer_ = application_->CreateAndBindHostBuffer(
+        &create_info, set == 0 ? nullptr : &indices[0]);
 
     VkCommandBufferBeginInfo begin_info = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // sType
@@ -77,7 +99,10 @@ class BufferFrameData {
       update_commands_.push_back(application_->GetCommandBuffer());
       update_commands_.back()->vkBeginCommandBuffer(update_commands_.back(),
                                                     &begin_info);
-
+      if (device_mask_ != 0) {
+        update_commands_.back()->vkCmdSetDeviceMask(update_commands_.back(),
+                                                      device_mask_); 
+      }
       VkBufferMemoryBarrier barrier = {
           VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
           nullptr,                                  // pNext
@@ -113,7 +138,8 @@ class BufferFrameData {
 
   // Enqueues an update operation on the queue if needed, to ensure
   // that the buffer is correct for the given index.
-  void UpdateBuffer(VkQueue* update_queue, size_t buffer_index) {
+  void UpdateBuffer(VkQueue* update_queue, size_t buffer_index,
+                    uint32_t kDeviceMask = 0) {
     const size_t offset = get_offset_for_frame(buffer_index);
     bool equal =
         memcmp(&set_value_, host_buffer_->base_address() + offset, size()) == 0;
@@ -123,13 +149,24 @@ class BufferFrameData {
       uninitialized_[buffer_index] = false;
       memcpy(host_buffer_->base_address() + offset, &set_value_, size());
       host_buffer_->flush(offset, aligned_data_size());
+
+      VkDeviceGroupSubmitInfo group_submit_info = {
+          VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,
+          nullptr,
+          0,
+          nullptr,
+          1,
+          &device_mask_,
+          0,
+          nullptr};
+
       VkSubmitInfo init_submit_info{
-          VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-          nullptr,                        // pNext
-          0,                              // waitSemaphoreCount
-          nullptr,                        // pWaitSemaphores
-          nullptr,                        // pWaitDstStageMask,
-          1,                              // commandBufferCount
+          VK_STRUCTURE_TYPE_SUBMIT_INFO,                     // sType
+          device_mask_ == 0 ? nullptr : &group_submit_info,  // pNext
+          0,        // waitSemaphoreCount
+          nullptr,  // pWaitSemaphores
+          nullptr,  // pWaitDstStageMask,
+          1,        // commandBufferCount
           &update_commands_[buffer_index].get_command_buffer(),
           0,       // signalSemaphoreCount
           nullptr  // pSignalSemaphores
@@ -166,6 +203,7 @@ class BufferFrameData {
   // These command-buffers contain the command needed to update the
   // device-buffer from the host buffer.
   containers::vector<VkCommandBuffer> update_commands_;
+  uint32_t device_mask_;
 };
 }  // namespace vulkan
 

@@ -44,7 +44,7 @@ class VulkanArena {
   // address.
   VulkanArena(containers::Allocator* allocator, logging::Logger* log,
               ::VkDeviceSize buffer_size, uint32_t memory_type_index,
-              VkDevice* device, bool map);
+              VkDevice* device, bool map, uint32_t device_mask = 0);
   ~VulkanArena();
 
   // Returns an AllocationToken for the memory of a given size and alignment.
@@ -804,8 +804,9 @@ class VulkanApplication {
   VkSwapchainKHR swapchain_;
   VkCommandPool command_pool_;
   VkPipelineCache pipeline_cache_;
-  containers::unique_ptr<VulkanArena> host_accessible_heap_;
-  containers::unique_ptr<VulkanArena> coherent_heap_;
+  containers::vector<
+      containers::unique_ptr<VulkanArena>> host_accessible_heap_;
+  containers::vector<containers::unique_ptr<VulkanArena>> coherent_heap_;
   containers::unique_ptr<VulkanArena> device_only_image_heap_;
   containers::unique_ptr<VulkanArena> device_only_buffer_heap_;
   containers::vector<containers::unique_ptr<VulkanArena>>

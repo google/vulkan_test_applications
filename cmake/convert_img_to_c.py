@@ -102,7 +102,7 @@ def main():
             f.write("\n   }\n")
             f.write("};\n")
     except IOError as err:
-        print err
+        print(err)
         return -1
     return 0
 

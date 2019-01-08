@@ -48,7 +48,11 @@ class VkCommandBuffer {
         device_(*device),
         log_(device->GetLogger()),
         destruction_function_(&(*device)->vkFreeCommandBuffers),
-        functions_((*device)->command_buffer_functions()) {}
+        functions_((*device)->command_buffer_functions()) {
+    for (size_t i = 0; i < device->num_devices(); ++i) {
+      default_mask_ |= 1 << i;
+    }
+  }
 
   ~VkCommandBuffer() {
     if (command_buffer_ != VK_NULL_HANDLE) {
@@ -64,6 +68,18 @@ class VkCommandBuffer {
   }
   uint32_t get_device_mask() { return device_mask_; }
 
+  void begin_command_buffer(const VkCommandBufferBeginInfo* begin_info) {
+    device_mask_ = default_mask_;
+    const VkDeviceGroupCommandBufferBeginInfo* dgcbbi = 
+      reinterpret_cast<const VkDeviceGroupCommandBufferBeginInfo*>(begin_info->pNext);
+    if (dgcbbi &&
+        dgcbbi->sType ==
+            VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO) {
+      device_mask_ = dgcbbi->deviceMask;
+    }
+    functions_->vkBeginCommandBuffer(command_buffer_, begin_info);
+  }
+
  private:
   ::VkCommandBuffer command_buffer_;
   ::VkCommandPool pool_;
@@ -73,6 +89,7 @@ class VkCommandBuffer {
       destruction_function_;
   CommandBufferFunctions* functions_;
   uint32_t device_mask_ = 0;
+  uint32_t default_mask_ = 0;
 
  public:
   const ::VkCommandBuffer& get_command_buffer() const { return command_buffer_; }

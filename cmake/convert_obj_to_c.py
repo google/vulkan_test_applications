@@ -75,7 +75,7 @@ def main():
                 if line.startswith('v '):
                     match = position_matcher.match(line)
                     if not match:
-                        print 'Could not parse vertex ' + line
+                        print('Could not parse vertex {}'.format(line))
                         return -1
                     positions.append(
                         (float(match.group(1)),
@@ -84,7 +84,7 @@ def main():
                 elif line.startswith('vt '):
                     match = texture_matcher.match(line)
                     if not match:
-                        print 'Could not parse texture_coord ' + line
+                        print('Could not parse texture_coord {}'.format(line))
                         return -1
                     tex_coords.append(
                         (float(match.group(1)),
@@ -92,7 +92,7 @@ def main():
                 elif line.startswith('vn '):
                     match = normal_matcher.match(line)
                     if not match:
-                        print 'Could not parse normal ' + line
+                        print('Could not parse normal {}'.format(line))
                         return -1
                     normals.append(
                         (float(match.group(1)),
@@ -101,7 +101,7 @@ def main():
                 elif line.startswith('f '):
                     match = face_matcher.match(line)
                     if not match:
-                        print 'Could not parse face ' + line
+                        print('Could not parse face {}'.format(line))
                         return -1
                     face_verts = [
                         (int(match.group(1)),
@@ -187,7 +187,7 @@ def main():
                     "\"Memory layout is not as expected\");\n")
             f.write("#endif\n")
     except IOError as err:
-        print err
+        print(err)
         return -1
     return 0
 
