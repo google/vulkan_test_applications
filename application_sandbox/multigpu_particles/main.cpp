@@ -73,17 +73,33 @@ const uint32_t kMaskGPU0 = 1 << 0;
 const uint32_t kMaskGPU1 = 1 << 1;
 const uint32_t kMaskGPUAll = 1 << 0 | 1 << 1;
 
-const uint32_t kAllOn0Mask[] = {0, 0};
-const uint32_t kAllOn1Mask[] = {1, 1};
-const uint32_t kDefaultMask[] = {0, 1};
+const uint32_t kGPU0 = 0;
+const uint32_t kGPU1 = 1;
+
+const uint32_t kAllOn0Indices[] = {0, 0};
+const uint32_t kAllOn1Indices[] = {1, 1};
+const uint32_t kDefaultIndices[] = {0, 1};
+
+const VkDeviceGroupCommandBufferBeginInfo kDeviceGroupBeginCommandBufferOn0 = {
+    VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO,  // sType
+    nullptr,                                                   // pNext
+    kMaskGPU0,                                                 // deviceMask
+};
+
+const VkCommandBufferBeginInfo kBeginCommandBufferOn0 = {
+    VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // sType
+    &kDeviceGroupBeginCommandBufferOn0,           // pNext
+    0,                                            // flags
+    nullptr                                       // pInheritanceInfo
+};
 
 int main_entry(const entry::EntryData* data) {
   auto* allocator = data->allocator();
   data->logger()->LogInfo("Application Startup");
   vulkan::VulkanApplication app(
       data->allocator(), data->logger(), data, {}, VkPhysicalDeviceFeatures{},
-      1024 * 1024 * 128, 1024 * 1024 * 128, 1024 * 1024 * 128,
-      1024 * 1024 * 128, false, false, true, 1024 * 1024 * 128);
+      1024 * 1024 * 256, 1024 * 1024 * 256, 1024 * 1024 * 512,
+      1024 * 1024 * 256, false, false, true, 1024 * 1024 * 256);
   // So we don't have to type app.device every time.
   vulkan::VkDevice& device = app.device();
   vulkan::VkQueue& render_queue = app.render_queue();
@@ -158,11 +174,10 @@ int main_entry(const entry::EntryData* data) {
   };
 
   auto setup_command_buffer = app.GetCommandBuffer();
-  setup_command_buffer->vkBeginCommandBuffer(setup_command_buffer,
-                                             &kBeginCommandBuffer);
+  setup_command_buffer.begin_command_buffer(&kBeginCommandBuffer);
 
   auto simulation_ssbo =
-      app.CreateAndBindDeviceBuffer(&buffer_create_info, &kAllOn1Mask[0]);
+      app.CreateAndBindDeviceBuffer(&buffer_create_info, &kAllOn1Indices[0]);
   srand(0);
   containers::vector<simulation_data> fill_data(allocator);
   fill_data.resize(TOTAL_PARTICLES);
@@ -201,6 +216,12 @@ int main_entry(const entry::EntryData* data) {
       app.GetCommandBuffer(),
       app.GetCommandBuffer(),
   };
+
+  vulkan::VkCommandBuffer transfer_command_buffers[kNBuffers] = {
+      app.GetCommandBuffer(),
+      app.GetCommandBuffer(),
+  };
+
   vulkan::VkSemaphore compute_ready_semaphores[kNBuffers] = {
       vulkan::CreateSemaphore(&app.device()),
       vulkan::CreateSemaphore(&app.device()),
@@ -212,18 +233,22 @@ int main_entry(const entry::EntryData* data) {
 
   auto update_time_data =
       containers::make_unique<vulkan::BufferFrameData<Mat44>>(
-          allocator, &app, kNBuffers, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+          allocator, &app, kNBuffers, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+          kMaskGPU1);
   auto aspect_buffer =
       containers::make_unique<vulkan::BufferFrameData<Vector4>>(
-          allocator, &app, kNBuffers, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+          allocator, &app, kNBuffers, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+          kMaskGPU0);
 
   // Fill the buffer. Technically we probably want to use a staging buffer
   // and fill from that, since this is not really a "small" buffer.
   // However, we have this helper function, so might as well use it.
-  app.FillSmallBuffer(
-      simulation_ssbo.get(), fill_data.data(),
-      fill_data.size() * sizeof(simulation_data), 0, &setup_command_buffer,
-      VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, kMaskGPU1);
+  app.FillSmallBuffer(simulation_ssbo.get(), fill_data.data(),
+                      fill_data.size() * sizeof(simulation_data), 0,
+                      &setup_command_buffer,
+                      VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
+                          VK_ACCESS_TRANSFER_READ_BIT,
+                      kMaskGPU1);
 
   buffer_create_info = {
       VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // sType
@@ -239,7 +264,7 @@ int main_entry(const entry::EntryData* data) {
 
   for (size_t i = 0; i < kNBuffers; ++i) {
     computation_buffer[i] =
-        app.CreateAndBindDeviceBuffer(&buffer_create_info, &kAllOn1Mask[0]);
+        app.CreateAndBindDeviceBuffer(&buffer_create_info, &kAllOn1Indices[0]);
     compute_descriptor_sets[i] = containers::make_unique<vulkan::DescriptorSet>(
         allocator,
         app.AllocateDescriptorSet({compute_descriptor_set_layouts[0],
@@ -292,8 +317,7 @@ int main_entry(const entry::EntryData* data) {
   };
 
   for (size_t i = 0; i < kNBuffers; ++i) {
-    draw_buffers[i] =
-        app.CreateAndBindPeerBuffer(&buffer_create_info, kMaskGPU0);
+    draw_buffers[i] = app.CreateAndBindPeerBuffer(&buffer_create_info, kGPU0);
     app.FillSmallBuffer(draw_buffers[i].get(), nullptr, 0, 0,
                         &setup_command_buffer, VK_ACCESS_TRANSFER_WRITE_BIT,
                         kMaskGPU0);
@@ -390,6 +414,7 @@ int main_entry(const entry::EntryData* data) {
                              particle_fragment_shader);
   render_pipeline->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
   render_pipeline->SetInputStreams(&quad_model);
+  render_pipeline->SetCullMode(VK_CULL_MODE_NONE);
   render_pipeline->SetViewport(
       {0.0f, 0.f, static_cast<float>(app.swapchain().width()),
        static_cast<float>(app.swapchain().height()), 0.0f, 1.0f});
@@ -554,9 +579,20 @@ int main_entry(const entry::EntryData* data) {
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app.device()));
   }
   setup_command_buffer->vkEndCommandBuffer(setup_command_buffer);
+
+  VkDeviceGroupSubmitInfo group_submit_info = {
+      VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,
+      nullptr,
+      0,
+      nullptr,
+      1,
+      &kMaskGPUAll,
+      0,
+      nullptr};
+
   VkSubmitInfo init_submit_info{
       VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-      nullptr,                        // pNext
+      &group_submit_info,             // pNext
       0,                              // waitSemaphoreCount
       nullptr,                        // pWaitSemaphores
       nullptr,                        // pWaitDstStageMask,
@@ -565,6 +601,7 @@ int main_entry(const entry::EntryData* data) {
       0,       // signalSemaphoreCount
       nullptr  // pSignalSemaphores
   };
+
   app.render_queue()->vkQueueSubmit(app.render_queue(), 1, &init_submit_info,
                                     static_cast<VkFence>(VK_NULL_HANDLE));
 
@@ -587,6 +624,21 @@ int main_entry(const entry::EntryData* data) {
   }
 
   data->NotifyReady();
+
+  VkBufferCreateInfo tb_create_info = {
+      VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // sType
+      nullptr,                               // pNext
+      0,                                     // createFlags
+      sizeof(draw_data) * TOTAL_PARTICLES,   // size
+      VK_BUFFER_USAGE_TRANSFER_DST_BIT,      // usageFlags
+      VK_SHARING_MODE_EXCLUSIVE,             // sharingMode
+      0,                                     // queueFamilyIndexCount
+      nullptr                                // pQueueFamilyIndices
+  };
+
+  auto temp_buff =
+      app.CreateAndBindCoherentBuffer(&buffer_create_info, &kAllOn0Indices[0]);
+  char* dat = temp_buff->base_address();
 
   // Actually draw stuff
   for (; !data->WindowClosing();) {
@@ -629,7 +681,7 @@ int main_entry(const entry::EntryData* data) {
                               "ms");
     }
     update_time_data->UpdateBuffer(&app.render_queue(), i);
-
+    app.device()->vkDeviceWaitIdle(app.device());
     VkBufferMemoryBarrier simulation_barriers[2] = {
         {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
@@ -654,7 +706,7 @@ int main_entry(const entry::EntryData* data) {
             computation_buffer[i]->size(),            // size
         }};
 
-    computeBuff->vkBeginCommandBuffer(computeBuff, &kBeginCommandBuffer);
+    computeBuff.begin_command_buffer(&kBeginCommandBuffer);
     computeBuff->vkCmdSetDeviceMask(computeBuff, kMaskGPU1);
 
     computeBuff->vkCmdPipelineBarrier(
@@ -684,24 +736,36 @@ int main_entry(const entry::EntryData* data) {
         &simulation_barriers[1], 0, nullptr);
 
     VkBufferCopy cp{0, 0, sizeof(draw_data) * TOTAL_PARTICLES};
-
     computeBuff->vkCmdCopyBuffer(computeBuff, *computation_buffer[i],
                                  *draw_buffers[i], 1, &cp);
+
+    simulation_barriers[1].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    simulation_barriers[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    computeBuff->vkCmdPipelineBarrier(
+        computeBuff, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0, nullptr, 1,
+        &simulation_barriers[1], 0, nullptr);
 
     computeBuff->vkEndCommandBuffer(computeBuff);
 
     auto& render_buffer = render_command_buffers[i];
-    render_buffer->vkBeginCommandBuffer(render_buffer, &kBeginCommandBuffer);
-    render_buffer->vkCmdSetDeviceMask(render_buffer, kMaskGPU0);
+    render_buffer.begin_command_buffer(&kBeginCommandBufferOn0);
     uint32_t swapchain_idx;
-    vulkan::VkFence myfence = vulkan::CreateFence(&app.device());
+
+    VkAcquireNextImageInfoKHR acquire = {
+        VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,  // sType
+        nullptr,                                        // pNext
+        app.swapchain(),                                // swapchain
+        0xFFFFFFFFFFFFFFFF,                             // timeout
+        swap_ready_semaphores[i].get_raw_object(),      // semaphore
+        VK_NULL_HANDLE,                                 // fence
+        kMaskGPU0,
+    };
+
     LOG_ASSERT(==, app.GetLogger(), VK_SUCCESS,
-               app.device()->vkAcquireNextImageKHR(
-                   app.device(), app.swapchain(), 0xFFFFFFFFFFFFFFFF,
-                   swap_ready_semaphores[i].get_raw_object(),
-                   myfence.get_raw_object(), &swapchain_idx));
-    data->logger()->LogInfo("AcquireNextImageSemaphore ",
-                            swap_ready_semaphores[i].get_raw_object());
+               app.device()->vkAcquireNextImage2KHR(app.device(), &acquire,
+                                                    &swapchain_idx));
     VkImageMemoryBarrier barrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,    // sType
         nullptr,                                   // pNext
@@ -718,13 +782,36 @@ int main_entry(const entry::EntryData* data) {
         render_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0,
         nullptr, 1, &barrier);
+
+    VkBufferMemoryBarrier draw_barrier = {
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
+        nullptr,                                  // pNext
+        VK_ACCESS_TRANSFER_WRITE_BIT,             // srcAccessMask
+        VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
+        VK_QUEUE_FAMILY_IGNORED,                  // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                  // dstQueueFamilyIndex
+        *draw_buffers[i],                         // buffer
+        0,                                        //  offset
+        draw_buffers[i]->size(),                  // size
+    };
+
+    render_buffer->vkCmdPipelineBarrier(
+        render_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &draw_barrier, 0,
+        nullptr);
+
+    VkDeviceGroupRenderPassBeginInfo device_group_begin{
+        VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO,  // sType
+        nullptr,                                                // pNext
+        kMaskGPU0, 0, nullptr};
+
     VkClearValue clear{};
     vulkan::MemoryClear(&clear);
     clear.color.float32[3] = 1.0f;
     // The rest of the normal drawing.
     VkRenderPassBeginInfo pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
-        nullptr,                                   // pNext
+        &device_group_begin,                       // pNext
         *render_pass,                              // renderPass
         *framebuffers[swapchain_idx],              // framebuffer
         {{0, 0},
@@ -740,6 +827,7 @@ int main_entry(const entry::EntryData* data) {
         render_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         ::VkPipelineLayout(*render_pipeline_layout), 0, 1,
         &render_descriptor_sets[i]->raw_set(), 0, nullptr);
+
     quad_model.DrawInstanced(&render_buffer, TOTAL_PARTICLES);
     render_buffer->vkCmdEndRenderPass(render_buffer);
 
@@ -755,10 +843,18 @@ int main_entry(const entry::EntryData* data) {
         app.swapchain_images()[swapchain_idx],     // image
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
     layouts[swapchain_idx] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
     render_buffer->vkCmdPipelineBarrier(
         render_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1,
-        &present_barrier);
+        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 1, &draw_barrier,
+        1, &present_barrier);
+    draw_barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    draw_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    render_buffer->vkCmdPipelineBarrier(render_buffer,
+                                        VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+                                        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+                                        nullptr, 1, &draw_barrier, 0, nullptr);
 
     render_buffer->vkEndCommandBuffer(render_buffer);
 
@@ -776,9 +872,9 @@ int main_entry(const entry::EntryData* data) {
 
     VkDeviceGroupSubmitInfo group_submit_infos[2] = {
         {VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO, nullptr, 1, &gpu1, 1,
-         &kMaskGPUAll, 2, &gpu11[0]},
+         &kMaskGPU1, 2, &gpu11[0]},
         {VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO, nullptr, 2, &gpu00[0], 1,
-         &kMaskGPUAll, 1, &gpu0}};
+         &kMaskGPU0, 1, &gpu0}};
 
     ::VkSemaphore CDS[2] = {
         compute_ready_semaphores[i].get_raw_object(),
@@ -830,9 +926,14 @@ int main_entry(const entry::EntryData* data) {
                VK_SUCCESS);
     app.device()->vkDeviceWaitIdle(app.device());
 
+    VkDeviceGroupPresentInfoKHR device_group_present = {
+        VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_INFO_KHR,  // sType
+        nullptr,                                          // pNext
+        1, &kMaskGPU0, VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR};
+
     VkPresentInfoKHR present_info{
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,  // sType
-        nullptr,                             // pNext
+        &device_group_present,               // pNext
         1,                                   // waitSemaphoreCount
         &render_ready_semaphores[swapchain_idx]
              .get_raw_object(),             // pWaitSemaphores
@@ -841,15 +942,10 @@ int main_entry(const entry::EntryData* data) {
         &swapchain_idx,                     // pImageIndices
         nullptr,                            // pResults
     };
-    data->logger()->LogInfo("Presenting Frame ", swapchain_idx);
-    data->logger()->Flush();
     LOG_ASSERT(==, app.GetLogger(),
                app.render_queue()->vkQueuePresentKHR(app.present_queue(),
                                                      &present_info),
                VK_SUCCESS);
-    data->logger()->LogInfo("Presenting Frame");
-    data->logger()->LogInfo("Graphics Queue: ", (::VkQueue)app.render_queue(),
-                            "PresentQueue: ", (::VkQueue)app.present_queue());
     data->logger()->Flush();
   }
   data->logger()->LogInfo("Application Shutdown");

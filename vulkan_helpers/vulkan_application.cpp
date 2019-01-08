@@ -89,6 +89,8 @@ VulkanApplication::VulkanApplication(
                                         present_queue_index_, entry_data_)),
       command_pool_(CreateDefaultCommandPool(allocator_, device_)),
       pipeline_cache_(CreateDefaultPipelineCache(&device_)),
+      host_accessible_heap_(allocator_),
+      coherent_heap_(allocator_),
       device_peer_memory_heaps_(allocator_),
       should_exit_(false) {
   if (!device_.is_valid()) {
@@ -160,8 +162,21 @@ VulkanApplication::VulkanApplication(
   // Furthermore for both types, we will have ZERO flags
   // set (we do not want to do sparse binding.)
 
-  containers::unique_ptr<VulkanArena>* device_memories[3] = {
-      &host_accessible_heap_, &device_only_buffer_heap_, &coherent_heap_};
+  // containers::unique_ptr<VulkanArena>* device_memories[3] = {
+  //&host_accessible_heap_, &device_only_buffer_heap_, &coherent_heap_};
+  containers::vector<containers::unique_ptr<VulkanArena>*> device_memories[3] =
+      {containers::vector<containers::unique_ptr<VulkanArena>*>(allocator_),
+       containers::vector<containers::unique_ptr<VulkanArena>*>(allocator_),
+       containers::vector<containers::unique_ptr<VulkanArena>*>(allocator_)};
+
+  device_memories[1].push_back(&device_only_buffer_heap_);
+  host_accessible_heap_.resize(device_.num_devices());
+  coherent_heap_.resize(device_.num_devices());
+  for (size_t i = 0; i < device_.num_devices(); ++i) {
+    device_memories[0].push_back(&host_accessible_heap_[i]);
+    device_memories[2].push_back(&coherent_heap_[i]);
+  }
+
   uint32_t device_memory_sizes[3] = {host_buffer_size, device_buffer_size,
                                      coherent_buffer_size};
 
@@ -174,36 +189,51 @@ VulkanApplication::VulkanApplication(
   VkMemoryPropertyFlags property_flags[3] = {
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+  bool m_gpu = device_.num_devices() > 1;
+  for (size_t j = 0; j < device_.num_devices(); ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+      // 1) Create a tiny buffer so that we can determine what memory flags are
+      // required.
+      bool host_mapped =
+          (property_flags[i] & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) != 0;
+      if (j > 0 && !host_mapped) {
+        continue;
+      }
 
-  for (size_t i = 0; i < 3; ++i) {
-    // 1) Create a tiny buffer so that we can determine what memory flags are
-    // required.
-    VkBufferCreateInfo create_info = {
-        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // sType
-        nullptr,                               // pNext
-        0,                                     // flags
-        1,                                     // size
-        usages[i],                             // usage
-        VK_SHARING_MODE_EXCLUSIVE,             // sharingMode
-        0,                                     // queueFamilyIndexCount
-        nullptr,                               //  pQueueFamilyIndices
-    };
-    ::VkBuffer buffer;
-    LOG_ASSERT(==, log_,
-               device_->vkCreateBuffer(device_, &create_info, nullptr, &buffer),
-               VK_SUCCESS);
-    // Get the memory requirements for this buffer.
-    VkMemoryRequirements requirements;
-    device_->vkGetBufferMemoryRequirements(device_, buffer, &requirements);
-    device_->vkDestroyBuffer(device_, buffer, nullptr);
+      VkBufferCreateInfo create_info = {
+          VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // sType
+          nullptr,                               // pNext
+          0,                                     // flags
+          1,                                     // size
+          usages[i],                             // usage
+          VK_SHARING_MODE_EXCLUSIVE,             // sharingMode
+          0,                                     // queueFamilyIndexCount
+          nullptr,                               //  pQueueFamilyIndices
+      };
+      uint32_t device_mask = 1 << j;
+      if (!host_mapped) {
+        device_mask = 0;
+        for (size_t i = 0; i < device_.num_devices(); ++i) {
+          device_mask |= 1 << i;
+        }
+      }
+      ::VkBuffer buffer;
+      LOG_ASSERT(
+          ==, log_,
+          device_->vkCreateBuffer(device_, &create_info, nullptr, &buffer),
+          VK_SUCCESS);
+      // Get the memory requirements for this buffer.
+      VkMemoryRequirements requirements;
+      device_->vkGetBufferMemoryRequirements(device_, buffer, &requirements);
+      device_->vkDestroyBuffer(device_, buffer, nullptr);
 
-    uint32_t memory_index = GetMemoryIndex(
-        &device_, log_, requirements.memoryTypeBits, property_flags[i]);
-    *device_memories[i] = containers::make_unique<VulkanArena>(
-        allocator_, allocator_, log_, device_memory_sizes[i], memory_index,
-        &device_,
-        (property_flags[i] & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) != 0);
+      uint32_t memory_index = GetMemoryIndex(
+          &device_, log_, requirements.memoryTypeBits, property_flags[i]);
+      *device_memories[i][j] = containers::make_unique<VulkanArena>(
+          allocator_, allocator_, log_, device_memory_sizes[i], memory_index,
+          &device_, host_mapped, m_gpu ? device_mask : 0);
+    }
   }
 
   // Special handling of peer memory
@@ -588,14 +618,32 @@ VulkanApplication::CreateAndBindBuffer(VulkanArena* heap,
 containers::unique_ptr<VulkanApplication::Buffer>
 VulkanApplication::CreateAndBindHostBuffer(
     const VkBufferCreateInfo* create_info, const uint32_t* device_indices) {
-  return CreateAndBindBuffer(host_accessible_heap_.get(), create_info,
+  uint32_t first_device_index = 0;
+  if (device_indices != 0) {
+    first_device_index = device_indices[0];
+    for (size_t i = 1; i < device_.num_devices(); ++i) {
+      // If we have host_coherent memory, then any devices that bind it
+      // must bind to the same one.
+      LOG_ASSERT(==, log_, first_device_index, device_indices[i]);
+    }
+  }
+  return CreateAndBindBuffer(host_accessible_heap_[first_device_index].get(), create_info,
                              device_indices);
 }
 
 containers::unique_ptr<VulkanApplication::Buffer>
 VulkanApplication::CreateAndBindCoherentBuffer(
     const VkBufferCreateInfo* create_info, const uint32_t* device_indices) {
-  return CreateAndBindBuffer(coherent_heap_.get(), create_info, device_indices);
+  uint32_t first_device_index = 0;
+  if (device_indices != 0) {
+    first_device_index = device_indices[0];
+    for (size_t i = 1; i < device_.num_devices(); ++i) {
+      // If we have host_coherent memory, then any devices that bind it
+      // must bind to the same one.
+      LOG_ASSERT(==, log_, first_device_index, device_indices[i]);
+    }
+  }
+  return CreateAndBindBuffer(coherent_heap_[first_device_index].get(), create_info, device_indices);
 }
 
 containers::unique_ptr<VulkanApplication::Buffer>
@@ -1036,7 +1084,7 @@ struct AllocationToken {
 
 VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
                          ::VkDeviceSize buffer_size, uint32_t memory_type_index,
-                         VkDevice* device, bool map)
+                         VkDevice* device, bool map, uint32_t device_mask)
     : allocator_(allocator),
       freeblocks_(allocator_),
       first_block_(nullptr),
@@ -1050,12 +1098,27 @@ VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
       VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO, nullptr,
       VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT, 0};
 
+  uint32_t nDevices = 0;
   if (device->num_devices() > 1) {
     pNext = &flags;
-    for (size_t i = 0; i < device->num_devices(); ++i) {
-      flags.deviceMask |= 1 << i;
+    if (device_mask == 0) {
+      for (size_t i = 0; i < device->num_devices(); ++i) {
+        flags.deviceMask |= 1 << i;
+        nDevices += 1;
+      }
+    } else {
+      for (size_t i = 0; i < device->num_devices(); ++i) {
+        if (device_mask & (1 << i)) {
+          flags.deviceMask |= 1 << i;
+          nDevices += 1;
+        }
+      }
     }
   }
+
+  // It is illegal to have map memory that is bound to
+  // more than one GPU
+  LOG_ASSERT(==, log, true, (!map || nDevices <= 1));
 
   // Actually allocate the bytes for this heap.
   VkMemoryAllocateInfo allocate_info{

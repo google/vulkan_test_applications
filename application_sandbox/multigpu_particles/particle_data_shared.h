@@ -25,9 +25,9 @@ struct simulation_data {
   Vector4 position_velocity;
 };
 
-#define TOTAL_PARTICLES (1024 * 256)
+#define TOTAL_PARTICLES (1024 * 1024 * 4)
 #define COMPUTE_SHADER_LOCAL_SIZE 128
 
-#define TOTAL_MASS (1024.0f * 1024.0f * 8.0f)
+#define TOTAL_MASS (1024.0f * 1024.0f * 1024.0f * 2.0f)
 
 #endif  // _PARTICLE_DATA_SHARED_H_

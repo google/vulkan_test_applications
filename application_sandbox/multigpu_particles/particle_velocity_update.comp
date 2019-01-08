@@ -47,7 +47,7 @@ void main() {
     if (idx != gl_GlobalInvocationID.x) {
       Vector2 direction = simulation[idx].position_velocity.xy - sim.position_velocity.xy;
       float lensq = dot(direction, direction);
-      float a = G * (MASS_PER_PARTICLE*MASS_PER_PARTICLE * PARTICLE_SPLIT)/ lensq;
+      float a = G * (MASS_PER_PARTICLE*MASS_PER_PARTICLE)/ lensq;
       total_acceleration += direction * a;
     }
   }

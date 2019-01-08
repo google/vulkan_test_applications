@@ -14,9 +14,11 @@
  */
 
 #version 450
+
 #include "include/math_common.h"
 
 layout(location = 0) out vec4 out_color;
+
 layout (location = 1) in vec2 texcoord;
 layout (location = 2) in float speed;
 layout(set = 0, binding = 1) uniform sampler default_sampler;
@@ -76,6 +78,6 @@ Vector3 hsv2rgb(Vector3 hsv) {
 
 
 void main() {
-    vec4 color = texture(sampler2D(default_texture, default_sampler), texcoord);
-    out_color = vec4(hsv2rgb(Vector3(180.0f + speed * 360.0f, 1.0, 1.0)), color.x * 0.05f);
+   vec4 color = texture(sampler2D(default_texture, default_sampler), texcoord);
+   out_color = vec4(hsv2rgb(Vector3(180.0f + speed * 360.0f, 1.0, 1.0)), color.x * 0.05f);
 }

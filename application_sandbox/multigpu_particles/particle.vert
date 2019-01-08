@@ -29,7 +29,7 @@ layout (binding = 3) buffer frame {
 };
 
 void main() {
-    vec4 position = get_position() / 250.0f;
+    vec4 position = get_position() / 512.0f;
     gl_Position =
         vec4(position.xy + drawData[gl_InstanceIndex].position_speed.xy, 0.0f, 1.0f);
     gl_Position.x /= aspect_data.x;

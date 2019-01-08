@@ -71,7 +71,7 @@ class InstanceFunctions {
 #elif defined _WIN32
         ,
         CONSTRUCT_LAZY_FUNCTION(vkCreateWin32SurfaceKHR),
-        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceWin32PresentationSupportKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceWin32PresentationSupportKHR)
 #endif
 #undef CONSTRUCT_LAZY_FUNCTION
   {
@@ -350,6 +350,7 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkWaitForFences),
         CONSTRUCT_LAZY_FUNCTION(vkGetFenceStatus),
         CONSTRUCT_LAZY_FUNCTION(vkAcquireNextImageKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkAcquireNextImage2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkDeviceWaitIdle),
         CONSTRUCT_LAZY_FUNCTION(vkCreateQueryPool),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyQueryPool),
@@ -453,6 +454,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkGetFenceStatus);
   LAZY_FUNCTION(vkResetFences);
   LAZY_FUNCTION(vkAcquireNextImageKHR);
+  LAZY_FUNCTION(vkAcquireNextImage2KHR);
   LAZY_FUNCTION(vkDeviceWaitIdle);
   LAZY_FUNCTION(vkCreateQueryPool);
   LAZY_FUNCTION(vkDestroyQueryPool);
