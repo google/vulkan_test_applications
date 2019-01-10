@@ -210,6 +210,7 @@ class Sample {
     }
 
     InitializationComplete();
+    data_->NotifyReady();
   }
 
   void WaitIdle() { app()->device()->vkDeviceWaitIdle(app()->device()); }
