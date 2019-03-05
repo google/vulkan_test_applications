@@ -191,6 +191,19 @@ struct VulkanModel {
                            instance_count, 0, 0, 0);
   }
 
+  void BindVertexAndIndexBuffers(vulkan::VkCommandBuffer* cmdBuffer) {
+    ::VkBuffer buffers[3] = {*vertexBuffer_, *vertexBuffer_, *vertexBuffer_};
+    ::VkDeviceSize offsets[3] = {
+        0, num_vertices_ * POSITION_SIZE,
+        num_vertices_ * (POSITION_SIZE + TEXCOORD_SIZE)};
+    (*cmdBuffer)->vkCmdBindVertexBuffers(*cmdBuffer, 0, 3, buffers, offsets);
+    (*cmdBuffer)
+        ->vkCmdBindIndexBuffer(*cmdBuffer, *indexBuffer_, 0,
+                               VK_INDEX_TYPE_UINT32);
+  }
+
+  size_t NumIndices() const { return num_indices_; }
+
  private:
   const float* positions_;
   const float* texture_coords_;

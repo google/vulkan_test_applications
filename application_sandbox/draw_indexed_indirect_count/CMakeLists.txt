@@ -11,23 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-add_gapid_test(vkCreateInstance_NullApp_test
-  SOURCES null_create_info.cpp
-  LIBS
-    vulkan_wrapper
+add_shader_library(diic_shaders
+  SOURCES
+    diic.frag
+    diic.vert
+  SHADER_DEPS
+    shader_library
 )
 
-add_gapid_test(vkCreateInstance_NonNullApp_test
-  SOURCES non_null_create_info.cpp
+add_vulkan_sample_application(draw_indexed_indirect_count
+  SOURCES main.cpp
   LIBS
-    vulkan_wrapper
-)
-
-
-add_gapid_test(vkCreateInstance_Multiple_test
-  SOURCES enumerate_multiple.cpp
-  LIBS
-    vulkan_wrapper
+    vulkan_helpers
+  MODELS
+    standard_models
+  SHADERS
+    diic_shaders
 )
