@@ -65,7 +65,9 @@ struct VulkanTexture {
   // during the upload operation.
   void InitializeData(vulkan::VulkanApplication* application,
                       vulkan::VkCommandBuffer* cmdBuffer,
-                      VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT) {
+                      VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT,
+                      VkImageCreateFlags flags = 0,
+                      void* pNext = nullptr) {
     VkBufferCreateInfo create_info = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // sType
         nullptr,                               // pNext
@@ -82,8 +84,8 @@ struct VulkanTexture {
 
     VkImageCreateInfo image_create_info = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  // sType
-        nullptr,                              // pNext
-        0,                                    // flags
+        pNext,                                // pNext
+        flags,                                // flags
         VK_IMAGE_TYPE_2D,                     // type
         format_,                              // format
         {static_cast<uint32_t>(width_), static_cast<uint32_t>(height_),
