@@ -24,10 +24,3 @@ add_gapid_test(vkCreateInstance_NonNullApp_test
   LIBS
     vulkan_wrapper
 )
-
-
-add_gapid_test(vkCreateInstance_Multiple_test
-  SOURCES enumerate_multiple.cpp
-  LIBS
-    vulkan_wrapper
-)
