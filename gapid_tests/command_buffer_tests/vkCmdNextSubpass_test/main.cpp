@@ -63,8 +63,10 @@ const vulkan::VulkanGraphicsPipeline::InputStream kUVStream{
 };
 
 const VkCommandBufferBeginInfo kCommandBufferBeginInfo{
-    VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr,
-    VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr,
+    VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+    nullptr,
+    VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    nullptr,
 };
 
 const VkSampleCountFlagBits kSampleCountBit = VK_SAMPLE_COUNT_1_BIT;
@@ -96,8 +98,8 @@ void EnqueueImageLayoutTransition(
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {},
-                                {}, 1024 * 128, 1024 * 1024 * 1024);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {}, {},
+                                {}, {}, 1024 * 128, 1024 * 1024 * 1024);
   vulkan::VkDevice& device = app.device();
 
   auto fence = vulkan::CreateFence(&app.device(), false);
@@ -196,7 +198,7 @@ int main_entry(const entry::EntryData* data) {
               0,                                              // flags
           },
       }  // SubpassDependencies
-      );
+  );
 
   // Create pipeline for the first subpass
   vulkan::PipelineLayout first_subpass_pipeline_layout(
@@ -292,9 +294,10 @@ int main_entry(const entry::EntryData* data) {
       },
   };
   ::VkImageView raw_swapchain_image_view;
-  LOG_ASSERT(==, data->logger(), app.device()->vkCreateImageView(
-                                app.device(), &swapchain_image_view_create_info,
-                                nullptr, &raw_swapchain_image_view),
+  LOG_ASSERT(==, data->logger(),
+             app.device()->vkCreateImageView(
+                 app.device(), &swapchain_image_view_create_info, nullptr,
+                 &raw_swapchain_image_view),
              VK_SUCCESS);
   vulkan::VkImageView swapchain_image_view(raw_swapchain_image_view, nullptr,
                                            &app.device());
@@ -415,7 +418,8 @@ int main_entry(const entry::EntryData* data) {
 
   cmd_buf->vkCmdEndRenderPass(cmd_buf);
 
-  app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf, &app.render_queue());
+  app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf,
+                                                   &app.render_queue());
 
   VkPresentInfoKHR present_info{
       VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, nullptr,      0,      nullptr, 1,

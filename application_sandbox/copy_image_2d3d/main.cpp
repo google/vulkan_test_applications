@@ -66,7 +66,7 @@ class CopyImage2D3DSample
             128,  // Larger device buffer space may be required
             // if the swapchain image is large
             1, sample_application::SampleOptions(), VkPhysicalDeviceFeatures{},
-            {"VK_KHR_maintenance1"}),
+            {}, {VK_KHR_MAINTENANCE1_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,

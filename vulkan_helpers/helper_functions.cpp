@@ -98,7 +98,8 @@ VkInstance CreateDefaultInstance(containers::Allocator* allocator,
 
 VkInstance CreateVerisonedInstanceForApplicaiton(
     containers::Allocator* allocator, LibraryWrapper* wrapper,
-    const entry::EntryData* data, uint32_t version) {
+    const entry::EntryData* data, uint32_t version,
+    const std::initializer_list<const char*> instance_extensions) {
   // Similar to CreateDefaultInstance, but turns on the virtual swapchain
   // if the requested by entry_data.
 
@@ -110,7 +111,7 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
                              0,
                              version};
 
-  const char* extensions[] = {
+  const char* default_extensions[] = {
     VK_KHR_SURFACE_EXTENSION_NAME,
 #if defined __ANDROID__
     VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
@@ -121,7 +122,17 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
 #endif
   };
 
+  const auto num_default_extensions =
+      sizeof(default_extensions) / sizeof(default_extensions[0]);
+
   const char* layers[] = {"CallbackSwapchain"};
+
+  std::vector<const char*> extensions;
+  extensions.reserve(num_default_extensions + instance_extensions.size());
+  extensions.insert(extensions.end(), default_extensions,
+                    default_extensions + num_default_extensions);
+  extensions.insert(extensions.end(), instance_extensions.begin(),
+                    instance_extensions.end());
 
   wrapper->GetLogger()->LogInfo("Enabled Extensions: ");
   for (auto& extension : extensions) {
@@ -136,8 +147,8 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
                                          ? (sizeof(layers) / sizeof(layers[0]))
                                          : 0),
                             layers,
-                            (sizeof(extensions) / sizeof(extensions[0])),
-                            extensions};
+                            uint32_t(extensions.size()),
+                            extensions.data()};
 
   ::VkInstance raw_instance;
   LOG_ASSERT(==, wrapper->GetLogger(),
@@ -147,18 +158,20 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
   return vulkan::VkInstance(allocator, raw_instance, nullptr, wrapper);
 }
 
-VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
-                                        LibraryWrapper* wrapper,
-                                        const entry::EntryData* data) {
-  return CreateVerisonedInstanceForApplicaiton(allocator, wrapper, data,
-                                               VK_MAKE_VERSION(1, 0, 0));
+VkInstance CreateInstanceForApplication(
+    containers::Allocator* allocator, LibraryWrapper* wrapper,
+    const entry::EntryData* data,
+    const std::initializer_list<const char*> extensions) {
+  return CreateVerisonedInstanceForApplicaiton(
+      allocator, wrapper, data, VK_MAKE_VERSION(1, 0, 0), extensions);
 }
 
-VkInstance Create11InstanceForApplication(containers::Allocator* allocator,
-                                          LibraryWrapper* wrapper,
-                                          const entry::EntryData* data) {
-  return CreateVerisonedInstanceForApplicaiton(allocator, wrapper, data,
-                                               VK_MAKE_VERSION(1, 1, 0));
+VkInstance Create11InstanceForApplication(
+    containers::Allocator* allocator, LibraryWrapper* wrapper,
+    const entry::EntryData* data,
+    const std::initializer_list<const char*> extensions) {
+  return CreateVerisonedInstanceForApplicaiton(
+      allocator, wrapper, data, VK_MAKE_VERSION(1, 1, 0), extensions);
 }
 
 containers::vector<VkPhysicalDevice> GetPhysicalDevices(

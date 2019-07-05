@@ -96,7 +96,7 @@ vulkan::VulkanGraphicsPipeline CreateAndCommitPipeline(
           nullptr                           // pPreserveAttachments
       }},                                   // SubpassDescriptions
       {}                                    // SubpassDependencies
-      );
+  );
 
   vulkan::VulkanGraphicsPipeline pipeline =
       app.CreateGraphicsPipeline(&pipeline_layout, &render_pass, 0);
@@ -125,7 +125,7 @@ int main_entry(const entry::EntryData* data) {
     const float line_width = 2.0;
     VkPhysicalDeviceFeatures requested_feateures{};
     requested_feateures.wideLines = VK_TRUE;
-    vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+    vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {},
                                   {}, requested_feateures);
     if (app.device().is_valid()) {
       // Create a pipeline

@@ -130,11 +130,13 @@ class Sample {
          uint32_t device_buffer_size_in_MB, uint32_t coherent_buffer_size_in_MB,
          const SampleOptions& options,
          const VkPhysicalDeviceFeatures& physical_device_features = {0},
-         const std::initializer_list<const char*> extensions = {})
+         const std::initializer_list<const char*> instance_extensions = {},
+         const std::initializer_list<const char*> device_extensions = {})
       : options_(options),
         data_(entry_data),
         allocator_(allocator),
-        application_(allocator, entry_data->logger(), entry_data, extensions,
+        application_(allocator, entry_data->logger(), entry_data,
+                     device_extensions, instance_extensions,
                      physical_device_features,
                      host_buffer_size_in_MB * 1024 * 1024,
                      image_memory_size_in_MB * 1024 * 1024,

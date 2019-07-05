@@ -22,11 +22,12 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {},
                                 {VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME});
   vulkan::VkDevice& device = app.device();
   if (device.is_valid()) {
-    data->logger()->LogInfo(VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME, " found.");
+    data->logger()->LogInfo(VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME,
+                            " found.");
 
     {  // 1. Image Test
       VkDedicatedAllocationImageCreateInfoNV dedicated_image_info = {
@@ -126,7 +127,7 @@ int main_entry(const entry::EntryData* data) {
     }
   } else {
     data->logger()->LogInfo("Disabled test due to missing ",
-                       VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME);
+                            VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME);
   }
   data->logger()->LogInfo("Application Shutdown");
   return 0;

@@ -47,15 +47,15 @@ struct DrawIndexedIndirectCountData {
 
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
-class DrawIndexedIndirectCountSample : public sample_application::Sample<DrawIndexedIndirectCountData> {
+class DrawIndexedIndirectCountSample
+    : public sample_application::Sample<DrawIndexedIndirectCountData> {
  public:
   DrawIndexedIndirectCountSample(const entry::EntryData* data)
       : data_(data),
         Sample<DrawIndexedIndirectCountData>(
             data->allocator(), data, 1, 512, 1, 1,
-            sample_application::SampleOptions(), {0},
-            {"VK_KHR_draw_indirect_count"}
-        ),
+            sample_application::SampleOptions(), {0}, {},
+            {VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
@@ -115,9 +115,8 @@ class DrawIndexedIndirectCountSample : public sample_application::Sample<DrawInd
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               diic_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -147,38 +146,35 @@ class DrawIndexedIndirectCountSample : public sample_application::Sample<DrawInd
     model_data_->data().transform = Mat44::FromTranslationVector(
         mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
 
-    
     static const uint32_t num_commands = 1;
     VkDrawIndexedIndirectCommand commands[num_commands] = {
-        VkDrawIndexedIndirectCommand {
-            static_cast<uint32_t>(cube_.NumIndices()),// index count
-            1, // instance count
-            0, // firstIndex
-            0, // vertexOffset
-            0, // firstInstance
-        }
-    };
+        VkDrawIndexedIndirectCommand{
+            static_cast<uint32_t>(cube_.NumIndices()),  // index count
+            1,                                          // instance count
+            0,                                          // firstIndex
+            0,                                          // vertexOffset
+            0,                                          // firstInstance
+        }};
 
-    drawDataBuffer = app()->CreateAndBindDefaultExclusiveDeviceBuffer(sizeof(commands),
+    drawDataBuffer = app()->CreateAndBindDefaultExclusiveDeviceBuffer(
+        sizeof(commands),
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
-    countDataBuffer = app()->CreateAndBindDefaultExclusiveDeviceBuffer(4,
+    countDataBuffer = app()->CreateAndBindDefaultExclusiveDeviceBuffer(
+        4,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
 
-    app()->FillSmallBuffer(
-        drawDataBuffer.get(), commands,
-        sizeof(commands), 0,
-        initialization_buffer,
-        VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
-    
-    app()->FillSmallBuffer(
-        countDataBuffer.get(), &num_commands,
-        sizeof(num_commands), 0,
-        initialization_buffer,
-        VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
+    app()->FillSmallBuffer(drawDataBuffer.get(), commands, sizeof(commands), 0,
+                           initialization_buffer,
+                           VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
+
+    app()->FillSmallBuffer(countDataBuffer.get(), &num_commands,
+                           sizeof(num_commands), 0, initialization_buffer,
+                           VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
   }
 
   virtual void InitializeFrameData(
-      DrawIndexedIndirectCountData* frame_data, vulkan::VkCommandBuffer* initialization_buffer,
+      DrawIndexedIndirectCountData* frame_data,
+      vulkan::VkCommandBuffer* initialization_buffer,
       size_t frame_index) override {
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
@@ -271,8 +267,9 @@ class DrawIndexedIndirectCountSample : public sample_application::Sample<DrawInd
         &frame_data->cube_descriptor_set_->raw_set(), 0, nullptr);
     cube_.BindVertexAndIndexBuffers(&cmdBuffer);
 
-    cmdBuffer->vkCmdDrawIndexedIndirectCountKHR(cmdBuffer, 
-        *drawDataBuffer, 0, *countDataBuffer, 0, 10, static_cast<uint32_t>(sizeof(VkDrawIndexedIndirectCommand)));
+    cmdBuffer->vkCmdDrawIndexedIndirectCountKHR(
+        cmdBuffer, *drawDataBuffer, 0, *countDataBuffer, 0, 10,
+        static_cast<uint32_t>(sizeof(VkDrawIndexedIndirectCommand)));
 
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
 

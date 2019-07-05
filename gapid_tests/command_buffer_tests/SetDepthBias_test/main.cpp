@@ -93,7 +93,7 @@ void CreatePipelineAndSetDepthBias(const entry::EntryData* data,
           nullptr                           // pPreserveAttachments
       }},                                   // SubpassDescriptions
       {}                                    // SubpassDependencies
-      );
+  );
 
   vulkan::VulkanGraphicsPipeline pipeline =
       app.CreateGraphicsPipeline(&pipeline_layout, &render_pass, 0);
@@ -133,8 +133,9 @@ int main_entry(const entry::EntryData* data) {
 
   {
     const float depth_bias_constant_factor = 1.1f;
-    const float depth_bias_clamp = 0.0f;  // only 0.0 is valid as depthBiasClamp
-                                         // has not been confirmed as supported.
+    const float depth_bias_clamp =
+        0.0f;  // only 0.0 is valid as depthBiasClamp
+               // has not been confirmed as supported.
     const float depth_bias_slope_factor = 3.3f;
     // 1. Test with depthBiasClamp set to zero, so physical device feature:
     // depthBiasClamp is not required.
@@ -151,7 +152,7 @@ int main_entry(const entry::EntryData* data) {
     const float depth_bias_slope_factor = 3.3f;
     VkPhysicalDeviceFeatures request_features = {0};
     request_features.depthBiasClamp = VK_TRUE;
-    vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+    vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {},
                                   {}, request_features);
     if (app.device().is_valid()) {
       CreatePipelineAndSetDepthBias(data, &app, depth_bias_constant_factor,

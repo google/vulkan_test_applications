@@ -59,45 +59,39 @@ class ImageFormatListSample
  public:
   ImageFormatListSample(const entry::EntryData* data)
       : data_(data),
-        Sample<ImageFormatListFrameData>(data->allocator(), data, 1, 512, 1, 1,
-                                      sample_application::SampleOptions(), {}, {"VK_KHR_image_format_list"}),
+        Sample<ImageFormatListFrameData>(
+            data->allocator(), data, 1, 512, 1, 1,
+            sample_application::SampleOptions(), {},
+            {VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data),
         texture_(data->allocator(), data->logger(), texture_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
-
     VkFormat formats[] = {VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB};
     VkImageFormatListCreateInfoKHR image_format_pNext = {
-        VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,
-        nullptr,
-        2,
-        formats
-    };
+        VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR, nullptr, 2,
+        formats};
     cube_.InitializeData(app(), initialization_buffer);
-    texture_.InitializeData(app(),
-        initialization_buffer,
-        VK_IMAGE_USAGE_SAMPLED_BIT,
-        VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,
-        &image_format_pNext
-    );
+    texture_.InitializeData(
+        app(), initialization_buffer, VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT, &image_format_pNext);
 
     VkImageViewCreateInfo view_create_info = {
-            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  // sType
-            nullptr,                                   // pNext
-            0,                                         // flags
-            texture_.image(),                         // image
-            VK_IMAGE_VIEW_TYPE_2D,                     // viewType
-            VK_FORMAT_R8G8B8A8_SRGB,                   // format
-            {  VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
-            VK_COMPONENT_SWIZZLE_A},
-            {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  // sType
+        nullptr,                                   // pNext
+        0,                                         // flags
+        texture_.image(),                          // image
+        VK_IMAGE_VIEW_TYPE_2D,                     // viewType
+        VK_FORMAT_R8G8B8A8_SRGB,                   // format
+        {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
+         VK_COMPONENT_SWIZZLE_A},
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
 
     ::VkImageView raw_view;
-    LOG_ASSERT(
-        ==, data_->logger(), VK_SUCCESS,
-        app()->device()->vkCreateImageView(
-            app()->device(), &view_create_info, nullptr, &raw_view));
+    LOG_ASSERT(==, data_->logger(), VK_SUCCESS,
+               app()->device()->vkCreateImageView(
+                   app()->device(), &view_create_info, nullptr, &raw_view));
     mutable_image_view_ = containers::make_unique<vulkan::VkImageView>(
         data_->allocator(),
         vulkan::VkImageView(raw_view, nullptr, &app()->device()));
@@ -147,8 +141,7 @@ class ImageFormatListSample
         data_->allocator(),
         app()->CreatePipelineLayout(
             {{cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
-              cube_descriptor_set_layouts_[2],
-              cube_descriptor_set_layouts_[3],
+              cube_descriptor_set_layouts_[2], cube_descriptor_set_layouts_[3],
               cube_descriptor_set_layouts_[4]}}));
 
     VkAttachmentReference color_attachment = {
@@ -184,9 +177,8 @@ class ImageFormatListSample
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               image_format_list_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -229,14 +221,14 @@ class ImageFormatListSample
         containers::make_unique<vulkan::VkCommandBuffer>(
             data_->allocator(), app()->GetCommandBuffer());
 
-    frame_data
-        ->cube_descriptor_set_ = containers::make_unique<vulkan::DescriptorSet>(
-        data_->allocator(),
-        app()->AllocateDescriptorSet({
-            cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
-            cube_descriptor_set_layouts_[2], cube_descriptor_set_layouts_[3],
-            cube_descriptor_set_layouts_[4]
-        }));
+    frame_data->cube_descriptor_set_ =
+        containers::make_unique<vulkan::DescriptorSet>(
+            data_->allocator(),
+            app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
+                                          cube_descriptor_set_layouts_[1],
+                                          cube_descriptor_set_layouts_[2],
+                                          cube_descriptor_set_layouts_[3],
+                                          cube_descriptor_set_layouts_[4]}));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -255,16 +247,17 @@ class ImageFormatListSample
         VK_NULL_HANDLE,            // imageView
         VK_IMAGE_LAYOUT_UNDEFINED  //  imageLayout
     };
-    VkDescriptorImageInfo texture_info[2] = {{
-        VK_NULL_HANDLE,                            // sampler
-        texture_.view(),                           // imageView
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // imageLayout
-    },
-    {
-        VK_NULL_HANDLE,                            // sampler
-        *mutable_image_view_,                       // imageView
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // imageLayout
-    }};
+    VkDescriptorImageInfo texture_info[2] = {
+        {
+            VK_NULL_HANDLE,                            // sampler
+            texture_.view(),                           // imageView
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // imageLayout
+        },
+        {
+            VK_NULL_HANDLE,                            // sampler
+            *mutable_image_view_,                      // imageView
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // imageLayout
+        }};
 
     VkWriteDescriptorSet writes[3] = {
         {
@@ -299,7 +292,7 @@ class ImageFormatListSample
             0,                                       // dstArrayElement
             2,                                       // descriptorCount
             VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,        // descriptorType
-            texture_info,                           // pImageInfo
+            texture_info,                            // pImageInfo
             nullptr,                                 // pBufferInfo
             nullptr,                                 // pTexelBufferView
         },
