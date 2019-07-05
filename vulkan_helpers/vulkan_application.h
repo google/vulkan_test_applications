@@ -424,18 +424,18 @@ class VulkanApplication {
   //  One for host-visible buffers.
   //  One for device-only-accessible buffers.
   //  One for device-only images.
-  VulkanApplication(containers::Allocator* allocator, logging::Logger* log,
-                    const entry::EntryData* entry_data,
-                    const std::initializer_list<const char*> extensions = {},
-                    const VkPhysicalDeviceFeatures& features = {0},
-                    uint32_t host_buffer_size = 1024 * 128,
-                    uint32_t device_image_size = 1024 * 128,
-                    uint32_t device_buffer_size = 1024 * 128,
-                    uint32_t coherent_buffer_size = 1024 * 128,
-                    bool use_async_compute_queue = false,
-                    bool use_sparse_binding = false,
-                    bool use_device_groups = false,
-                    uint32_t device_peer_memory_size = 0);
+  VulkanApplication(
+      containers::Allocator* allocator, logging::Logger* log,
+      const entry::EntryData* entry_data,
+      const std::initializer_list<const char*> instance_extensions = {},
+      const std::initializer_list<const char*> device_extensions = {},
+      const VkPhysicalDeviceFeatures& features = {0},
+      uint32_t host_buffer_size = 1024 * 128,
+      uint32_t device_image_size = 1024 * 128,
+      uint32_t device_buffer_size = 1024 * 128,
+      uint32_t coherent_buffer_size = 1024 * 128,
+      bool use_async_compute_queue = false, bool use_sparse_binding = false,
+      bool use_device_groups = false, uint32_t device_peer_memory_size = 0);
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.
@@ -804,8 +804,7 @@ class VulkanApplication {
   VkSwapchainKHR swapchain_;
   VkCommandPool command_pool_;
   VkPipelineCache pipeline_cache_;
-  containers::vector<
-      containers::unique_ptr<VulkanArena>> host_accessible_heap_;
+  containers::vector<containers::unique_ptr<VulkanArena>> host_accessible_heap_;
   containers::vector<containers::unique_ptr<VulkanArena>> coherent_heap_;
   containers::unique_ptr<VulkanArena> device_only_image_heap_;
   containers::unique_ptr<VulkanArena> device_only_buffer_heap_;

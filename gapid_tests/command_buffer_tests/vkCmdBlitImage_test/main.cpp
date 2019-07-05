@@ -24,8 +24,8 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                        data, {}, {0}, 1024 * 100, 1024 * 100,
+  vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
+                                        {}, {}, {0}, 1024 * 100, 1024 * 100,
                                         1024 * 100);
 
   VkExtent3D src_image_extent{32, 32, 1};
@@ -52,8 +52,7 @@ int main_entry(const entry::EntryData* data) {
       application.CreateAndBindImage(&image_create_info);
   size_t image_data_size = vulkan::GetImageExtentSizeInBytes(
       src_image_extent, VK_FORMAT_R8G8B8A8_UNORM);
-  containers::vector<uint8_t> image_data(image_data_size, 0,
-                                         data->allocator());
+  containers::vector<uint8_t> image_data(image_data_size, 0, data->allocator());
   for (size_t i = 0; i < image_data_size; i++) {
     image_data[i] = i & 0xFF;
   }
@@ -99,7 +98,7 @@ int main_entry(const entry::EntryData* data) {
           {},                                     // wait_semaphores
           {image_fill_semaphore},                 // signal_semaphores
           static_cast<::VkFence>(VK_NULL_HANDLE)  // fence
-          );
+      );
   bool fill_succeed = std::get<0>(fill_result);
   // Before the all the image filling commands are executed, the command buffer
   // must not be freed.
@@ -205,7 +204,7 @@ int main_entry(const entry::EntryData* data) {
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // initial layout
         &dump_data,                            // data
         {}                                     // wait_semaphores
-        );
+    );
     LOG_ASSERT(==, data->logger(), image_data.size(), dump_data.size());
     LOG_ASSERT(
         ==, data->logger(), true,

@@ -54,16 +54,18 @@ VkInstance CreateDefaultInstance(containers::Allocator* allocator,
 // Creates an instance with either a real or virtual swapchain based on
 // whether or not data requests an external swapchain. Otherwise
 // identical to CreateDefaultInstance.
-VkInstance CreateInstanceForApplication(containers::Allocator* allocator,
-                                        LibraryWrapper* wrapper,
-                                        const entry::EntryData* data);
+VkInstance CreateInstanceForApplication(
+    containers::Allocator* allocator, LibraryWrapper* wrapper,
+    const entry::EntryData* data,
+    const std::initializer_list<const char*> extensions);
 
 // Creates an instance with either a real or virtual swapchain based on
 // whether or not data requests an external swapchain. Otherwise
 // identical to CreateDefaultInstance.
-VkInstance Create11InstanceForApplication(containers::Allocator* allocator,
-                                          LibraryWrapper* wrapper,
-                                          const entry::EntryData* data);
+VkInstance Create11InstanceForApplication(
+    containers::Allocator* allocator, LibraryWrapper* wrapper,
+    const entry::EntryData* data,
+    const std::initializer_list<const char*> extensions);
 
 containers::vector<VkPhysicalDevice> GetPhysicalDevices(
     containers::Allocator* allocator, VkInstance& instance);

@@ -57,7 +57,8 @@ DescriptorSet::DescriptorSet(
 VulkanApplication::VulkanApplication(
     containers::Allocator* allocator, logging::Logger* log,
     const entry::EntryData* entry_data,
-    const std::initializer_list<const char*> extensions,
+    const std::initializer_list<const char*> device_extensions,
+    const std::initializer_list<const char*> instance_extensions,
     const VkPhysicalDeviceFeatures& features, uint32_t host_buffer_size,
     uint32_t device_image_size, uint32_t device_buffer_size,
     uint32_t coherent_buffer_size, bool use_async_compute_queue,
@@ -72,16 +73,17 @@ VulkanApplication::VulkanApplication(
       render_queue_index_(0u),
       present_queue_index_(0u),
       library_wrapper_(allocator_, log_),
-      instance_(!use_device_group
-                    ? CreateInstanceForApplication(
-                          allocator_, &library_wrapper_, entry_data_)
-                    : Create11InstanceForApplication(
-                          allocator_, &library_wrapper_, entry_data_)),
+      instance_(!use_device_group ? CreateInstanceForApplication(
+                                        allocator_, &library_wrapper_,
+                                        entry_data_, instance_extensions)
+                                  : Create11InstanceForApplication(
+                                        allocator_, &library_wrapper_,
+                                        entry_data_, instance_extensions)),
       surface_(CreateDefaultSurface(&instance_, entry_data_)),
       device_(!use_device_group
-                  ? CreateDevice(extensions, features, use_async_compute_queue,
-                                 use_sparse_binding)
-                  : CreateDeviceGroup(extensions, features,
+                  ? CreateDevice(device_extensions, features,
+                                 use_async_compute_queue, use_sparse_binding)
+                  : CreateDeviceGroup(device_extensions, features,
                                       use_async_compute_queue,
                                       use_sparse_binding)),
       swapchain_(CreateDefaultSwapchain(&instance_, &device_, &surface_,
@@ -627,8 +629,8 @@ VulkanApplication::CreateAndBindHostBuffer(
       LOG_ASSERT(==, log_, first_device_index, device_indices[i]);
     }
   }
-  return CreateAndBindBuffer(host_accessible_heap_[first_device_index].get(), create_info,
-                             device_indices);
+  return CreateAndBindBuffer(host_accessible_heap_[first_device_index].get(),
+                             create_info, device_indices);
 }
 
 containers::unique_ptr<VulkanApplication::Buffer>
@@ -643,7 +645,8 @@ VulkanApplication::CreateAndBindCoherentBuffer(
       LOG_ASSERT(==, log_, first_device_index, device_indices[i]);
     }
   }
-  return CreateAndBindBuffer(coherent_heap_[first_device_index].get(), create_info, device_indices);
+  return CreateAndBindBuffer(coherent_heap_[first_device_index].get(),
+                             create_info, device_indices);
 }
 
 containers::unique_ptr<VulkanApplication::Buffer>

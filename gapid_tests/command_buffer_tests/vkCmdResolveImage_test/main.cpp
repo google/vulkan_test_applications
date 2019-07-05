@@ -23,8 +23,8 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                        data, {}, {0}, 1024 * 100, 1024 * 100,
+  vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
+                                        {}, {}, {0}, 1024 * 100, 1024 * 100,
                                         1024 * 100);
 
   const VkExtent3D sample_image_extent{32, 32, 1};
@@ -73,20 +73,21 @@ int main_entry(const entry::EntryData* data) {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr, 0, nullptr};
     cmd_buf->vkBeginCommandBuffer(cmd_buf, &cmd_buf_begin_info);
     vulkan::RecordImageLayoutTransition(*src_image, clear_color_range,
-        VK_IMAGE_LAYOUT_UNDEFINED, 0, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_ACCESS_TRANSFER_WRITE_BIT, &cmd_buf);
+                                        VK_IMAGE_LAYOUT_UNDEFINED, 0,
+                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                        VK_ACCESS_TRANSFER_WRITE_BIT, &cmd_buf);
     cmd_buf->vkCmdClearColorImage(cmd_buf, *src_image,
                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                   &clear_color, 1, &clear_color_range);
     // Switch src image layout from TRANSFER_DST to TRANSFER_SRC
-    vulkan::RecordImageLayoutTransition(*src_image, clear_color_range,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT,
-        &cmd_buf);
+    vulkan::RecordImageLayoutTransition(
+        *src_image, clear_color_range, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        VK_ACCESS_TRANSFER_READ_BIT, &cmd_buf);
     vulkan::RecordImageLayoutTransition(*dst_image, clear_color_range,
-        VK_IMAGE_LAYOUT_UNDEFINED, 0,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
-        &cmd_buf);
+                                        VK_IMAGE_LAYOUT_UNDEFINED, 0,
+                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                        VK_ACCESS_TRANSFER_WRITE_BIT, &cmd_buf);
     VkImageResolve image_resolve{
         // mip level 0, layerbase 0, layer count 1
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
@@ -124,7 +125,7 @@ int main_entry(const entry::EntryData* data) {
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // initial layout
         &dump_data,                            // data
         {}                                     // wait_semaphores
-        );
+    );
     containers::vector<uint8_t> expected_data(32 * 32 * 4, 0.5 * 255,
                                               data->allocator());
     LOG_ASSERT(==, data->logger(), expected_data.size(), dump_data.size());

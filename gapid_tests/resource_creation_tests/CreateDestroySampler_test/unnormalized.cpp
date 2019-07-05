@@ -30,7 +30,7 @@ int main_entry(const entry::EntryData* data) {
   {  // Sampler using unnormalized coordinates
     VkPhysicalDeviceFeatures requested_features = {0};
     requested_features.samplerAnisotropy = VK_TRUE;
-    vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+    vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {},
                                   {}, requested_features);
     if (app.device().is_valid()) {
       vulkan::VkDevice& device = app.device();

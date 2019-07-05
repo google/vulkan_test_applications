@@ -22,8 +22,8 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                        data, {}, {0}, 1024 * 100, 1024 * 100,
+  vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
+                                        {}, {}, {0}, 1024 * 100, 1024 * 100,
                                         1024 * 100);
   {
     // Update a buffer with size 65536 bytes and 0 offset.
@@ -55,7 +55,7 @@ int main_entry(const entry::EntryData* data) {
                                0,                  // dstOffset
                                update_size,        // dataSize
                                buffer_data.data()  // pData
-                               );
+    );
 
     VkBufferMemoryBarrier dst_to_src_barrier{
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
@@ -79,7 +79,7 @@ int main_entry(const entry::EntryData* data) {
         &dst_to_src_barrier,             // pBufferMemoryBarriers
         0,                               // imageMemoryBarrierCount
         nullptr                          // pImageMemoryBarriers
-        );
+    );
 
     cmd_buf->vkEndCommandBuffer(cmd_buf);
     VkCommandBuffer raw_cmd_buf = cmd_buf.get_command_buffer();

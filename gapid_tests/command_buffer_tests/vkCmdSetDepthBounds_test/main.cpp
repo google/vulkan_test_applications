@@ -90,7 +90,7 @@ vulkan::VulkanGraphicsPipeline CreatePipelineWithDepthBoundTestEnabled(
           nullptr                           // pPreserveAttachments
       }},                                   // SubpassDescriptions
       {}                                    // SubpassDependencies
-      );
+  );
 
   vulkan::VulkanGraphicsPipeline pipeline =
       app.CreateGraphicsPipeline(&pipeline_layout, &render_pass, 0);
@@ -121,7 +121,7 @@ int main_entry(const entry::EntryData* data) {
     VkPhysicalDeviceFeatures request_features = {0};
     request_features.depthBounds = VK_TRUE;
 
-    vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+    vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {},
                                   {}, request_features);
     if (app.device().is_valid()) {
       auto pipeline = CreatePipelineWithDepthBoundTestEnabled(data, &app);

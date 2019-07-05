@@ -58,8 +58,8 @@ int main_entry(const entry::EntryData* data) {
     // miplevel and 0 offsets in all dimensions to another 2D image created
     // with same create info.
     vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                          data, {}, {0}, 1024 * 100, 1024 * 100,
-                                          1024 * 100);
+                                          data, {}, {}, {0}, 1024 * 100,
+                                          1024 * 100, 1024 * 100);
     vulkan::VkDevice& device = application.device();
 
     vulkan::ImagePointer src_image =
@@ -97,7 +97,7 @@ int main_entry(const entry::EntryData* data) {
             {},                                     // wait_semaphores
             {image_fill_semaphore},                 // signal_semaphores
             static_cast<::VkFence>(VK_NULL_HANDLE)  // fence
-            );
+        );
     bool fill_succeeded = std::get<0>(fill_result);
     // Before the all the image filling commands are executed, the command
     // buffer must not be freed.
@@ -145,7 +145,7 @@ int main_entry(const entry::EntryData* data) {
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // dstImageLayout
         1,                                     // regionCount
         &region                                // pRegions
-        );
+    );
     copy_image_cmd_buf->vkEndCommandBuffer(copy_image_cmd_buf);
 
     // Submit the commands
@@ -175,7 +175,7 @@ int main_entry(const entry::EntryData* data) {
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // initial layout
         &dump_data,                            // data
         {}                                     // wait_semaphores
-        );
+    );
     LOG_ASSERT(==, data->logger(), sample_image_data.size(), dump_data.size());
     LOG_ASSERT(==, data->logger(), true,
                std::equal(sample_image_data.begin(), sample_image_data.end(),
@@ -189,7 +189,7 @@ int main_entry(const entry::EntryData* data) {
     VkPhysicalDeviceFeatures requested_features = {0};
     requested_features.textureCompressionBC = VK_TRUE;
     vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                          data, {}, requested_features,
+                                          data, {}, {}, requested_features,
                                           1024 * 100, 1024 * 100, 1024 * 100);
     vulkan::VkDevice& device = application.device();
     if (device.is_valid()) {
@@ -244,7 +244,7 @@ int main_entry(const entry::EntryData* data) {
               {},                                     // wait_semaphores
               {image_fill_semaphore},                 // signal_semaphores
               static_cast<::VkFence>(VK_NULL_HANDLE)  // fence
-              );
+          );
       bool fill_succeeded = std::get<0>(fill_result);
       // Before the all the image filling commands are executed, the command
       // buffer must not be freed.
@@ -293,7 +293,7 @@ int main_entry(const entry::EntryData* data) {
           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // dstImageLayout
           1,                                     // regionCount
           &region                                // pRegions
-          );
+      );
       copy_image_cmd_buf->vkEndCommandBuffer(copy_image_cmd_buf);
 
       // Submit the commands
@@ -323,7 +323,7 @@ int main_entry(const entry::EntryData* data) {
           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // initial layout
           &dump_data,                            // data
           {}                                     // wait_semaphores
-          );
+      );
       LOG_ASSERT(==, data->logger(), copy_image_data.size(), dump_data.size());
       LOG_ASSERT(==, data->logger(), true,
                  std::equal(copy_image_data.begin(), copy_image_data.end(),

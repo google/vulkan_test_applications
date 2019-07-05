@@ -32,7 +32,7 @@ int main_entry(const entry::EntryData* data) {
     VkPhysicalDeviceFeatures request_features = {0};
     request_features.pipelineStatisticsQuery = VK_TRUE;
     vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                          data, {}, request_features);
+                                          data, {}, {}, request_features);
     if (application.device().is_valid()) {
       vulkan::VkDevice& device = application.device();
       VkQueryPoolCreateInfo query_pool_create_info = {
