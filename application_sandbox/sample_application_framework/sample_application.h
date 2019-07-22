@@ -136,7 +136,7 @@ class Sample {
         data_(entry_data),
         allocator_(allocator),
         application_(allocator, entry_data->logger(), entry_data,
-                     device_extensions, instance_extensions,
+                     instance_extensions, device_extensions,
                      physical_device_features,
                      host_buffer_size_in_MB * 1024 * 1024,
                      image_memory_size_in_MB * 1024 * 1024,

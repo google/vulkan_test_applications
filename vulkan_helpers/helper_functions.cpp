@@ -74,7 +74,7 @@ VkInstance CreateDefaultInstance(containers::Allocator* allocator,
 #endif
   };
 
-  wrapper->GetLogger()->LogInfo("Enabled Extensions: ");
+  wrapper->GetLogger()->LogInfo("Enabled Device Extensions: ");
   for (auto& extension : extensions) {
     wrapper->GetLogger()->LogInfo("    ", extension);
   }
@@ -134,7 +134,7 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
   extensions.insert(extensions.end(), instance_extensions.begin(),
                     instance_extensions.end());
 
-  wrapper->GetLogger()->LogInfo("Enabled Extensions: ");
+  wrapper->GetLogger()->LogInfo("Enabled Instance Extensions: ");
   for (auto& extension : extensions) {
     wrapper->GetLogger()->LogInfo("    ", extension);
   }

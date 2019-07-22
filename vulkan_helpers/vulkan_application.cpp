@@ -57,8 +57,8 @@ DescriptorSet::DescriptorSet(
 VulkanApplication::VulkanApplication(
     containers::Allocator* allocator, logging::Logger* log,
     const entry::EntryData* entry_data,
-    const std::initializer_list<const char*> device_extensions,
     const std::initializer_list<const char*> instance_extensions,
+    const std::initializer_list<const char*> device_extensions,
     const VkPhysicalDeviceFeatures& features, uint32_t host_buffer_size,
     uint32_t device_image_size, uint32_t device_buffer_size,
     uint32_t coherent_buffer_size, bool use_async_compute_queue,
