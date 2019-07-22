@@ -60,7 +60,10 @@ class InstanceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceCapabilitiesKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR),
-        CONSTRUCT_LAZY_FUNCTION(vkEnumeratePhysicalDeviceGroups)
+        CONSTRUCT_LAZY_FUNCTION(vkEnumeratePhysicalDeviceGroups),
+        CONSTRUCT_LAZY_FUNCTION(vkCreateDebugUtilsMessengerEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkDestroyDebugUtilsMessengerEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkSubmitDebugUtilsMessageEXT)
 #if defined __ANDROID__
         ,
         CONSTRUCT_LAZY_FUNCTION(vkCreateAndroidSurfaceKHR)
@@ -110,6 +113,9 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR);
   LAZY_FUNCTION(vkEnumeratePhysicalDeviceGroups);
+  LAZY_FUNCTION(vkCreateDebugUtilsMessengerEXT);
+  LAZY_FUNCTION(vkDestroyDebugUtilsMessengerEXT);
+  LAZY_FUNCTION(vkSubmitDebugUtilsMessageEXT);
 #if defined __ANDROID__
   LAZY_FUNCTION(vkCreateAndroidSurfaceKHR);
 #elif defined __linux__
@@ -185,7 +191,10 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdResetEvent),
         CONSTRUCT_LAZY_FUNCTION(vkCmdWaitEvents),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetDeviceMask),
-        CONSTRUCT_LAZY_FUNCTION(vkCmdDrawIndexedIndirectCountKHR)
+        CONSTRUCT_LAZY_FUNCTION(vkCmdDrawIndexedIndirectCountKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdEndDebugUtilsLabelEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdInsertDebugUtilsLabelEXT)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -241,6 +250,9 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdWaitEvents);
   LAZY_FUNCTION(vkCmdSetDeviceMask);
   LAZY_FUNCTION(vkCmdDrawIndexedIndirectCountKHR);
+  LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT);
+  LAZY_FUNCTION(vkCmdEndDebugUtilsLabelEXT);
+  LAZY_FUNCTION(vkCmdInsertDebugUtilsLabelEXT);
 #undef LAZY_FUNCTION
 };
 
@@ -253,7 +265,10 @@ struct QueueFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkQueueSubmit),
         CONSTRUCT_LAZY_FUNCTION(vkQueueWaitIdle),
         CONSTRUCT_LAZY_FUNCTION(vkQueuePresentKHR),
-        CONSTRUCT_LAZY_FUNCTION(vkQueueBindSparse)
+        CONSTRUCT_LAZY_FUNCTION(vkQueueBindSparse),
+        CONSTRUCT_LAZY_FUNCTION(vkQueueBeginDebugUtilsLabelEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkQueueEndDebugUtilsLabelEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkQueueInsertDebugUtilsLabelEXT)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -264,6 +279,9 @@ struct QueueFunctions {
   LAZY_FUNCTION(vkQueueWaitIdle);
   LAZY_FUNCTION(vkQueuePresentKHR);
   LAZY_FUNCTION(vkQueueBindSparse);
+  LAZY_FUNCTION(vkQueueBeginDebugUtilsLabelEXT);
+  LAZY_FUNCTION(vkQueueEndDebugUtilsLabelEXT);
+  LAZY_FUNCTION(vkQueueInsertDebugUtilsLabelEXT);
 #undef LAZY_FUNCTION
 };
 
@@ -363,7 +381,9 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkSetEvent),
         CONSTRUCT_LAZY_FUNCTION(vkResetEvent),
         CONSTRUCT_LAZY_FUNCTION(vkGetRenderAreaGranularity),
-        CONSTRUCT_LAZY_FUNCTION(vkGetDeviceGroupPeerMemoryFeatures)
+        CONSTRUCT_LAZY_FUNCTION(vkGetDeviceGroupPeerMemoryFeatures),
+        CONSTRUCT_LAZY_FUNCTION(vkSetDebugUtilsObjectNameEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkSetDebugUtilsObjectTagEXT)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -468,6 +488,8 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkResetEvent);
   LAZY_FUNCTION(vkGetRenderAreaGranularity);
   LAZY_FUNCTION(vkGetDeviceGroupPeerMemoryFeatures);
+  LAZY_FUNCTION(vkSetDebugUtilsObjectNameEXT);
+  LAZY_FUNCTION(vkSetDebugUtilsObjectTagEXT);
 #undef LAZY_FUNCTION
 };
 
