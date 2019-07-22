@@ -61,7 +61,7 @@ class ImageFormatListSample
       : data_(data),
         Sample<ImageFormatListFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
-            sample_application::SampleOptions(), {},
+            sample_application::SampleOptions(), {0}, {},
             {VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data),
         texture_(data->allocator(), data->logger(), texture_data) {}
