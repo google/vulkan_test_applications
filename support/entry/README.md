@@ -31,7 +31,7 @@ Each of the command-line arguments has a CMake build option that will
 affect the default value.
 - `OUTPUT_FRAME` Sets the default value of `-output-frame`. `-1` normally.
 - `OUTPUT_FILE` Sets the default value of `-output-file`. `output.ppm` normally.
-- `DEFUALT_WINDOW_WIDTH` Sets the default value of `-w=`. `100` normally.
+- `DEFAULT_WINDOW_WIDTH` Sets the default value of `-w=`. `100` normally.
 - `DEFAULT_WINDOW_HEIGHT` Sets the default value of `-h=`. `100` normally.
 - `FIXED_TIMESTEP` Turns on `-fixed` by default.
 - `PREFER_SEPARATE_PRESENT` Turns on `-separate-present` by default.

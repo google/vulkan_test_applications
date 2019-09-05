@@ -39,7 +39,7 @@ This will ensure that you have all of the dependencies checked out.
 
 To build for Windows.
 ```
-cmake /path/to/source
+cmake -G "Visual Studio 14 2015 Win64" /path/to/source
 open VulkanTestApplications.sln
 ```
 or if you want to use Ninja
