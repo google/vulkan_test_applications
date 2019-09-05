@@ -415,6 +415,9 @@ class Sample {
     return base->depth_stencil_->get_raw_image();
   }
 
+  FrameData* GetFrameData(uint32_t frame_idx) {
+      return &frame_data_[frame_idx].child_data_;
+  }
  private:
   // This will be called during Initialize(). The application is expected
   // to initialize any frame-specific data that it needs.
