@@ -43,7 +43,6 @@ struct CubeFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
   containers::unique_ptr<vulkan::DescriptorSet> cube_descriptor_set_;
-  containers::unique_ptr<vulkan::VkFence> cube_test_fence_;
 };
 
 // This creates an application with 16MB of image memory, and defaults
@@ -55,7 +54,8 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         Sample<CubeFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions().EnableMultisampling()),
-        cube_(data->allocator(), data->logger(), cube_data) {}
+        cube_(data->allocator(), data->logger(), cube_data),
+        cube_test_fences_(data->allocator()) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
@@ -144,6 +144,11 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
 
     model_data_->data().transform = Mat44::FromTranslationVector(
         mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
+
+    cube_test_fences_.reserve(num_swapchain_images);
+    for (size_t i = 0; i < num_swapchain_images; i++) {
+      cube_test_fences_.emplace_back(vulkan::CreateFence(&app()->device()));
+    }
   }
 
   virtual void InitializeFrameData(
@@ -158,8 +163,6 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             data_->allocator(),
             app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
                                           cube_descriptor_set_layouts_[1]}));
-    frame_data->cube_test_fence_ = containers::make_unique<vulkan::VkFence>(
-        data_->allocator(), vulkan::CreateFence(&app()->device()));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -246,8 +249,9 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     (*frame_data->command_buffer_)
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
 
-    app()->render_queue()->vkQueueSubmit(app()->render_queue(), 0, nullptr,
-                                         *frame_data->cube_test_fence_);
+    app()->render_queue()->vkQueueSubmit(
+        app()->render_queue(), 0, nullptr,
+        cube_test_fences_[frame_index].get_raw_object());
   }
 
   virtual void Update(float time_since_last_render) override {
@@ -281,7 +285,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
                                          static_cast<VkFence>(VK_NULL_HANDLE));
 
     // Wait fence for the current frame
-    ::VkFence test_fence = *frame_data->cube_test_fence_;
+    ::VkFence test_fence = cube_test_fences_[frame_index].get_raw_object();
     LOG_ASSERT(==, app()->GetLogger(), VK_SUCCESS,
                app()->device()->vkWaitForFences(app()->device(), 1, &test_fence,
                                                 VK_FALSE, 0xFFFFFFFFFFFFFFFF));
@@ -292,7 +296,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
       // Signal fence for the previous frame
       auto img_num = app()->swapchain_images().size();
       auto prev_idx = (frame_index + img_num - 1) % img_num;
-      ::VkFence prev_fence = *GetFrameData(prev_idx)->cube_test_fence_;
+      ::VkFence prev_fence = cube_test_fences_[prev_idx].get_raw_object();
       app()->render_queue()->vkQueueSubmit(app()->render_queue(), 0, nullptr,
                                            prev_fence);
     }
@@ -317,6 +321,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
 
   containers::unique_ptr<vulkan::BufferFrameData<CameraData>> camera_data_;
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
+  containers::vector<vulkan::VkFence> cube_test_fences_;
   uint64_t frame_count = 0;
 };
 
