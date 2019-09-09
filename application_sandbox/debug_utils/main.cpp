@@ -45,12 +45,13 @@ struct CubeFrameData {
   containers::unique_ptr<vulkan::DescriptorSet> cube_descriptor_set_;
 };
 
-VkBool32 DebugUtilsMessengerCallback(
+VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsMessengerCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageTypes,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData) {
   fprintf(stderr, "CALLBACK %s\n", pCallbackData->pMessage);
+  return VK_FALSE;
 }
 
 // This creates an application with 16MB of image memory, and defaults
