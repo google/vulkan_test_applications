@@ -17,13 +17,13 @@ FROM ubuntu
 COPY . /root/vulkan_test_applications
 
 RUN apt-get update -qq && \
-apt-get install -qq -y git gcc g++ ninja-build python python-pip cmake libxcb1-dev openjdk-8-jdk wget unzip && \
-pip install pillow
+apt-get install -qq -y git gcc g++ ninja-build python3 python3-pip cmake libxcb1-dev openjdk-8-jdk wget unzip && \
+pip3 install pillow
 
 WORKDIR /root
 RUN git clone https://github.com/google/shaderc.git && \
 git clone https://github.com/google/googletest.git /root/shaderc/third_party/googletest && \
-git clone https://github.com/google/glslang.git /root/shaderc/third_party/glslang && \
+git clone https://github.com/KhronosGroup/glslang.git /root/shaderc/third_party/glslang && \
 git clone https://github.com/KhronosGroup/SPIRV-Tools.git /root/shaderc/third_party/spirv-tools && \
 git clone https://github.com/KhronosGroup/SPIRV-Headers.git /root/shaderc/third_party/spirv-tools/external/spirv-headers
 
