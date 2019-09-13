@@ -89,7 +89,7 @@ VulkanApplication::VulkanApplication(
       swapchain_(CreateDefaultSwapchain(&instance_, &device_, &surface_,
                                         allocator_, render_queue_index_,
                                         present_queue_index_, entry_data_)),
-      command_pool_(CreateDefaultCommandPool(allocator_, device_)),
+      command_pools_(allocator_),
       pipeline_cache_(CreateDefaultPipelineCache(&device_)),
       host_accessible_heap_(allocator_),
       coherent_heap_(allocator_),
@@ -751,7 +751,7 @@ VulkanApplication::FillImageLayersData(
   auto failure_return = std::make_tuple(
       false,
       VkCommandBuffer(static_cast<::VkCommandBuffer>(VK_NULL_HANDLE),
-                      &command_pool_, &device_),
+                      &GetCommandPool(), &device_),
       BufferPointer(nullptr));
   if (!img) {
     log_->LogError("FillImageLayersData(): The given *img is nullptr");

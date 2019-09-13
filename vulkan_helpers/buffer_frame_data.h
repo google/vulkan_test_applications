@@ -44,11 +44,12 @@ class BufferFrameData {
   // along with |usage| to guarantee data can be copied to the underlying
   // VkBuffer(s).
   BufferFrameData(VulkanApplication* application, size_t buffered_data_count,
-                  VkBufferUsageFlags usage, uint32_t device_mask = 0)
+                  VkBufferUsageFlags usage, uint32_t device_mask = 0, uint32_t queue_family_index = 0)
       : application_(application),
         uninitialized_(application->GetAllocator()),
         update_commands_(application->GetAllocator()),
-        device_mask_(device_mask) {
+        device_mask_(device_mask),
+        queue_family_index_(queue_family_index) {
     uint32_t dm = device_mask;
     uninitialized_.insert(uninitialized_.begin(), buffered_data_count, true);
     const size_t aligned_data_size =
@@ -79,8 +80,8 @@ class BufferFrameData {
         aligned_data_size * buffered_data_count,   // size
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage,  // usage
         VK_SHARING_MODE_EXCLUSIVE,
-        0,
-        nullptr};
+        1,
+        &queue_family_index_};
     buffer_ = application_->CreateAndBindDeviceBuffer(
         &create_info, set == 0 ? nullptr : &indices[0]);
 
@@ -96,7 +97,7 @@ class BufferFrameData {
     };
 
     for (size_t i = 0; i < buffered_data_count; ++i) {
-      update_commands_.push_back(application_->GetCommandBuffer());
+      update_commands_.push_back(application_->GetCommandBuffer(queue_family_index_));
       update_commands_.back()->vkBeginCommandBuffer(update_commands_.back(),
                                                     &begin_info);
       if (device_mask_ != 0) {
@@ -204,6 +205,7 @@ class BufferFrameData {
   // device-buffer from the host buffer.
   containers::vector<VkCommandBuffer> update_commands_;
   uint32_t device_mask_;
+  uint32_t queue_family_index_;
 };
 }  // namespace vulkan
 
