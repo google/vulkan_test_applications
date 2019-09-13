@@ -18,6 +18,7 @@
 
 #include "support/containers/allocator.h"
 #include "support/containers/ordered_multimap.h"
+#include "support/containers/unordered_map.h"
 #include "support/containers/vector.h"
 #include "support/entry/entry.h"
 #include "support/log/log.h"
@@ -550,15 +551,15 @@ class VulkanApplication {
 
   // Creates and returns a new primary level CommandBuffer using the
   // Application's default VkCommandPool.
-  VkCommandBuffer GetCommandBuffer() {
-    return CreateCommandBuffer(&command_pool_, VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+  VkCommandBuffer GetCommandBuffer(uint32_t queueFamilyIndex = 0) {
+    return CreateCommandBuffer(&GetCommandPool(queueFamilyIndex), VK_COMMAND_BUFFER_LEVEL_PRIMARY,
                                &device_);
   }
 
   // Creates and returns a new CommandBuffer with given command buffer level
   // using the Application's default VkCommandPool
-  VkCommandBuffer GetCommandBuffer(VkCommandBufferLevel level) {
-    return CreateCommandBuffer(&command_pool_, level, &device_);
+  VkCommandBuffer GetCommandBuffer(VkCommandBufferLevel level, uint32_t queueFamilyIndex = 0) {
+    return CreateCommandBuffer(&GetCommandPool(queueFamilyIndex), level, &device_);
   }
 
   // Begins the given command buffer with the given command buffer usage flags
@@ -781,6 +782,13 @@ class VulkanApplication {
       const std::initializer_list<const char*> extensions,
       const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue,
       bool use_sparse_binding);
+  
+  VkCommandPool& GetCommandPool(uint32_t queueFamilyIndex = 0) {
+    if (command_pools_.find(queueFamilyIndex) == command_pools_.end()) {
+      command_pools_.emplace(queueFamilyIndex, CreateDefaultCommandPool(allocator_, device_, queueFamilyIndex));
+    }    
+    return command_pools_.at(queueFamilyIndex);
+  }
 
   containers::Allocator* allocator_;
   logging::Logger* log_;
@@ -802,7 +810,7 @@ class VulkanApplication {
   VkSurfaceKHR surface_;
   VkDevice device_;
   VkSwapchainKHR swapchain_;
-  VkCommandPool command_pool_;
+  containers::unordered_map<uint32_t, VkCommandPool> command_pools_;
   VkPipelineCache pipeline_cache_;
   containers::vector<containers::unique_ptr<VulkanArena>> host_accessible_heap_;
   containers::vector<containers::unique_ptr<VulkanArena>> coherent_heap_;

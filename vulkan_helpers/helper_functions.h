@@ -102,7 +102,7 @@ VkDevice CreateDefaultDevice(containers::Allocator* allocator,
 // Creates a command pool with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
 // set.
 VkCommandPool CreateDefaultCommandPool(containers::Allocator* allocator,
-                                       VkDevice& device);
+                                       VkDevice& device, uint32_t queueFamilyIndex = 0);
 
 // Creates a surface to render into the the default window
 // provided in entry_data.

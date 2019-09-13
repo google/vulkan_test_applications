@@ -106,7 +106,7 @@ class ASyncThreadRunner {
 
     update_time_data_ = containers::make_unique<vulkan::BufferFrameData<Mat44>>(
         allocator_, app_, num_async_compute_buffers,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 0, app_->async_compute_queue()->index());
 
     // Both compute passes use the same set of descriptors for simplicity.
     // Technically we don't have to pass the draw_data SSBO to the velocity
@@ -164,7 +164,7 @@ class ASyncThreadRunner {
             "main"));
 
     auto initial_data_buffer = containers::make_unique<vulkan::VkCommandBuffer>(
-        allocator_, app_->GetCommandBuffer());
+        allocator_, app_->GetCommandBuffer(app_->async_compute_queue()->index()));
 
     (*initial_data_buffer)
         ->vkBeginCommandBuffer(*initial_data_buffer,
@@ -235,7 +235,7 @@ class ASyncThreadRunner {
       data_.push_back(
           PrivateAsyncData{vulkan::CreateFence(&app_->device()),
                            app_->CreateAndBindDeviceBuffer(&create_info),
-                           app_->GetCommandBuffer(), app_->GetCommandBuffer(),
+                           app_->GetCommandBuffer(app_->async_compute_queue()->index()), app_->GetCommandBuffer(),
                            containers::make_unique<vulkan::DescriptorSet>(
                                allocator_,
                                app_->AllocateDescriptorSet(
