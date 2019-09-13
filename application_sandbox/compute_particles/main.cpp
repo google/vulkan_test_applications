@@ -126,9 +126,9 @@ class ComputeTask {
         &waitStageMask,                 // pWaitDstStageMask,
         1,                              // commandBufferCount
         &(dat.command_buffer_.get_command_buffer()),
-        1,  // signalSemaphoreCount
+        1,                              // signalSemaphoreCount
         &GetSemaphoreForIndex(frame_index)
-             ->get_raw_object()  // pSignalSemaphores
+             ->get_raw_object()         // pSignalSemaphores
     };
 
     (*app_->async_compute_queue())
@@ -153,10 +153,10 @@ class ComputeTask {
         0,                                          // createFlags
         sizeof(simulation_data) * TOTAL_PARTICLES,  // size
         VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,  // usageFlags
-        VK_SHARING_MODE_EXCLUSIVE,               // sharingMode
-        0,                                       // queueFamilyIndexCount
-        nullptr                                  // pQueueFamilyIndices
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,    // usageFlags
+        VK_SHARING_MODE_EXCLUSIVE,                 // sharingMode
+        0,                                         // queueFamilyIndexCount
+        nullptr                                    // pQueueFamilyIndices
     };
 
     simulation_ssbo_ = app_->CreateAndBindDeviceBuffer(&create_info);
@@ -200,8 +200,8 @@ class ComputeTask {
         nullptr,                        // pWaitDstStageMask,
         1,                              // commandBufferCount
         &(initial_data_buffer->get_command_buffer()),
-        0,       // signalSemaphoreCount
-        nullptr  // pSignalSemaphores
+        0,                             // signalSemaphoreCount
+        nullptr                        // pSignalSemaphores
     };
 
     // Actually finish filling the initial data, and transfer to the
@@ -216,13 +216,13 @@ class ComputeTask {
   }
 
   void InitComputeTaskData() {
-    // For each async compute buffer, we have to create the output SSBO,
+    // For each async compute buffer, we have to create the semaphore,
     // the command_buffers, descriptor sets, and some synchronization data.
     for (size_t i = 0; i < app_->swapchain_images().size(); ++i) {
       compute_data_.push_back(ComputeTaskData{
           containers::make_unique<vulkan::VkSemaphore>(
               allocator_, vulkan::CreateSemaphore(&app_->device())),
-          GetComputeCommandBuffer(), app_->GetCommandBuffer(),
+          GetComputeCommandBuffer(),
           containers::make_unique<vulkan::DescriptorSet>(
               allocator_, app_->AllocateDescriptorSet(
                               {compute_descriptor_set_layouts_[0],
@@ -266,8 +266,8 @@ class ComputeTask {
       VkBufferMemoryBarrier barrier = {
           VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
           nullptr,                                  // pNext
-          VK_ACCESS_SHADER_READ_BIT,                // srcAccessMask
-          VK_ACCESS_SHADER_WRITE_BIT,               // dstAccessMask
+          0,                                        // srcAccessMask
+          0,                                        // dstAccessMask
           app_->render_queue().index(),             // srcQueueFamilyIndex
           app_->async_compute_queue()->index(),     // dstQueueFamilyIndex
           *render_ssbo_,                            // buffer
@@ -281,7 +281,7 @@ class ComputeTask {
 
       // Transfer the ownership from the render_queue to this queue.
       command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+          command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
 
@@ -316,44 +316,22 @@ class ComputeTask {
       command_buffer->vkCmdBindPipeline(command_buffer,
                                         VK_PIPELINE_BIND_POINT_COMPUTE,
                                         *position_update_pipeline_);
-      // Update the positons, and fill the output buffer.
+      // Update the positions, and fill the output buffer.
       command_buffer->vkCmdDispatch(
           command_buffer, TOTAL_PARTICLES / COMPUTE_SHADER_LOCAL_SIZE, 1, 1);
 
       // Transition the old buffer back.
       barrier.srcQueueFamilyIndex = app_->async_compute_queue()->index();
       barrier.dstQueueFamilyIndex = app_->render_queue().index();
-      barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-      barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+      barrier.srcAccessMask = 0;
+      barrier.dstAccessMask = 0;
 
       command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+          command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
 
       command_buffer->vkEndCommandBuffer(command_buffer);
-
-      // Wake command buffer
-      auto& wake_command_buffer = dat.wake_command_buffer_;
-      wake_command_buffer->vkBeginCommandBuffer(
-          wake_command_buffer, &sample_application::kBeginCommandBuffer);
-      VkBufferMemoryBarrier wake_barrier = {
-          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
-          nullptr,                                  // pNext
-          VK_ACCESS_SHADER_READ_BIT,                // srcAccessMask
-          VK_ACCESS_SHADER_WRITE_BIT,               //  dstAccessMask
-          app_->render_queue().index(),             // srcQueueFamilyIndex
-          app_->async_compute_queue()->index(),     // dstQueueFamilyIndex
-          *render_ssbo_,                            // buffer
-          0,                                        //  offset
-          render_ssbo_->size(),                     // size
-      };
-      wake_command_buffer->vkCmdPipelineBarrier(
-          wake_command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &wake_barrier,
-          0, nullptr);
-
-      wake_command_buffer->vkEndCommandBuffer(wake_command_buffer);
     }
   }
 
@@ -442,8 +420,6 @@ class ComputeTask {
     containers::unique_ptr<vulkan::VkSemaphore> semaphore_;
     // The command buffer for simulating.
     vulkan::VkCommandBuffer command_buffer_;
-    // The command buffer for transferring this back to the simulation thread.
-    vulkan::VkCommandBuffer wake_command_buffer_;
     // The descriptor set needed for simulating.
     containers::unique_ptr<vulkan::DescriptorSet> compute_descriptor_set_;
   };
@@ -463,8 +439,6 @@ class ComputeTask {
   containers::unique_ptr<vulkan::PipelineLayout> compute_pipeline_layout_;
   // These descriptor sets are shared by both pipelines as well.
   VkDescriptorSetLayoutBinding compute_descriptor_set_layouts_[3];
-  //   // The descriptor set needed for simulating.
-  //   containers::unique_ptr<vulkan::DescriptorSet> compute_descriptor_set_;
   // This pipeline is used to update the velocity component of the
   // simulation_ssbo_.
   containers::unique_ptr<vulkan::VulkanComputePipeline> velocity_pipeline_;
@@ -495,14 +469,16 @@ struct ComputeParticlesFrameData {
   containers::unique_ptr<vulkan::VkSemaphore> render_semaphore_;
 };
 
-class ComputeParticlesSample : public sample_application::Sample<ComputeParticlesFrameData> {
+class ComputeParticlesSample
+    : public sample_application::Sample<ComputeParticlesFrameData> {
  public:
   ComputeParticlesSample(const entry::EntryData* data)
       : data_(data),
-        Sample<ComputeParticlesFrameData>(data->allocator(), data, 1, 512, 32, 1,
-                               sample_application::SampleOptions()
-                                   .EnableAsyncCompute()
-                                   .EnableMultisampling()),
+        Sample<ComputeParticlesFrameData>(data->allocator(), data, 1, 512, 32,
+                                          1,
+                                          sample_application::SampleOptions()
+                                              .EnableAsyncCompute()
+                                              .EnableMultisampling()),
         quad_model_(data->allocator(), data->logger(), quad_data),
         particle_texture_(data->allocator(), data->logger(), texture_data),
         compute_task_(data->allocator(), app()) {
@@ -655,7 +631,7 @@ class ComputeParticlesSample : public sample_application::Sample<ComputeParticle
         nullptr,                        // pWaitDstStageMask,
         0,                              // commandBufferCount
         nullptr,
-        1,  // signalSemaphoreCount
+        1,                              // signalSemaphoreCount
         &frame_data->render_semaphore_->get_raw_object()  // pSignalSemaphores
     };
 
@@ -803,8 +779,8 @@ class ComputeParticlesSample : public sample_application::Sample<ComputeParticle
     VkBufferMemoryBarrier barrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
         nullptr,                                  // pNext
-        VK_ACCESS_SHADER_WRITE_BIT,               // srcAccessMask
-        VK_ACCESS_SHADER_READ_BIT,                //  dstAccessMask
+        0,                                        // srcAccessMask
+        0,                                        //  dstAccessMask
         app()->async_compute_queue()->index(),    // srcQueueFamilyIndex
         app()->render_queue().index(),            // dstQueueFamilyIndex
         *buffer,                                  // bufferdraw_data
@@ -813,7 +789,7 @@ class ComputeParticlesSample : public sample_application::Sample<ComputeParticle
     };
     cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
                                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0,
+                                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0,
                                     nullptr, 1, &barrier, 0, nullptr);
     // }
 
@@ -843,6 +819,22 @@ class ComputeParticlesSample : public sample_application::Sample<ComputeParticle
     // each instance to the correct location.
     quad_model_.DrawInstanced(&cmdBuffer, TOTAL_PARTICLES);
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
+
+    VkBufferMemoryBarrier transfer_barrier = {
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
+        nullptr,                                  // pNext
+        0,                                        // srcAccessMask
+        0,                                        //  dstAccessMask
+        app()->render_queue().index(),            // srcQueueFamilyIndex
+        app()->async_compute_queue()->index(),    // dstQueueFamilyIndex
+        *buffer,                                  // buffer
+        0,                                        //  offset
+        buffer->size(),                           // size
+    };
+    cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
+                                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0,
+                                    nullptr, 1, &transfer_barrier, 0, nullptr);
 
     (*data->draw_command_buffer_)
         ->vkEndCommandBuffer(*data->draw_command_buffer_);
@@ -881,7 +873,7 @@ class ComputeParticlesSample : public sample_application::Sample<ComputeParticle
   containers::unique_ptr<vulkan::BufferFrameData<Vector4>> aspect_buffer_;
   // A model of a quad with corners. (-1, -1), (1, 1), (-1, 1), (1, -1)
   vulkan::VulkanModel quad_model_;
-  // A simple circlular texture with falloff.
+  // A simple circular texture with falloff.
   vulkan::VulkanTexture particle_texture_;
   // The sampler for this texture.
   containers::unique_ptr<vulkan::VkSampler> sampler_;
