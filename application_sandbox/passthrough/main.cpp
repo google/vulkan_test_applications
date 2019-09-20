@@ -99,8 +99,6 @@ VkBufferCreateInfo GetBufferCreateInfo(VkDeviceSize size,
 struct PassthroughFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
-  containers::unique_ptr<vulkan::VulkanApplication::Buffer> vertices_buf_;
-  containers::unique_ptr<vulkan::VulkanApplication::Buffer> uv_buf_;
 };
 
 // This creates an application with 16MB of image memory, and defaults
@@ -117,6 +115,30 @@ class PassthroughSample
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
+
+    // Create vertex buffers and index buffer
+    const auto vertices_buf_create_info = GetBufferCreateInfo(
+        sizeof(kVertices),
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    const auto uv_buf_create_info = GetBufferCreateInfo(
+        sizeof(kUV),
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    vertices_buf_ =
+        app()->CreateAndBindHostBuffer(&vertices_buf_create_info);
+    uv_buf_ = app()->CreateAndBindHostBuffer(&uv_buf_create_info);
+
+    app()->FillHostVisibleBuffer(&*vertices_buf_,
+                                 reinterpret_cast<const char*>(kVertices),
+                                 sizeof(kVertices), 0, initialization_buffer,
+                                 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                                 VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+    app()->FillHostVisibleBuffer(&*uv_buf_, reinterpret_cast<const char*>(kUV),
+                                 sizeof(kUV), 0, initialization_buffer,
+                                 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                                 VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+
+
+
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
         data_->allocator(), app()->CreatePipelineLayout({{}}));
 
@@ -232,28 +254,8 @@ class PassthroughSample
         &clear                            // clears
     };
 
-    // Create vertex buffers and index buffer
-    const auto vertices_buf_create_info = GetBufferCreateInfo(
-        sizeof(kVertices),
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    const auto uv_buf_create_info = GetBufferCreateInfo(
-        sizeof(kUV),
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    frame_data->vertices_buf_ =
-        app()->CreateAndBindHostBuffer(&vertices_buf_create_info);
-    frame_data->uv_buf_ = app()->CreateAndBindHostBuffer(&uv_buf_create_info);
-    const ::VkBuffer vertex_buffers[2] = {*frame_data->vertices_buf_, *frame_data->uv_buf_};
+    const ::VkBuffer vertex_buffers[2] = {*vertices_buf_, *uv_buf_};
     const ::VkDeviceSize vertex_buffer_offsets[2] = {0, 0};
-
-    app()->FillHostVisibleBuffer(&*frame_data->vertices_buf_,
-                                 reinterpret_cast<const char*>(kVertices),
-                                 sizeof(kVertices), 0, initialization_buffer,
-                                 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-                                 VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
-    app()->FillHostVisibleBuffer(&*frame_data->uv_buf_, reinterpret_cast<const char*>(kUV),
-                                 sizeof(kUV), 0, initialization_buffer,
-                                 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-                                 VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
 
     cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);
@@ -290,6 +292,8 @@ class PassthroughSample
 
  private:
   const entry::EntryData* data_;
+  containers::unique_ptr<vulkan::VulkanApplication::Buffer> vertices_buf_;
+  containers::unique_ptr<vulkan::VulkanApplication::Buffer> uv_buf_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> passthrough_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
