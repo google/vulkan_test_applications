@@ -75,7 +75,7 @@ To build only for 32-bit ARM platform.
 cmake -GNinja {root} -DBUILD_APKS=ON -DANDROID_SDK=path/to/android/sdk -DANDROID_ABIS=armeabi-v7a -DCMAKE_GLSL_COMPILER=path/to/glslc
 ```
 
-`glslc` is required to compile GLSL shaders to SPIR-V. If it is not
+[glslc](https://github.com/google/shaderc) is required to compile GLSL shaders to SPIR-V. If it is not
 on your path, its location should be specified through `-DCMAKE_GLSL_COMPILER`
 option.
 
