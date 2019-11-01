@@ -1437,6 +1437,10 @@ void VulkanGraphicsPipeline::SetRasterizationFill(VkPolygonMode mode) {
   rasterization_state_.polygonMode = mode;
 }
 
+void VulkanGraphicsPipeline::SetRasterizationExtension(const void * extension) {
+  rasterization_state_.pNext = extension;
+}
+
 void VulkanGraphicsPipeline::AddShader(VkShaderStageFlagBits stage,
                                        const char* entry, uint32_t* code,
                                        uint32_t numCodeWords) {
