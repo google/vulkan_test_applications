@@ -30,6 +30,7 @@ const static VkFormat kDepthFormat = VK_FORMAT_D16_UNORM;
 
 struct SampleOptions {
   bool enable_multisampling = false;
+  bool enable_mixed_multisampling = false;
   bool enable_depth_buffer = false;
   bool verbose_output = false;
   bool async_compute = false;
@@ -37,6 +38,10 @@ struct SampleOptions {
 
   SampleOptions& EnableMultisampling() {
     enable_multisampling = true;
+    return *this;
+  }
+  SampleOptions& EnableMixedMultisampling() {
+    enable_mixed_multisampling = true;
     return *this;
   }
   SampleOptions& EnableDepthBuffer() {
@@ -160,6 +165,12 @@ class Sample {
     render_target_format_ = application_.swapchain().format();
     num_samples_ = options.enable_multisampling ? kVkMultiSampledSampleCount
                                                 : VK_SAMPLE_COUNT_1_BIT;
+    num_color_samples_ =
+        options.enable_mixed_multisampling ? VK_SAMPLE_COUNT_1_BIT
+                                           : num_samples_;
+    num_depth_stencil_samples_ = options.enable_mixed_multisampling
+                                    ? kVkMultiSampledSampleCount
+                                    : num_samples_;
     default_viewport_ = {0.0f,
                          0.0f,
                          static_cast<float>(application_.swapchain().width()),
@@ -226,6 +237,10 @@ class Sample {
 
   // The number of samples that we are rendering with.
   VkSampleCountFlagBits num_samples() const { return num_samples_; }
+  // The number of color samples that will be used with mixed sampling
+  VkSampleCountFlagBits num_color_samples() const { return num_color_samples_; }
+  // The number of depth/stencil samples that will be used with mixed sampling
+  VkSampleCountFlagBits num_depth_stencil_samples() const { return num_depth_stencil_samples_; }
 
   vulkan::VulkanApplication* app() { return &application_; }
   const vulkan::VulkanApplication* app() const { return &application_; }
@@ -501,6 +516,10 @@ class Sample {
     ::VkImageView raw_view;
 
     if (options_.enable_depth_buffer) {
+      if (options_.enable_mixed_multisampling) {
+        image_create_info.samples = num_depth_stencil_samples_;
+      }
+
       data->depth_stencil_ =
           application_.CreateAndBindImage(&image_create_info);
       view_create_info.image = *data->depth_stencil_;
@@ -512,9 +531,13 @@ class Sample {
       data->depth_view_ = containers::make_unique<vulkan::VkImageView>(
           allocator_,
           vulkan::VkImageView(raw_view, nullptr, &application_.device()));
+
+      if (options_.enable_mixed_multisampling) {
+        image_create_info.samples = num_samples_;
+      }
     }
 
-    if (options_.enable_multisampling) {
+    if (options_.enable_multisampling && !options_.enable_mixed_multisampling) {
       image_create_info.format = render_target_format_;
       image_create_info.usage =
           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -523,7 +546,8 @@ class Sample {
           application_.CreateAndBindImage(&image_create_info);
     }
 
-    view_create_info.image = options_.enable_multisampling
+    view_create_info.image =
+		(options_.enable_multisampling && !options_.enable_mixed_multisampling)
                                  ? *data->multisampled_target_
                                  : data->swapchain_image_;
     view_create_info.format = render_target_format_;
@@ -558,8 +582,9 @@ class Sample {
          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // newLayout
          VK_QUEUE_FAMILY_IGNORED,                   // srcQueueFamilyIndex
          VK_QUEUE_FAMILY_IGNORED,                   // dstQueueFamilyIndex
-         options_.enable_multisampling ? *data->multisampled_target_
-                                       : data->swapchain_image_,  // image
+         (options_.enable_multisampling && !options_.enable_mixed_multisampling)
+             ? *data->multisampled_target_
+		     : data->swapchain_image_,  // image
          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}}};
 
     (*initialization_buffer)
@@ -635,8 +660,9 @@ class Sample {
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // newLayout
         srcQueueFamilyIndex,                       // srcQueueFamilyIndex
         dstQueueFamilyIndex,                       // dstQueueFamilyIndex
-        options_.enable_multisampling ? *data->multisampled_target_
-                                      : data->swapchain_image_,  // image
+        (options_.enable_multisampling && !options_.enable_mixed_multisampling)
+            ? *data->multisampled_target_
+		    : data->swapchain_image_,  // image
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
 
     data->setup_command_buffer_ =
@@ -664,7 +690,7 @@ class Sample {
                                &kBeginCommandBuffer);
     VkImageLayout old_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     VkAccessFlags old_access = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    if (options_.enable_multisampling) {
+    if (options_.enable_multisampling && !options_.enable_mixed_multisampling) {
       old_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
       old_access = VK_ACCESS_TRANSFER_WRITE_BIT;
       VkImageMemoryBarrier resolve_barrier[2] = {
@@ -763,6 +789,10 @@ class Sample {
   containers::vector<SampleFrameData> frame_data_;
   // The number of samples that we will render with
   VkSampleCountFlagBits num_samples_;
+  // The number of color samples that will be used with mixed sampling
+  VkSampleCountFlagBits num_color_samples_;
+  // The number of depth/stencil samples that will be used with mixed sampling
+  VkSampleCountFlagBits num_depth_stencil_samples_;
   // The format of our render_target
   VkFormat render_target_format_;
   // The viewport we use to render

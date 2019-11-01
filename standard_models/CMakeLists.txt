@@ -17,4 +17,5 @@ add_model_library(standard_models
     fullscreen_quad.obj
     cube.obj
     torus_knot.obj
+    floor.obj
 )

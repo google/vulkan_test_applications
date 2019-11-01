@@ -23,18 +23,12 @@ add_shader_library(stencil_shaders
     shader_library
 )
 
-add_model_library(floor_model
-  SOURCES
-    floor.obj
-)
-
 add_vulkan_sample_application(stencil
   SOURCES main.cpp
   LIBS
     vulkan_helpers
   MODELS
     standard_models
-    floor_model
   SHADERS
     stencil_shaders
 )
