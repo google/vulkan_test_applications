@@ -384,6 +384,17 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkGetDeviceGroupPeerMemoryFeatures),
         CONSTRUCT_LAZY_FUNCTION(vkSetDebugUtilsObjectNameEXT),
         CONSTRUCT_LAZY_FUNCTION(vkSetDebugUtilsObjectTagEXT)
+#if defined _WIN32
+        ,
+        CONSTRUCT_LAZY_FUNCTION(vkGetMemoryWin32HandleKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetFenceWin32HandleKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkImportFenceWin32HandleKHR)
+#elif __linux__
+        ,
+        CONSTRUCT_LAZY_FUNCTION(vkGetMemoryFdKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetFenceFdKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkImportFenceFdKHR)
+#endif
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -490,6 +501,15 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkGetDeviceGroupPeerMemoryFeatures);
   LAZY_FUNCTION(vkSetDebugUtilsObjectNameEXT);
   LAZY_FUNCTION(vkSetDebugUtilsObjectTagEXT);
+#if defined _WIN32
+  LAZY_FUNCTION(vkGetMemoryWin32HandleKHR);
+  LAZY_FUNCTION(vkGetFenceWin32HandleKHR);
+  LAZY_FUNCTION(vkImportFenceWin32HandleKHR);
+#elif __linux__
+  LAZY_FUNCTION(vkGetMemoryFdKHR);
+  LAZY_FUNCTION(vkGetFenceFdKHR);
+  LAZY_FUNCTION(vkImportFenceFdKHR);
+#endif
 #undef LAZY_FUNCTION
 };
 
