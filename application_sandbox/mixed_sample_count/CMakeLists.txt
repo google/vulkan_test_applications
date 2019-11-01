@@ -12,28 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_shader_library(compute_particles_shaders
+add_shader_library(mixed_sample_count_shaders
   SOURCES
-    particle_update.comp
-    particle_velocity_update.comp
-    particle.vert
-    particle.frag
-    particle_data_shared.h
+    cube.frag
+    cube.vert
+    floor.frag
+    floor.vert
+    mirror.vert
   SHADER_DEPS
     shader_library
-    math_common_glsl
 )
 
-add_vulkan_sample_application(compute_particles
+add_vulkan_sample_application(mixed_sample_count
   SOURCES main.cpp
-  particle_data_shared.h
   LIBS
     vulkan_helpers
-    math_common
   MODELS
     standard_models
   SHADERS
-    compute_particles_shaders
-  TEXTURES
-    standard_images
+    mixed_sample_count_shaders
 )
