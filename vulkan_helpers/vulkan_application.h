@@ -132,6 +132,9 @@ class VulkanGraphicsPipeline {
   // Sets the rasterization fill mode of the polygon.
   void SetRasterizationFill(VkPolygonMode mode);
 
+  // Sets pNext in VkPipelineRasterizationStateCreateInfo.
+  void SetRasterizationExtension(const void* extension);
+
   // Adds an attachment to this pipeline. Sets up default opaque blending
   // for that attachment.
   void AddAttachment();
