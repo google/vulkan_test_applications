@@ -1457,6 +1457,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(containers::Allocator* allocator,
       attachments_(allocator),
       layout_(*layout),
       contained_stages_(0),
+      pipeline_extensions_(nullptr),
       pipeline_(VK_NULL_HANDLE, nullptr, &application->device()) {
   MemoryClear(&vertex_input_state_);
   MemoryClear(&input_assembly_state_);
@@ -1653,6 +1654,10 @@ void VulkanGraphicsPipeline::SetInputStreams(VulkanModel* model) {
                          &vertex_attribute_descriptions_);
 }
 
+void VulkanGraphicsPipeline::SetPipelineExtensions(const void* pipeline_extensions) {
+  pipeline_extensions_ = pipeline_extensions;
+}
+
 void VulkanGraphicsPipeline::Commit() {
   vertex_input_state_.vertexBindingDescriptionCount =
       static_cast<uint32_t>(vertex_binding_descriptions_.size());
@@ -1683,7 +1688,7 @@ void VulkanGraphicsPipeline::Commit() {
 
   VkGraphicsPipelineCreateInfo create_info{
       VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,  // sType
-      nullptr,                                          // pNext
+      pipeline_extensions_,                             // pNext
       0,                                                // flags
       static_cast<uint32_t>(stages_.size()),            // stageCount
       stages_.data(),                                   // pStage
