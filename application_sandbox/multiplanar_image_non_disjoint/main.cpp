@@ -74,6 +74,7 @@ class MultiPlanarImageSample
              VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
              VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
              VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME}),
+
         cube_(data->allocator(), data->logger(), cube_data),
         texture_(data->allocator(), data->logger(), texture_data) {}
   virtual void InitializeApplicationData(

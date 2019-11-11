@@ -80,11 +80,11 @@ VulkanApplication::VulkanApplication(
       use_protected_memory_(use_protected_memory),
       library_wrapper_(allocator_, log_),
       instance_(!use_vulkan_1_1 ? CreateInstanceForApplication(
-                                        allocator_, &library_wrapper_,
-                                        entry_data_, instance_extensions)
-                                  : Create11InstanceForApplication(
-                                        allocator_, &library_wrapper_,
-                                        entry_data_, instance_extensions)),
+                                      allocator_, &library_wrapper_,
+                                      entry_data_, instance_extensions)
+                                : Create11InstanceForApplication(
+                                      allocator_, &library_wrapper_,
+                                      entry_data_, instance_extensions)),
       surface_(CreateDefaultSurface(&instance_, entry_data_)),
       device_(!use_device_group
                   ? CreateDevice(device_extensions, features,
