@@ -350,6 +350,7 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkBindImageMemory2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkCreateShaderModule),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyShaderModule),
+        CONSTRUCT_LAZY_FUNCTION(vkGetShaderInfoAMD),
         CONSTRUCT_LAZY_FUNCTION(vkCreateSampler),
         CONSTRUCT_LAZY_FUNCTION(vkCreateSamplerYcbcrConversionKHR),
         CONSTRUCT_LAZY_FUNCTION(vkDestroySampler),
@@ -473,6 +474,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkBindImageMemory2KHR);
   LAZY_FUNCTION(vkCreateShaderModule);
   LAZY_FUNCTION(vkDestroyShaderModule);
+  LAZY_FUNCTION(vkGetShaderInfoAMD);
   LAZY_FUNCTION(vkCreateSampler);
   LAZY_FUNCTION(vkCreateSamplerYcbcrConversionKHR);
   LAZY_FUNCTION(vkDestroySampler);
