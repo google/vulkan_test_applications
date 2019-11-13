@@ -1197,7 +1197,9 @@ VkSampler CreateDefaultSampler(VkDevice* device) {
 }
 
 VkSampler CreateSampler(VkDevice* device, VkFilter minFilter,
-                        VkFilter magFilter, void* extension) {
+                        VkFilter magFilter, VkSamplerAddressMode addressModeU,
+                        VkSamplerAddressMode addressModeV,
+                        VkSamplerAddressMode addressModeW, void* extension) {
   VkSamplerCreateInfo info{
       /* sType = */ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
       /* pNext = */ extension,
@@ -1205,9 +1207,9 @@ VkSampler CreateSampler(VkDevice* device, VkFilter minFilter,
       /* magFilter = */ minFilter,
       /* minFilter = */ magFilter,
       /* mipmapMode = */ VK_SAMPLER_MIPMAP_MODE_NEAREST,
-      /* addressModeU = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-      /* addressModeV = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-      /* addressModeW = */ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+      /* addressModeU = */ addressModeU,
+      /* addressModeV = */ addressModeV,
+      /* addressModeW = */ addressModeW,
       /* mipLodBias = */ 0.f,
       /* anisotropyEnable = */ false,
       /* maxAnisotropy = */ 1.f,

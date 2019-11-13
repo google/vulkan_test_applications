@@ -196,10 +196,14 @@ VkImage CreateDefault2DColorImage(VkDevice* device, uint32_t width,
 // anisotropy and compare is disabled.
 VkSampler CreateDefaultSampler(VkDevice* device);
 
-// Creates a default sampler as above, but with the specified minFilter and
-// magFilter.
-VkSampler CreateSampler(VkDevice* device, VkFilter minFilter,
-                        VkFilter magFilter, void* extension = nullptr);
+// Creates a default sampler as above, but with the specified minFilter,
+// magFilter, addressModes, and extension.
+VkSampler CreateSampler(
+    VkDevice* device, VkFilter minFilter, VkFilter magFilter,
+    VkSamplerAddressMode addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    VkSamplerAddressMode addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    VkSamplerAddressMode addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    void* extension = nullptr);
 
 // Creates a DescriptorSetLayout with the given set of layouts.
 VkDescriptorSetLayout CreateDescriptorSetLayout(
