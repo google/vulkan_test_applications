@@ -114,11 +114,14 @@ bool EntryData::WindowClosing() const {
 #elif defined _WIN32
   // TODO: implement this for WIN32
   return false;
+#elif defined __APPLE__
+  return false;
 #endif
 }
 };  // namespace entry
 
-#if defined __linux__ || defined _WIN32 && !(defined __ANDROID__)
+#if defined __linux__ || defined _WIN32 || \
+    defined __APPLE__ && !(defined __ANDROID__)
 struct CommandLineArgs {
   uint32_t window_width;
   uint32_t window_height;
@@ -261,7 +264,6 @@ void android_main(android_app* app) {
 
   main_thread.join();
 }
-
 
 #elif defined __linux__
 
@@ -470,5 +472,45 @@ int main(int argc, const char** argv) {
   assert(root_allocator.currently_allocated_bytes_.load() == 0);
   return return_value;
 }
+#endif
 
+#ifdef __APPLE__
+extern "C" {
+  void RunMacOS();
+  void StopMacOS();
+  void* CreateMacOSWindow(uint32_t width, uint32_t height);
+  bool entry::EntryData::CreateWindow() {
+    void* v = CreateMacOSWindow(this->width_, this->height_);
+    native_window_handle_ = v;
+    return v;
+  }
+
+  int main(int argc, const char** argv) {
+    CommandLineArgs args;
+    parse_args(&args, argc, argv);
+    while (args.wait_for_debugger)
+      ;
+    containers::LeakCheckAllocator root_allocator;
+    entry::EntryData entry_data(&root_allocator, args.window_width,
+                                args.window_height, args.fixed_timestep,
+                                args.prefer_separate_present, args.output_frame,
+                                args.output_file, args.shader_compiler);
+    if (args.output_frame == -1) {
+      bool window_created = entry_data.CreateWindow();
+        if (!window_created) {
+          entry_data.logger()->LogError("Window creation failed");
+          return -1;
+        }
+    }
+    int ret;
+    std::thread run([&ret, &entry_data]() {
+      ret = main_entry(&entry_data);
+      StopMacOS();
+    });
+    RunMacOS();
+  
+  assert(root_allocator.currently_allocated_bytes_.load() == 0);
+  return ret;
+}
+}
 #endif

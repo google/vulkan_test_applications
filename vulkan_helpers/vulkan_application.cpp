@@ -190,7 +190,7 @@ VulkanApplication::VulkanApplication(
       kAllBufferBits, kAllBufferBits};
   VkMemoryPropertyFlags property_flags[3] = {
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+      0};
   bool m_gpu = device_.num_devices() > 1;
   for (size_t j = 0; j < device_.num_devices(); ++j) {
     for (size_t i = 0; i < 3; ++i) {

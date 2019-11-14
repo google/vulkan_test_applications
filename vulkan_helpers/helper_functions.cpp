@@ -71,6 +71,8 @@ VkInstance CreateDefaultInstance(containers::Allocator* allocator,
     VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 #elif defined _WIN32
     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif defined __APPLE__
+    VK_MVK_MACOS_SURFACE_EXTENSION_NAME,
 #endif
   };
 
@@ -119,6 +121,8 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
     VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 #elif defined _WIN32
     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif defined __APPLE__
+    VK_MVK_MACOS_SURFACE_EXTENSION_NAME
 #endif
   };
 
@@ -893,7 +897,8 @@ VkDevice CreateDeviceGroupForSwapchain(
 }
 
 VkCommandPool CreateDefaultCommandPool(containers::Allocator* allocator,
-                                       VkDevice& device, uint32_t queueFamilyIndex) {
+                                       VkDevice& device,
+                                       uint32_t queueFamilyIndex) {
   VkCommandPoolCreateInfo info = {
       /* sType = */ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
       /* pNext = */ nullptr,
@@ -935,6 +940,12 @@ VkSurfaceKHR CreateDefaultSurface(VkInstance* instance,
       data->native_hinstance(), data->native_window_handle()};
 
   (*instance)->vkCreateWin32SurfaceKHR(*instance, &create_info, nullptr,
+                                       &surface);
+#elif defined __APPLE__
+  VkMacOSSurfaceCreateInfoMVK create_info{
+      VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK, nullptr, 0,
+      data->native_window_handle()};
+  (*instance)->vkCreateMacOSSurfaceMVK(*instance, &create_info, nullptr,
                                        &surface);
 #endif
 

@@ -75,6 +75,9 @@ class InstanceFunctions {
         ,
         CONSTRUCT_LAZY_FUNCTION(vkCreateWin32SurfaceKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceWin32PresentationSupportKHR)
+#elif defined __APPLE__
+        ,
+        CONSTRUCT_LAZY_FUNCTION(vkCreateMacOSSurfaceMVK)
 #endif
 #undef CONSTRUCT_LAZY_FUNCTION
   {
@@ -124,6 +127,8 @@ class InstanceFunctions {
 #elif defined _WIN32
   LAZY_FUNCTION(vkCreateWin32SurfaceKHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceWin32PresentationSupportKHR);
+#elif defined __APPLE__
+  LAZY_FUNCTION(vkCreateMacOSSurfaceMVK);
 #endif
 #undef LAZY_FUNCTION
 };
