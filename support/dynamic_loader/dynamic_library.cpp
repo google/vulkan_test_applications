@@ -59,7 +59,11 @@ class InternalDynamicLibrary : public DynamicLibrary {
   // by LD_LIBRARY_PATH.
   InternalDynamicLibrary(const char* lib_name) {
     std::string lib_with_extension = lib_name;
+#ifdef __APPLE__
+    lib_with_extension = "lib" + lib_with_extension + ".dylib";
+#else
     lib_with_extension = "lib" + lib_with_extension + ".so";
+#endif
     // We choose RTLD_LAZY because we expect most of the functions
     // in this library to be resolved by other calls to dlsym.
     lib_ = dlopen(lib_with_extension.c_str(), RTLD_LAZY);

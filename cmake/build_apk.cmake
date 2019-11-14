@@ -251,11 +251,13 @@ function(add_vulkan_executable target)
     endif()
   elseif (NOT BUILD_APKS)
     set(ADDITIONAL_ARGS)
+    set(ADDITIONAL_ARGS2)
     if (EXE_NON_DEFAULT)
       list(APPEND ADDITIONAL_ARGS EXCLUDE_FROM_ALL)
     endif()
-    add_executable(${target} ${ADDITIONAL_ARGS}
+    add_executable(${target} ${ADDITIONAL_ARGS} ${ADDITIONAL_ARGS2}
       ${EXE_SOURCES} ${EXE_UNPARSED_ARGS})
+
     setup_folders(${target})
     target_include_directories(${target} PRIVATE ${VulkanTestApplications_SOURCE_DIR})
     mathfu_configure_flags(${target})
@@ -288,6 +290,7 @@ function(add_vulkan_executable target)
       endforeach()
     endif()
   else()
+
     set(TARGET_SOURCES)
     set(ANDROID_TARGET_NAME ${target})
     set(${target}_SOURCES ${EXE_SOURCES})

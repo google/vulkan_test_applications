@@ -15,6 +15,9 @@
 
 if(ANDROID)
 set(ADDITIONAL_LIBS android android_native_app_glue atomic)
+elseif(APPLE)
+set(ADDITIONAL_FILES "macos/main.m")
+set(ADDITIONAL_LIBS "-framework Cocoa -framework QuartzCore")
 elseif(UNIX)
 set(ADDITIONAL_LIBS xcb pthread)
 endif()
@@ -60,10 +63,17 @@ add_vulkan_static_library(entry
         entry.cpp
         entry.h
         entry_config.h.in
+        ${ADDITIONAL_FILES}
     LIBS
         ${ADDITIONAL_LIBS}
         logger
         containers)
+
+if (APPLE)
+set_target_properties(entry PROPERTIES
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/macOS/cube/Info.plist
+)
+endif(APPLE)
 
 if (NOT BUILD_APKS)
     target_include_directories(entry PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${VulkanTestApplications_BINARY_DIR})

@@ -41,6 +41,7 @@ if (NOT BUILD_APKS)
     "${CMAKE_CURRENT_SOURCE_DIR}/third_party/Vulkan-Headers/include")
   add_vulkan_subdirectory(third_party/vk_callback_swapchain)
 endif()
+
 include_directories(${VULKAN_INCLUDE_LOCATION})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 

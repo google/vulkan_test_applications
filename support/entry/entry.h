@@ -31,6 +31,7 @@ struct ANativeWindow;
 #elif defined _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#elif defined __APPLE__
 #else
 #error Unsupported platform
 #endif
@@ -53,99 +54,102 @@ static internal::dummy __attribute__((used)) test_dummy;
 // like fixed time step etc. On Windows and Linux it is used to create a
 // window and cache the handles of the window for display.
 class EntryData {
-  public:
-    EntryData(const EntryData&) = delete;
-    EntryData(EntryData&&) = delete;
-    EntryData& operator=(const EntryData&) = delete;
-    EntryData& operator=(EntryData&&) = delete;
+ public:
+  EntryData(const EntryData&) = delete;
+  EntryData(EntryData&&) = delete;
+  EntryData& operator=(const EntryData&) = delete;
+  EntryData& operator=(EntryData&&) = delete;
 
-    // For Android, the width and height should be the window size provided by
-    // the app pointer. For Linux and Windows, the window size should come from
-    // command line or the default value.
-    EntryData(containers::Allocator* allocator, uint32_t width, uint32_t height,
-              bool fixed_timestep, bool separate_present,
-              int64_t output_frame_index, const char* output_frame_file,
-              const char* shader_compiler
+  // For Android, the width and height should be the window size provided by
+  // the app pointer. For Linux and Windows, the window size should come from
+  // command line or the default value.
+  EntryData(containers::Allocator* allocator, uint32_t width, uint32_t height,
+            bool fixed_timestep, bool separate_present,
+            int64_t output_frame_index, const char* output_frame_file,
+            const char* shader_compiler
 #if defined __ANDROID__
-              ,
-              android_app* app
+            ,
+            android_app* app
 #endif
-    );
+  );
 
-    // dtor of EntryData
-    ~EntryData() {
+  // dtor of EntryData
+  ~EntryData() {
 #if defined __ANDROID__
 #elif defined _WIN32
-      if (native_window_handle_) {
-        DestroyWindow(native_window_handle_);
-      }
-#elif defined __linux__
-      free(delete_window_atom_);
-      xcb_disconnect(native_connection_);
-#endif
+    if (native_window_handle_) {
+      DestroyWindow(native_window_handle_);
     }
-
-#if defined __ANDROID__
-	// Window is not created by the application on Android
 #elif defined __linux__
-    bool CreateWindow();
-#elif defined _WIN32
-    bool CreateWindowWin32();
+    free(delete_window_atom_);
+    xcb_disconnect(native_connection_);
 #endif
-    bool WindowClosing() const;
-
-    void NotifyReady() const;
+  }
 
 #if defined __ANDROID__
-    ANativeWindow* native_window_handle() const {
-      return native_window_handle_;
-    }
-    const char* os_version() const { return os_version_.c_str(); }
-    void CloseWindow() { window_closing_ = true; }
-#elif defined _WIN32
-    HWND native_window_handle() const { return native_window_handle_; }
-    HINSTANCE native_hinstance() const {return native_hinstance_; }
+  // Window is not created by the application on Android
 #elif defined __linux__
-    xcb_window_t native_window_handle() const { return native_window_handle_; }
-    xcb_connection_t* native_connection() const { return native_connection_; }
+  bool CreateWindow();
+#elif defined _WIN32
+  bool CreateWindowWin32();
+#elif defined __APPLE__
+  bool CreateWindow();
+#endif
+  bool WindowClosing() const;
+
+  void NotifyReady() const;
+
+#if defined __ANDROID__
+  ANativeWindow* native_window_handle() const { return native_window_handle_; }
+  const char* os_version() const { return os_version_.c_str(); }
+  void CloseWindow() { window_closing_ = true; }
+#elif defined _WIN32
+  HWND native_window_handle() const { return native_window_handle_; }
+  HINSTANCE native_hinstance() const { return native_hinstance_; }
+#elif defined __linux__
+  xcb_window_t native_window_handle() const { return native_window_handle_; }
+  xcb_connection_t* native_connection() const { return native_connection_; }
+#elif defined __APPLE__
+  void* native_window_handle() const { return native_window_handle_; }
 #endif
 
-    logging::Logger* logger() const { return log_.get(); }
-    containers::Allocator* allocator() const { return allocator_; }
-    bool fixed_timestep() const { return fixed_timestep_; }
-    bool prefer_separate_present() const { return prefer_separate_present_; }
-    uint32_t width() const { return width_; }
-    uint32_t height() const { return height_; }
-    int64_t output_frame_index() const { return output_frame_index_; }
-    const char* output_frame_file() const { return output_frame_file_; }
-    const char* shader_compiler() const { return shader_compiler_; }
+  logging::Logger* logger() const { return log_.get(); }
+  containers::Allocator* allocator() const { return allocator_; }
+  bool fixed_timestep() const { return fixed_timestep_; }
+  bool prefer_separate_present() const { return prefer_separate_present_; }
+  uint32_t width() const { return width_; }
+  uint32_t height() const { return height_; }
+  int64_t output_frame_index() const { return output_frame_index_; }
+  const char* output_frame_file() const { return output_frame_file_; }
+  const char* shader_compiler() const { return shader_compiler_; }
 
-   private:
-    bool fixed_timestep_;
-    bool prefer_separate_present_;
-    uint32_t width_;
-    uint32_t height_;
-    int64_t output_frame_index_;
-    const char* output_frame_file_;
-    const char* shader_compiler_;
-    containers::unique_ptr<logging::Logger> log_;
-    containers::Allocator* allocator_;
+ private:
+  bool fixed_timestep_;
+  bool prefer_separate_present_;
+  uint32_t width_;
+  uint32_t height_;
+  int64_t output_frame_index_;
+  const char* output_frame_file_;
+  const char* shader_compiler_;
+  containers::unique_ptr<logging::Logger> log_;
+  containers::Allocator* allocator_;
 
 #if defined __ANDROID__
-    ANativeWindow* native_window_handle_;
-    std::string os_version_;
-    bool window_closing_;
+  ANativeWindow* native_window_handle_;
+  std::string os_version_;
+  bool window_closing_;
 #elif defined _WIN32
-    HINSTANCE native_hinstance_;
-    HWND native_window_handle_;
+  HINSTANCE native_hinstance_;
+  HWND native_window_handle_;
 #elif defined __linux__
-    xcb_window_t native_window_handle_;
-    xcb_connection_t* native_connection_;
-    xcb_intern_atom_reply_t* delete_window_atom_;
+  xcb_window_t native_window_handle_;
+  xcb_connection_t* native_connection_;
+  xcb_intern_atom_reply_t* delete_window_atom_;
+#elif defined __APPLE__
+  void* native_window_handle_;
 #endif
 };
 }  // namespace entry
-
 // This is the entry-point that every application should define.
 int main_entry(const entry::EntryData* data);
 

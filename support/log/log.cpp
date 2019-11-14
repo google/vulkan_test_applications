@@ -29,7 +29,7 @@ class InternalLogger : public Logger {
     __android_log_print(ANDROID_LOG_INFO, "VulkanTestApplication", "%s", str);
   }
 };
-#elif defined __linux__
+#elif defined __linux__ || defined __APPLE__
 #include <cstdio>
 class InternalLogger : public Logger {
  public:
