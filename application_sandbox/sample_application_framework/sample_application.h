@@ -38,6 +38,7 @@ struct SampleOptions {
   bool ycbcr_sampling = false;
   bool protected_memory = false;
   bool host_query_reset = false;
+  bool extended_swapchain_color_space = false;
 
   SampleOptions& EnableMultisampling() {
     enable_multisampling = true;
@@ -73,6 +74,10 @@ struct SampleOptions {
   }
   SampleOptions& EnableHostQueryReset() {
     host_query_reset = true;
+    return *this;
+  }
+  SampleOptions& EnableExtendedSwapchainColorSpace() {
+    extended_swapchain_color_space = true;
     return *this;
   }
 };
@@ -161,9 +166,12 @@ class Sample {
             host_buffer_size_in_MB * 1024 * 1024,
             image_memory_size_in_MB * 1024 * 1024,
             device_buffer_size_in_MB * 1024 * 1024,
-                     coherent_buffer_size_in_MB * 1024 * 1024,
-                     options.async_compute, options.sparse_binding, false, 0,
-                     options.ycbcr_sampling, options.protected_memory),
+            coherent_buffer_size_in_MB * 1024 * 1024, options.async_compute,
+            options.sparse_binding, false, 0, options.ycbcr_sampling,
+            options.protected_memory, options.host_query_reset,
+            options.extended_swapchain_color_space
+                ? VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT
+                : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR),
         frame_data_(allocator),
         swapchain_images_(application_.swapchain_images()),
         last_frame_time_(std::chrono::high_resolution_clock::now()),
