@@ -1004,7 +1004,8 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
                                       containers::Allocator* allocator,
                                       uint32_t graphics_queue_index,
                                       uint32_t present_queue_index,
-                                      const entry::EntryData* data) {
+                                      const entry::EntryData* data,
+                                      VkColorSpaceKHR swapchain_color_space) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
   containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
@@ -1032,6 +1033,42 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
                    device->physical_device(), *surface, &num_formats,
                    surface_formats.data()),
                VK_SUCCESS);
+
+	VkSurfaceFormatKHR surface_format = surface_formats[0];
+
+	if (swapchain_color_space != 0) {
+      containers::vector<VkSurfaceFormat2KHR> surface_formats2(
+          allocator);
+      surface_formats.resize(1);
+
+      VkPhysicalDeviceSurfaceInfo2KHR surface_info{
+          VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
+          nullptr,  // pNext
+          *surface  // surface
+      };
+
+      LOG_ASSERT(
+          ==, instance->GetLogger(),
+          (*instance)->vkGetPhysicalDeviceSurfaceFormats2KHR(
+              device->physical_device(), &surface_info, &num_formats, nullptr),
+          VK_SUCCESS);
+
+      surface_formats2.resize(num_formats);
+      LOG_ASSERT(==, instance->GetLogger(),
+                 (*instance)->vkGetPhysicalDeviceSurfaceFormats2KHR(
+                     device->physical_device(), &surface_info, &num_formats,
+                     surface_formats2.data()),
+                 VK_SUCCESS);
+
+      for (size_t i = 0; i < surface_formats2.size(); ++i) {
+        instance->GetLogger()->LogInfo(
+            unsigned(surface_formats2[i].surfaceFormat.colorSpace));
+        if (surface_formats2[i].surfaceFormat.colorSpace ==
+            swapchain_color_space) {
+          surface_format = surface_formats2[i].surfaceFormat;
+        }
+      }
+	}
 
     uint32_t num_present_modes = 0;
     LOG_ASSERT(
@@ -1071,11 +1108,11 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
         0,                                            // flags
         *surface,                                     // surface
         std::min(surface_caps.minImageCount + 1,
-                 maxSwapchains),        // minImageCount
-        surface_formats[0].format,      // surfaceFormat
-        surface_formats[0].colorSpace,  // colorSpace
-        image_extent,                   // imageExtent
-        1,                              // imageArrayLayers
+                 maxSwapchains),    // minImageCount
+        surface_format.format,      // surfaceFormat
+        surface_format.colorSpace,  // colorSpace
+        image_extent,               // imageExtent
+        1,                          // imageArrayLayers
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // imageUsage
         has_multiple_queues ? VK_SHARING_MODE_CONCURRENT

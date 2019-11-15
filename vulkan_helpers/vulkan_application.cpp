@@ -64,7 +64,8 @@ VulkanApplication::VulkanApplication(
     uint32_t coherent_buffer_size, bool use_async_compute_queue,
     bool use_sparse_binding, bool use_device_group,
     uint32_t device_peer_memory_size, bool use_ycbcr_sampling,
-    bool use_protected_memory, bool use_host_query_reset)
+    bool use_protected_memory, bool use_host_query_reset,
+    VkColorSpaceKHR swapchain_color_space)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -91,7 +92,7 @@ VulkanApplication::VulkanApplication(
                                       use_sparse_binding)),
       swapchain_(CreateDefaultSwapchain(&instance_, &device_, &surface_,
                                         allocator_, render_queue_index_,
-                                        present_queue_index_, entry_data_)),
+          present_queue_index_, entry_data_, swapchain_color_space)),
       command_pools_(allocator_),
       pipeline_cache_(CreateDefaultPipelineCache(&device_)),
       host_accessible_heap_(allocator_),
