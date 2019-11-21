@@ -175,7 +175,7 @@ VkInstance Create11InstanceForApplication(
     const entry::EntryData* data,
     const std::initializer_list<const char*> extensions) {
   return CreateVerisonedInstanceForApplicaiton(
-      allocator, wrapper, data, VK_MAKE_VERSION(1, 1, 0), extensions);
+      allocator, wrapper, data, VK_MAKE_VERSION(1, 0, 0), extensions);
 }
 
 containers::vector<VkPhysicalDevice> GetPhysicalDevices(
@@ -1139,9 +1139,7 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
         image_extent,               // imageExtent
         1,                          // imageArrayLayers
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL | use_shared_presentation
-            ? VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR
-            : VK_IMAGE_LAYOUT_UNDEFINED,  // imageUsage
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT,  // imageUsage
         has_multiple_queues ? VK_SHARING_MODE_CONCURRENT
                             : VK_SHARING_MODE_EXCLUSIVE,  // sharingMode
         has_multiple_queues ? 2u : 0u,
