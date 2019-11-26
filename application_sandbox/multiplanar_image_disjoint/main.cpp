@@ -46,6 +46,12 @@ namespace simple_texture {
 
 const auto& texture_data = simple_texture::texture;
 
+static VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcr_sampler_features{
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR,
+    nullptr,  // pNext
+    true      // samplerYcbcrConversion
+};
+
 struct TexturedCubeFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
@@ -61,7 +67,9 @@ class MultiPlanarImageSample
       : data_(data),
         Sample<TexturedCubeFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
-            sample_application::SampleOptions().EnableYCbCrSampling(), {0},
+            sample_application::SampleOptions().AddDeviceExtensionStructure(
+                &ycbcr_sampler_features),
+            {0},
             {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
             {VK_KHR_MAINTENANCE1_EXTENSION_NAME,
              VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,

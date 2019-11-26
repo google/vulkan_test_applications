@@ -134,7 +134,7 @@ VkDevice CreateDeviceForSwapchain(
     bool try_to_find_separate_present_queue = false,
     uint32_t* aync_compute_queue_index = nullptr,
     uint32_t* sparse_binding_queue_index = nullptr,
-    bool use_ycbcr_sampling = false, bool use_host_query_reset = false);
+    bool use_host_query_reset = false, void* pNext = nullptr);
 
 // Creates a device capable of presenting to the given surface.
 // The device is created with the given extensions.
@@ -157,7 +157,8 @@ VkDevice CreateDeviceGroupForSwapchain(
     const VkPhysicalDeviceFeatures& features = {0},
     bool try_to_find_separate_present_queue = false,
     uint32_t* aync_compute_queue_index = nullptr,
-    uint32_t* sparse_binding_queue_index = nullptr);
+    uint32_t* sparse_binding_queue_index = nullptr,
+    const void* pNext = nullptr);
 
 // Creates a primary level default command buffer from the given command pool
 // and the device.

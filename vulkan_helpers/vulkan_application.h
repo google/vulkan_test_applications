@@ -447,12 +447,12 @@ class VulkanApplication {
       uint32_t coherent_buffer_size = 1024 * 128,
       bool use_async_compute_queue = false, bool use_sparse_binding = false,
       bool use_device_groups = false, uint32_t device_peer_memory_size = 0,
-      bool use_ycbcr_sampling = false, bool use_protected_memory = false,
-      bool use_host_query_reset = false,
+      bool use_protected_memory = false, bool use_host_query_reset = false,
       VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
       bool use_shared_presentation = false,
       bool use_mutable_swapchain_format = false,
-      const void* swapchain_extensions = nullptr, bool use_vulkan_1_1 = false);
+      const void* swapchain_extensions = nullptr, bool use_vulkan_1_1 = false,
+      void* extension_structures = nullptr);
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.
@@ -798,8 +798,8 @@ class VulkanApplication {
   VkDevice CreateDevice(const std::initializer_list<const char*> extensions,
                         const VkPhysicalDeviceFeatures& features,
                         bool create_async_compute_queue,
-                        bool use_sparse_binding, bool use_ycbcr_sampling,
-                        bool use_host_query_reset);
+                        bool use_sparse_binding, bool use_host_query_reset,
+                        void* pNext = nullptr);
 
   VkDevice SetupDevice(VkDevice device, bool create_async_compute_queue,
                        bool use_sparse_binding);
@@ -809,7 +809,7 @@ class VulkanApplication {
   VkDevice CreateDeviceGroup(
       const std::initializer_list<const char*> extensions,
       const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue,
-      bool use_sparse_binding);
+      bool use_sparse_binding, const void* pNext = nullptr);
 
   VkCommandPool& GetCommandPool(uint32_t queueFamilyIndex = 0) {
     if (command_pools_.find(queueFamilyIndex) == command_pools_.end()) {
