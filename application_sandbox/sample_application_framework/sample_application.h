@@ -40,13 +40,13 @@ struct SampleOptions {
   bool verbose_output = false;
   bool async_compute = false;
   bool sparse_binding = false;
-  bool ycbcr_sampling = false;
   bool protected_memory = false;
   bool host_query_reset = false;
   bool extended_swapchain_color_space = false;
   bool shared_presentation = false;
   bool enable_vulkan_1_1 = false;
   bool mutable_swapchain_format = false;
+  void* device_extension_structures = nullptr;
 
   SampleOptions& EnableMultisampling() {
     enable_multisampling = true;
@@ -72,10 +72,6 @@ struct SampleOptions {
     sparse_binding = true;
     return *this;
   }
-  SampleOptions& EnableYCbCrSampling() {
-    ycbcr_sampling = true;
-    return *this;
-  }
   SampleOptions& EnableProtectedMemory() {
     protected_memory = true;
     return *this;
@@ -98,6 +94,10 @@ struct SampleOptions {
   }
   SampleOptions& EnableMutableSwapChainFormat() {
     mutable_swapchain_format = true;
+    return *this;
+  }
+  SampleOptions& AddDeviceExtensionStructure(void* device_extension_structure) {
+    device_extension_structures = device_extension_structure;
     return *this;
   }
 };
@@ -188,16 +188,15 @@ class Sample {
             image_memory_size_in_MB * 1024 * 1024,
             device_buffer_size_in_MB * 1024 * 1024,
             coherent_buffer_size_in_MB * 1024 * 1024, options.async_compute,
-            options.sparse_binding, false, 0, options.ycbcr_sampling,
-            options.protected_memory, options.host_query_reset,
+            options.sparse_binding, false, 0, options.protected_memory,
+            options.host_query_reset,
             options.extended_swapchain_color_space
                 ? VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT
                 : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-            options.shared_presentation,
-            options.mutable_swapchain_format,
+            options.shared_presentation, options.mutable_swapchain_format,
             options.mutable_swapchain_format ? &kMutableSwapchainImageFormatList
                                              : nullptr,
-            options.enable_vulkan_1_1),
+            options.enable_vulkan_1_1, options.device_extension_structures),
         frame_data_(allocator),
         swapchain_images_(application_.swapchain_images()),
         last_frame_time_(std::chrono::high_resolution_clock::now()),
