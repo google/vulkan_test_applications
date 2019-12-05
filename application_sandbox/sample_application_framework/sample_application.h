@@ -27,6 +27,11 @@ namespace sample_application {
 const static VkSampleCountFlagBits kVkMultiSampledSampleCount =
     VK_SAMPLE_COUNT_4_BIT;
 const static VkFormat kDepthFormat = VK_FORMAT_D16_UNORM;
+const static VkFormat kMutableSwapchainFormats[] = {VK_FORMAT_B8G8R8A8_UNORM,
+                                                    VK_FORMAT_B8G8R8A8_SRGB};
+const static VkImageFormatListCreateInfoKHR kMutableSwapchainImageFormatList = {
+    VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR, nullptr, 2,
+    kMutableSwapchainFormats};
 
 struct SampleOptions {
   bool enable_multisampling = false;
@@ -41,6 +46,7 @@ struct SampleOptions {
   bool extended_swapchain_color_space = false;
   bool shared_presentation = false;
   bool enable_vulkan_1_1 = false;
+  bool mutable_swapchain_format = false;
 
   SampleOptions& EnableMultisampling() {
     enable_multisampling = true;
@@ -84,12 +90,14 @@ struct SampleOptions {
   }
   SampleOptions& EnableSharedPresentation() {
     shared_presentation = true;
-
     return *this;
   }
   SampleOptions& EnableVulkan11() {
     enable_vulkan_1_1 = true;
-
+    return *this;
+  }
+  SampleOptions& EnableMutableSwapChainFormat() {
+    mutable_swapchain_format = true;
     return *this;
   }
 };
@@ -185,6 +193,9 @@ class Sample {
                 ? VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT
                 : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
             options.shared_presentation,
+            options.mutable_swapchain_format,
+            options.mutable_swapchain_format ? &kMutableSwapchainImageFormatList
+                                             : nullptr,
             options.enable_vulkan_1_1),
         frame_data_(allocator),
         swapchain_images_(application_.swapchain_images()),
@@ -588,7 +599,9 @@ class Sample {
 		(options_.enable_multisampling && !options_.enable_mixed_multisampling)
                                  ? *data->multisampled_target_
                                  : data->swapchain_image_;
-    view_create_info.format = render_target_format_;
+    view_create_info.format = options_.mutable_swapchain_format
+                                  ? VK_FORMAT_B8G8R8A8_SRGB
+                                  : render_target_format_;
     view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
     LOG_ASSERT(
