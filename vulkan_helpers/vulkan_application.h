@@ -440,7 +440,7 @@ class VulkanApplication {
       uint32_t coherent_buffer_size = 1024 * 128,
       bool use_async_compute_queue = false, bool use_sparse_binding = false,
       bool use_device_groups = false, uint32_t device_peer_memory_size = 0,
-      bool use_protected_memory = false);
+      bool use_ycbcr_sampling = false, bool use_protected_memory = false);
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.
@@ -452,6 +452,12 @@ class VulkanApplication {
   // given |slice_size| roundup to the image's memory alignment.
   containers::unique_ptr<SparseImage> CreateAndBindSparseImage(
       const VkImageCreateInfo* create_info, size_t slice_size,
+      const uint32_t* device_indices = nullptr);
+  // Creates a multi-planar image from the given create_info, and binds memory
+  // from the device-only image arena. Memory is allocated for each plane of the
+  // image if it is disjoint.
+  containers::unique_ptr<Image> CreateAndBindMultiPlanarImage(
+      const VkImageCreateInfo* create_info,
       const uint32_t* device_indices = nullptr);
   // Create an image view for the given image, with the same format of the
   // given image and the given image view type, subresource range.
@@ -777,7 +783,7 @@ class VulkanApplication {
   VkDevice CreateDevice(const std::initializer_list<const char*> extensions,
                         const VkPhysicalDeviceFeatures& features,
                         bool create_async_compute_queue,
-                        bool use_sparse_binding);
+                        bool use_sparse_binding, bool use_ycbcr_sampling);
 
   VkDevice SetupDevice(VkDevice device, bool create_async_compute_queue,
                        bool use_sparse_binding);

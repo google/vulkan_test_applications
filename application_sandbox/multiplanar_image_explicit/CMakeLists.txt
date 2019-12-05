@@ -12,11 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_texture_library(standard_images
+
+add_shader_library(multiplanar_image_explicit_shaders
   SOURCES
-    particle.png
-    r8.png
-    rgb8.png
-    star.png
-    multiplanar.jpg
+    multiplanar_image.frag
+    multiplanar_image.vert
+  SHADER_DEPS
+    shader_library
+)
+
+add_vulkan_sample_application(multiplanar_image_explicit
+  SOURCES main.cpp
+  LIBS
+    vulkan_helpers
+  MODELS
+    standard_models
+  TEXTURES
+    standard_images
+  SHADERS
+    multiplanar_image_explicit_shaders
 )

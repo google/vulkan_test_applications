@@ -36,7 +36,9 @@ struct VulkanTexture {
   // bound with the given block size aligned to the image's memory alignment.
   VulkanTexture(containers::Allocator* allocator, logging::Logger* logger,
                 VkFormat format, size_t width, size_t height, const void* data,
-                size_t data_size, size_t sparse_binding_block_size = 0u)
+                size_t data_size, size_t sparse_binding_block_size = 0u,
+                size_t multiplanar_plane_count = 0u,
+                size_t downsampled_width = 0u, size_t downsampled_height = 0u)
       : allocator_(allocator),
         logger_(logger),
         format_(format),
@@ -45,16 +47,23 @@ struct VulkanTexture {
         data_(data),
         data_size_(data_size),
         sparse_binding_block_size_(sparse_binding_block_size),
+        multiplanar_plane_count_(multiplanar_plane_count),
+        downsampled_width_(downsampled_width),
+        downsampled_height_(downsampled_height),
         image_(nullptr) {}
 
   // Constructs a vulkan model from the output of the convert_img_to_c.py
   // script.
   template <typename T>
   VulkanTexture(containers::Allocator* allocator, logging::Logger* logger,
-                const T& t, size_t sparse_binding_block_size = 0u)
+                const T& t, size_t sparse_binding_block_size = 0u,
+                size_t multiplanar_plane_count = 0u,
+                size_t downsampled_width = 0u,
+                size_t downsampled_height = 0u)
       : VulkanTexture(allocator, logger, t.format, t.width, t.height,
                       static_cast<const void*>(t.data), sizeof(t.data),
-                      sparse_binding_block_size) {}
+                      sparse_binding_block_size, multiplanar_plane_count,
+                      downsampled_width, downsampled_height) {}
 
   // Creates the image object.
   // Also creates a temporary buffer object for the upload data
@@ -105,13 +114,48 @@ struct VulkanTexture {
           image_create_info.flags | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
       sparse_image_ = application->CreateAndBindSparseImage(&image_create_info,
           sparse_binding_block_size_);
-    } else {
+    } else if (IsFormatMultiplanar(format_)) {
+      VkSamplerYcbcrConversionImageFormatProperties ycbcr_conversion_properties{
+          VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES_KHR,
+          NULL, 0};
+      VkImageFormatProperties2 image_format_properties2{
+          VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+          &ycbcr_conversion_properties,
+          {}};
+      VkPhysicalDeviceImageFormatInfo2 physical_format_properties{
+          VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+          NULL,
+          format_,
+          VkImageType::VK_IMAGE_TYPE_2D,
+          VkImageTiling::VK_IMAGE_TILING_LINEAR,
+          VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+          0};
+      application->instance()->vkGetPhysicalDeviceImageFormatProperties2(
+          application->device().physical_device(), &physical_format_properties,
+          &image_format_properties2);
+
+      multiplanar_plane_count_ =
+          ycbcr_conversion_properties.combinedImageSamplerDescriptorCount;
+
+      downsampled_width_ = width_;
+      downsampled_height_ = height_;
+      if (FormatDownsamplesWidth(format_)) {
+        downsampled_width_ = width_ / 2;
+      } else if (FormatDownsamplesWidthAndHeight(format_)) {
+        downsampled_width_ = width_ / 2;
+        downsampled_height_ = height_ / 2;
+      }
+
+      image_create_info.pNext = &ycbcr_conversion_properties;
+      image_ = application->CreateAndBindMultiPlanarImage(&image_create_info);
+    }
+    else {
       image_ = application->CreateAndBindImage(&image_create_info);
     }
 
     VkImageViewCreateInfo view_create_info = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  // sType
-        nullptr,                                   // pNext
+        pNext,                                     // pNext
         0,                                         // flags
         image(),                                   // image
         VK_IMAGE_VIEW_TYPE_2D,                     // viewType
@@ -157,21 +201,58 @@ struct VulkanTexture {
                                VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1,
                                &buffer_barrier, 1, &barrier);
 
-    VkBufferImageCopy copy_params = {
-        0,                                     // bufferOffset
-        0,                                     // bufferRowLength
-        0,                                     // bufferImageHeight
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},  // imageSubresource
-        {0, 0, 0},                             // offset
-        {static_cast<uint32_t>(width_), static_cast<uint32_t>(height_),
-         1}  // extent
+    if (multiplanar_plane_count_ > 1) {
+      VkBufferImageCopy copy_params[3] = {
+          {
+              0,                                       // bufferOffset
+              0,                                       // bufferRowLength
+              0,                                       // bufferImageHeight
+              {VK_IMAGE_ASPECT_PLANE_0_BIT, 0, 0, 1},  // imageSubresource
+              {0, 0, 0},                               // offset
+              {static_cast<uint32_t>(width_), static_cast<uint32_t>(height_),
+               1}  // extent
+          },
+          {
+              width_ * height_,                        // bufferOffset
+              0,                                       // bufferRowLength
+              0,                                       // bufferImageHeight
+              {VK_IMAGE_ASPECT_PLANE_1_BIT, 0, 0, 1},  // imageSubresource
+              {0, 0, 0},                               // offset
+              {static_cast<uint32_t>(downsampled_width_),
+               static_cast<uint32_t>(downsampled_height_), 1}  // extent
+          },
+          {
+              width_ * height_ +
+                  downsampled_width_ * downsampled_height_,  // bufferOffset
+              0,                                             // bufferRowLength
+              0,                                       // bufferImageHeight
+              {VK_IMAGE_ASPECT_PLANE_2_BIT, 0, 0, 1},  // imageSubresource
+              {0, 0, 0},                               // offset
+              {static_cast<uint32_t>(downsampled_width_),
+               static_cast<uint32_t>(downsampled_height_), 1}  // extent
+          },
+      };
 
-    };
+      (*cmdBuffer)
+          ->vkCmdCopyBufferToImage(*cmdBuffer, *upload_buffer_, image(),
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                   multiplanar_plane_count_, copy_params);
+    } else {
+      VkBufferImageCopy copy_params = {
+          0,                                     // bufferOffset
+          0,                                     // bufferRowLength
+          0,                                     // bufferImageHeight
+          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},  // imageSubresource
+          {0, 0, 0},                             // offset
+          {static_cast<uint32_t>(width_), static_cast<uint32_t>(height_),
+           1}  // extent
+      };
 
-    (*cmdBuffer)
-        ->vkCmdCopyBufferToImage(*cmdBuffer, *upload_buffer_, image(),
-                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-                                 &copy_params);
+      (*cmdBuffer)
+          ->vkCmdCopyBufferToImage(*cmdBuffer, *upload_buffer_, image(),
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 3,
+                                   &copy_params);
+    }
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -191,6 +272,50 @@ struct VulkanTexture {
   }
   ::VkImageView view() const { return *image_view_; }
 
+  // Return true if format is multiplanar
+  bool IsFormatMultiplanar(VkFormat format) {
+    return (format_ >= VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM &&
+            format_ <= VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM) ||
+           (format_ >= VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16 &&
+            format_ <= VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16) ||
+           (format_ >= VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16 &&
+            format_ <= VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16) ||
+           (format_ >= VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM &&
+            format_ <= VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM);
+  }
+
+  // Return true if format downsamples width
+  bool FormatDownsamplesWidth(VkFormat format) {
+    return format_ == VK_FORMAT_G8B8G8R8_422_UNORM ||
+           format_ == VK_FORMAT_B8G8R8G8_422_UNORM ||
+           format_ == VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM ||
+           format_ == VK_FORMAT_G8_B8R8_2PLANE_422_UNORM ||
+           format_ == VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16 ||
+           format_ == VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16 ||
+           format_ == VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16 ||
+           format_ == VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16 ||
+           format_ == VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16 ||
+           format_ == VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16 ||
+           format_ == VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16 ||
+           format_ == VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16 ||
+           format_ == VK_FORMAT_G16B16G16R16_422_UNORM ||
+           format_ == VK_FORMAT_B16G16R16G16_422_UNORM ||
+           format_ == VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM ||
+           format_ == VK_FORMAT_G16_B16R16_2PLANE_422_UNORM;
+  }
+
+  // Return true if format downsamples width and height
+  bool FormatDownsamplesWidthAndHeight(VkFormat format) {
+    return format_ == VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM ||
+           format_ == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM ||
+           format_ == VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16 ||
+           format_ == VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16 ||
+           format_ == VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16 ||
+           format_ == VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16 ||
+           format_ == VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM ||
+           format_ == VK_FORMAT_G16_B16R16_2PLANE_420_UNORM;
+  }
+
  private:
   VkFormat format_;
   size_t width_;
@@ -200,6 +325,9 @@ struct VulkanTexture {
   containers::Allocator* allocator_;
   logging::Logger* logger_;
   size_t sparse_binding_block_size_;
+  size_t multiplanar_plane_count_;
+  size_t downsampled_width_;
+  size_t downsampled_height_;
 
   containers::unique_ptr<vulkan::VulkanApplication::Buffer> upload_buffer_;
   containers::unique_ptr<vulkan::VulkanApplication::Image> image_;

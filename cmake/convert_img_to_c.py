@@ -53,7 +53,8 @@ def main():
         "RGB": "struct {uint8_t r; uint8_t g; uint8_t b; uint8_t a;}",
         "RGBA": "struct {uint8_t r; uint8_t g; uint8_t b; uint8_t a;}",
         "I": "uint32_t",
-        "F": "float"
+        "F": "float",
+        "YCbCr": "uint8_t"
     }
 
     vulkan_types = {
@@ -63,12 +64,17 @@ def main():
         "RGB": "VK_FORMAT_R8G8B8A8_UNORM",
         "RGBA": "VK_FORMAT_R8G8B8A8_UNORM",
         "I": "VK_FORMAT_R32_UNORM",
-        "F": "VK_FORMAT_R32_SFLOAT"
+        "F": "VK_FORMAT_R32_SFLOAT",
+        # We use G8_B8_R8_3PLANE_420_UNORM here because it the most widely supported multiplanar format
+        "YCbCr": "VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM"
     }
 
     try:
         image = Image.open(args.img)
         data = image.getdata()
+
+        if (".jpg" in args.img):
+            image.mode = "YCbCr"
 
         with open(args.o, "w") as f:
             f.write("const struct {\n")
@@ -77,28 +83,48 @@ def main():
             f.write(" size_t height;")
             f.write(
                 " " + data_types[image.mode] +
-                " data[" + str(image.size[0] * image.size[1]) + "];\n} texture = { \n")
+                " data[" + str(image.size[0] * image.size[1] * 2) + "];\n} texture = { \n")
             f.write("   " + vulkan_types[image.mode] + ",\n")
             f.write("   " + str(image.size[0]) + ",\n")
             f.write("   " + str(image.size[1]) + ",\n")
             f.write("   {\n")
-            for i in range(0, image.size[0]):
-                if i != 0:
-                    f.write(",\n")
-                f.write("       ")
-                for j in range(0, image.size[1]):
-                    if j != 0:
-                        f.write(", ")
-                    pixel = image.getpixel((i, j))
-                    if isinstance(pixel, tuple):
-                        f.write("{")
-                        for j in range(0, len(pixel)):
-                            if j != 0:
+
+            if (image.mode == "YCbCr"):
+                images = image.split()
+                image_plane_count = min(len(images), 3)
+                for i in range(0, image_plane_count):
+                    image = images[(i + 2) % 3]
+                    if (i != 0):
+                        image = image.resize((int(image.width / 2), int(image.height / 2)))
+                    for j in range(0, image.size[0]):
+                        if j != 0:
+                            f.write(",\n")
+                        f.write("       ")
+                        for k in range(0, image.size[1]):
+                            if k != 0:
                                 f.write(", ")
-                            f.write(str(pixel[j]))
-                        f.write("}")
-                    else:
-                        f.write(str(pixel))
+                            pixel = image.getpixel((j, k))
+                            f.write(str(pixel))
+                    if i != (image_plane_count - 1):
+                        f.write(",\n")
+            else:
+                for i in range(0, image.size[0]):
+                    if i != 0:
+                        f.write(",\n")
+                    f.write("       ")
+                    for j in range(0, image.size[1]):
+                        if j != 0:
+                            f.write(", ")
+                        pixel = image.getpixel((i, j))
+                        if isinstance(pixel, tuple):
+                            f.write("{")
+                            for j in range(0, len(pixel)):
+                                if j != 0:
+                                    f.write(", ")
+                                f.write(str(pixel[j]))
+                            f.write("}")
+                        else:
+                            f.write(str(pixel))
             f.write("\n   }\n")
             f.write("};\n")
     except IOError as err:

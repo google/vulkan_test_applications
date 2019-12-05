@@ -454,7 +454,8 @@ VkDevice CreateDeviceForSwapchain(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features,
     bool try_to_find_separate_present_queue,
-    uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index) {
+    uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index,
+	bool use_ycbcr_sampling) {
   containers::vector<VkPhysicalDevice> physical_devices =
       GetPhysicalDevices(allocator, *instance);
   float priority = 1.f;
@@ -534,13 +535,16 @@ VkDevice CreateDeviceForSwapchain(
 
     containers::vector<QueueCreateInfo> queue_create_infos(allocator);
     queue_create_infos.reserve(4);
+
     queue_create_infos.emplace_back(QueueCreateInfo(
         allocator, graphics_queue_family_index,
         use_protected_memory ? VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT : 0));
+
     queue_create_infos.back().AddQueue(1.0f);
     if (graphics_queue_family_index != present_queue_family_index) {
       queue_create_infos.emplace_back(
-          QueueCreateInfo(allocator, present_queue_family_index, 0));
+          QueueCreateInfo(allocator, present_queue_family_index,
+                          0));
       queue_create_infos.back().AddQueue(1.0f);
     }
     if (async_compute_queue_index != nullptr) {
@@ -599,12 +603,18 @@ VkDevice CreateDeviceForSwapchain(
 
     VkPhysicalDeviceProtectedMemoryFeatures protected_memory_feature{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, nullptr,
-        true};
+        use_protected_memory ? true : false};
+
+    VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcr_sampler_features{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR,
+        &protected_memory_feature,         // pNext;
+        use_ycbcr_sampling ? true : false  // samplerYcbcrConversion
+    };
 
     VkDeviceCreateInfo info{
-        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,                        // stype
-        use_protected_memory ? &protected_memory_feature : nullptr,  // pNext
-        0,                                                           // flags
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // stype
+        &ycbcr_sampler_features,                        // pNext
+        0,                                              // flags
         static_cast<uint32_t>(raw_queue_infos.size()),  // queueCreateInfoCount
         raw_queue_infos.data(),                         // pQueueCreateInfos
         0,                                              // enabledLayerCount
@@ -1147,10 +1157,10 @@ VkSampler CreateDefaultSampler(VkDevice* device) {
 }
 
 VkSampler CreateSampler(VkDevice* device, VkFilter minFilter,
-                        VkFilter magFilter) {
+                        VkFilter magFilter, void* extension) {
   VkSamplerCreateInfo info{
       /* sType = */ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-      /* pNext = */ nullptr,
+      /* pNext = */ extension,
       /* flags = */ 0,
       /* magFilter = */ minFilter,
       /* minFilter = */ magFilter,
