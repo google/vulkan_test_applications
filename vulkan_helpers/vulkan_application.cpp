@@ -63,7 +63,8 @@ VulkanApplication::VulkanApplication(
     uint32_t device_image_size, uint32_t device_buffer_size,
     uint32_t coherent_buffer_size, bool use_async_compute_queue,
     bool use_sparse_binding, bool use_device_group,
-    uint32_t device_peer_memory_size, bool use_protected_memory)
+    uint32_t device_peer_memory_size, bool use_ycbcr_sampling,
+    bool use_protected_memory)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -83,7 +84,8 @@ VulkanApplication::VulkanApplication(
       surface_(CreateDefaultSurface(&instance_, entry_data_)),
       device_(!use_device_group
                   ? CreateDevice(device_extensions, features,
-                                 use_async_compute_queue, use_sparse_binding)
+                                 use_async_compute_queue, use_sparse_binding,
+                                 use_ycbcr_sampling)
                   : CreateDeviceGroup(device_extensions, features,
                                       use_async_compute_queue,
                                       use_sparse_binding)),
@@ -421,7 +423,7 @@ VkDevice VulkanApplication::CreateDeviceGroup(
 VkDevice VulkanApplication::CreateDevice(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue,
-    bool use_sparse_binding) {
+    bool use_sparse_binding, bool use_ycbcr_sampling) {
   // Since this is called by the constructor be careful not to
   // use any data other than what has already been initialized.
   // allocator_, log_, entry_data_, library_wrapper_, instance_,
@@ -432,7 +434,8 @@ VkDevice VulkanApplication::CreateDevice(
       &present_queue_index_, use_protected_memory_, extensions, features,
       entry_data_->prefer_separate_present(),
       create_async_compute_queue ? &compute_queue_index_ : nullptr,
-      use_sparse_binding ? &sparse_binding_queue_index_ : nullptr));
+      use_sparse_binding ? &sparse_binding_queue_index_ : nullptr,
+      use_ycbcr_sampling));
 
   return SetupDevice(std::move(device), create_async_compute_queue,
                      use_sparse_binding);
@@ -473,7 +476,7 @@ VulkanApplication::CreateAndBindImage(const VkImageCreateInfo* create_info,
         nullptr};
     VkBindImageMemoryInfo bind_info{VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
                                     &group_info, image, memory, offset};
-    device_->vkBindImageMemory2(device_, 1, &bind_info);
+    device_->vkBindImageMemory2KHR(device_, 1, &bind_info);
   } else {
     device_->vkBindImageMemory(device_, image, memory, offset);
   }
@@ -547,6 +550,89 @@ VulkanApplication::CreateAndBindSparseImage(
                   VkImage(image, nullptr, &device_), create_info->format);
 
   return containers::unique_ptr<SparseImage>(
+      img, containers::UniqueDeleter(allocator_, sizeof(Image)));
+}
+
+containers::unique_ptr<VulkanApplication::Image>
+VulkanApplication::CreateAndBindMultiPlanarImage(
+    const VkImageCreateInfo* create_info, const uint32_t* device_indices) {
+  ::VkImage image;
+  LOG_ASSERT(==, log_,
+             device_->vkCreateImage(device_, create_info, nullptr, &image),
+             VK_SUCCESS);
+
+  AllocationToken* token;
+  if (create_info->flags & VK_IMAGE_CREATE_DISJOINT_BIT) {
+    const unsigned maxPlaneCount = 3;
+    unsigned planeCount = 0;
+    VkBindImageMemoryInfo bind_infos[maxPlaneCount];
+    VkBindImagePlaneMemoryInfoKHR planeBinding[maxPlaneCount];
+    ::VkDeviceMemory memory[maxPlaneCount];
+    ::VkDeviceSize offset[maxPlaneCount];
+
+    const VkSamplerYcbcrConversionImageFormatProperties* ycbcrConversionProps =
+        reinterpret_cast<const VkSamplerYcbcrConversionImageFormatProperties*>(
+            create_info->pNext);
+    if (ycbcrConversionProps &&
+        ycbcrConversionProps->sType ==
+            VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES_KHR) {
+      planeCount = ycbcrConversionProps->combinedImageSamplerDescriptorCount;
+    }
+
+    for (unsigned i = 0; i < planeCount; ++i) {
+      VkImageAspectFlagBits planeAspectBit =
+          static_cast<VkImageAspectFlagBits>(VK_IMAGE_ASPECT_PLANE_0_BIT << i);
+      VkMemoryRequirements2 requirements{
+          VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, nullptr, {}};
+
+      VkImagePlaneMemoryRequirementsInfo planeRequirementsInfo{
+          VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO, nullptr,
+          planeAspectBit};
+      VkImageMemoryRequirementsInfo2 requirementsInfo{
+          VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
+          &planeRequirementsInfo, image};
+      device_->vkGetImageMemoryRequirements2KHR(device_, &requirementsInfo,
+                                                &requirements);
+
+      token = device_only_image_heap_->AllocateMemory(
+          requirements.memoryRequirements.size,
+          requirements.memoryRequirements.alignment, &memory[i], &offset[i],
+          nullptr);
+
+      planeBinding[i].sType =
+          VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR;
+      planeBinding[i].pNext = nullptr;
+      planeBinding[i].planeAspect = planeAspectBit;
+
+      bind_infos[i] = {VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
+                       &planeBinding[i], image, memory[i], offset[i]};
+    }
+
+    device_->vkBindImageMemory2KHR(device_, planeCount, bind_infos);
+  } else {
+    ::VkDeviceMemory memory;
+    ::VkDeviceSize offset;
+
+    VkMemoryRequirements2 requirements{
+        VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, nullptr, {}};
+    VkImageMemoryRequirementsInfo2 requirementsInfo{
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR, nullptr, image};
+    device_->vkGetImageMemoryRequirements2KHR(device_, &requirementsInfo,
+                                              &requirements);
+
+    token = device_only_image_heap_->AllocateMemory(
+        requirements.memoryRequirements.size,
+        requirements.memoryRequirements.alignment, &memory, &offset, nullptr);
+    device_->vkBindImageMemory(device_, image, memory, offset);
+  }
+
+  // We have to do it this way because Image is private and friended,
+  // so we cannot go through make_unique.
+  Image* img = new (allocator_->malloc(sizeof(Image)))
+      Image(device_only_image_heap_.get(), token,
+            VkImage(image, nullptr, &device_), create_info->format);
+
+  return containers::unique_ptr<Image>(
       img, containers::UniqueDeleter(allocator_, sizeof(Image)));
 }
 
@@ -1435,6 +1521,10 @@ void VulkanGraphicsPipeline::SetFrontFace(VkFrontFace face) {
 
 void VulkanGraphicsPipeline::SetRasterizationFill(VkPolygonMode mode) {
   rasterization_state_.polygonMode = mode;
+}
+
+void VulkanGraphicsPipeline::SetRasterizationExtension(const void * extension) {
+  rasterization_state_.pNext = extension;
 }
 
 void VulkanGraphicsPipeline::AddShader(VkShaderStageFlagBits stage,

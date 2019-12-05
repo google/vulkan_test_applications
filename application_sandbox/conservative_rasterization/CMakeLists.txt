@@ -12,11 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_texture_library(standard_images
+add_shader_library(conservative_rasterization_shaders
   SOURCES
-    particle.png
-    r8.png
-    rgb8.png
-    star.png
-    multiplanar.jpg
+    cube.frag
+    cube.vert
+  SHADER_DEPS
+    shader_library
+)
+
+add_vulkan_sample_application(conservative_rasterization
+  SOURCES main.cpp
+  LIBS
+    vulkan_helpers
+  MODELS
+    standard_models
+  SHADERS
+    conservative_rasterization_shaders
 )

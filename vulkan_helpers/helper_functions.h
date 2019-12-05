@@ -133,7 +133,8 @@ VkDevice CreateDeviceForSwapchain(
     const VkPhysicalDeviceFeatures& features = {0},
     bool try_to_find_separate_present_queue = false,
     uint32_t* aync_compute_queue_index = nullptr,
-    uint32_t* sparse_binding_queue_index = nullptr);
+    uint32_t* sparse_binding_queue_index = nullptr,
+    bool use_ycbcr_sampling = false);
 
 // Creates a device capable of presenting to the given surface.
 // The device is created with the given extensions.
@@ -199,7 +200,7 @@ VkSampler CreateDefaultSampler(VkDevice* device);
 // Creates a default sampler as above, but with the specified minFilter and
 // magFilter.
 VkSampler CreateSampler(VkDevice* device, VkFilter minFilter,
-                        VkFilter magFilter);
+                        VkFilter magFilter, void* extension = nullptr);
 
 // Creates a DescriptorSetLayout with the given set of layouts.
 VkDescriptorSetLayout CreateDescriptorSetLayout(
