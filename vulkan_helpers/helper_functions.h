@@ -82,7 +82,8 @@ containers::vector<VkQueueFamilyProperties> GetQueueFamilyProperties(
 // if no such queue.
 uint32_t GetGraphicsAndComputeQueueFamily(containers::Allocator* allocator,
                                           VkInstance& instance,
-                                          ::VkPhysicalDevice device);
+                                          ::VkPhysicalDevice device,
+                                          bool use_protected_memory);
 
 // Returns the index for the first queue family with the capabilities specified
 // by the given |queue_flags| for the given physical |device|. Returns the max
@@ -102,7 +103,9 @@ VkDevice CreateDefaultDevice(containers::Allocator* allocator,
 // Creates a command pool with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
 // set.
 VkCommandPool CreateDefaultCommandPool(containers::Allocator* allocator,
-                                       VkDevice& device, uint32_t queueFamilyIndex = 0);
+                                       VkDevice& device,
+                                       bool use_protected_memory,
+                                       uint32_t queueFamilyIndex = 0);
 
 // Creates a surface to render into the the default window
 // provided in entry_data.
@@ -125,7 +128,7 @@ VkSurfaceKHR CreateDefaultSurface(VkInstance* instance,
 VkDevice CreateDeviceForSwapchain(
     containers::Allocator* allocator, VkInstance* instance,
     VkSurfaceKHR* surface, uint32_t* graphics_queue_index,
-    uint32_t* present_queue_index,
+    uint32_t* present_queue_index, bool use_protected_memory,
     const std::initializer_list<const char*> extensions = {},
     const VkPhysicalDeviceFeatures& features = {0},
     bool try_to_find_separate_present_queue = false,

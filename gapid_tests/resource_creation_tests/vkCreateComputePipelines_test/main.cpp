@@ -33,7 +33,7 @@ int main_entry(const entry::EntryData* data) {
   vulkan::VkDevice device(vulkan::CreateDefaultDevice(alloc, instance, true));
   const ::VkPhysicalDevice pdev = device.physical_device();
   const uint32_t queue_index =
-      GetGraphicsAndComputeQueueFamily(alloc, instance, pdev);
+      GetGraphicsAndComputeQueueFamily(alloc, instance, pdev, false);
   vulkan::VkQueue queue(GetQueue(&device, queue_index));
 
   // Query memory properties and allocate memory.

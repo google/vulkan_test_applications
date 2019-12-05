@@ -30,7 +30,7 @@ int main_entry(const entry::EntryData* data) {
       vulkan::CreateEmptyInstance(data->allocator(), &wrapper));
   vulkan::VkDevice device(vulkan::CreateDefaultDevice(allocator, instance));
   vulkan::VkCommandPool pool(
-      vulkan::CreateDefaultCommandPool(allocator, device));
+      vulkan::CreateDefaultCommandPool(allocator, device, false));
 
   const uint32_t max_count = 5;
 

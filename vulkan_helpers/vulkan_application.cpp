@@ -63,7 +63,7 @@ VulkanApplication::VulkanApplication(
     uint32_t device_image_size, uint32_t device_buffer_size,
     uint32_t coherent_buffer_size, bool use_async_compute_queue,
     bool use_sparse_binding, bool use_device_group,
-    uint32_t device_peer_memory_size)
+    uint32_t device_peer_memory_size, bool use_protected_memory)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -72,6 +72,7 @@ VulkanApplication::VulkanApplication(
       present_queue_(nullptr),
       render_queue_index_(0u),
       present_queue_index_(0u),
+      use_protected_memory_(use_protected_memory),
       library_wrapper_(allocator_, log_),
       instance_(!use_device_group ? CreateInstanceForApplication(
                                         allocator_, &library_wrapper_,
@@ -189,7 +190,9 @@ VulkanApplication::VulkanApplication(
       VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
       kAllBufferBits, kAllBufferBits};
   VkMemoryPropertyFlags property_flags[3] = {
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+          (use_protected_memory_ ? VK_MEMORY_PROPERTY_PROTECTED_BIT : 0u),
       0};
   bool m_gpu = device_.num_devices() > 1;
   for (size_t j = 0; j < device_.num_devices(); ++j) {
@@ -426,7 +429,7 @@ VkDevice VulkanApplication::CreateDevice(
 
   vulkan::VkDevice device(vulkan::CreateDeviceForSwapchain(
       allocator_, &instance_, &surface_, &render_queue_index_,
-      &present_queue_index_, extensions, features,
+      &present_queue_index_, use_protected_memory_, extensions, features,
       entry_data_->prefer_separate_present(),
       create_async_compute_queue ? &compute_queue_index_ : nullptr,
       use_sparse_binding ? &sparse_binding_queue_index_ : nullptr));

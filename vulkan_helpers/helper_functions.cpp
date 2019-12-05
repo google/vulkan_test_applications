@@ -215,9 +215,12 @@ inline bool HasQueueFlags(const VkQueueFamilyProperties& property,
 
 uint32_t GetGraphicsAndComputeQueueFamily(containers::Allocator* allocator,
                                           VkInstance& instance,
-                                          ::VkPhysicalDevice device) {
-  return GetQueueFamily(allocator, instance, device,
-                        VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+                                          ::VkPhysicalDevice device,
+                                          bool use_protected_memory) {
+  return GetQueueFamily(
+      allocator, instance, device,
+      VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT |
+          (use_protected_memory ? VK_QUEUE_PROTECTED_BIT : 0));
 }
 
 inline uint32_t GetQueueFamily(containers::Allocator* allocator,
@@ -278,7 +281,7 @@ VkDevice CreateDefaultDevice(containers::Allocator* allocator,
   const uint32_t queue_family_index =
       require_graphics_compute_queue
           ? GetGraphicsAndComputeQueueFamily(allocator, instance,
-                                             physical_device)
+                                             physical_device, false)
           : GetQueueFamily(allocator, instance, physical_device,
                            VK_QUEUE_GRAPHICS_BIT);
   LOG_ASSERT(!=, instance.GetLogger(), queue_family_index, ~0u);
@@ -447,7 +450,7 @@ struct QueueCreateInfo {
 VkDevice CreateDeviceForSwapchain(
     containers::Allocator* allocator, VkInstance* instance,
     VkSurfaceKHR* surface, uint32_t* present_queue_index,
-    uint32_t* graphics_queue_index,
+    uint32_t* graphics_queue_index, bool use_protected_memory,
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features,
     bool try_to_find_separate_present_queue,
@@ -495,7 +498,8 @@ VkDevice CreateDeviceForSwapchain(
 
     auto properties = GetQueueFamilyProperties(allocator, *instance, device);
     const uint32_t graphics_queue_family_index =
-        GetGraphicsAndComputeQueueFamily(allocator, *instance, physical_device);
+        GetGraphicsAndComputeQueueFamily(allocator, *instance, physical_device,
+                                         use_protected_memory);
     uint32_t present_queue_family_index = 0;
     uint32_t backup_present_queue_family_index = 0xFFFFFFFF;
     for (; present_queue_family_index < properties.size();
@@ -530,8 +534,9 @@ VkDevice CreateDeviceForSwapchain(
 
     containers::vector<QueueCreateInfo> queue_create_infos(allocator);
     queue_create_infos.reserve(4);
-    queue_create_infos.emplace_back(
-        QueueCreateInfo(allocator, graphics_queue_family_index, 0));
+    queue_create_infos.emplace_back(QueueCreateInfo(
+        allocator, graphics_queue_family_index,
+        use_protected_memory ? VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT : 0));
     queue_create_infos.back().AddQueue(1.0f);
     if (graphics_queue_family_index != present_queue_family_index) {
       queue_create_infos.emplace_back(
@@ -592,10 +597,14 @@ VkDevice CreateDeviceForSwapchain(
       raw_queue_infos.emplace_back(qi.GetVkDeviceQueueCreateInfo());
     }
 
+    VkPhysicalDeviceProtectedMemoryFeatures protected_memory_feature{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, nullptr,
+        true};
+
     VkDeviceCreateInfo info{
-        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // stype
-        nullptr,                                        // pNext
-        0,                                              // flags
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,                        // stype
+        use_protected_memory ? &protected_memory_feature : nullptr,  // pNext
+        0,                                                           // flags
         static_cast<uint32_t>(raw_queue_infos.size()),  // queueCreateInfoCount
         raw_queue_infos.data(),                         // pQueueCreateInfos
         0,                                              // enabledLayerCount
@@ -672,8 +681,8 @@ containers::vector<QueueCreateInfo> GetAcceptableQueues(
 
   auto properties =
       GetQueueFamilyProperties(allocator, *instance, physical_device);
-  const uint32_t graphics_queue_family_index =
-      GetGraphicsAndComputeQueueFamily(allocator, *instance, physical_device);
+  const uint32_t graphics_queue_family_index = GetGraphicsAndComputeQueueFamily(
+      allocator, *instance, physical_device, false);
   uint32_t present_queue_family_index = 0;
   uint32_t backup_present_queue_family_index = 0xFFFFFFFF;
   for (; present_queue_family_index < properties.size();
@@ -898,11 +907,13 @@ VkDevice CreateDeviceGroupForSwapchain(
 
 VkCommandPool CreateDefaultCommandPool(containers::Allocator* allocator,
                                        VkDevice& device,
+                                       bool use_protected_memory,
                                        uint32_t queueFamilyIndex) {
   VkCommandPoolCreateInfo info = {
       /* sType = */ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
       /* pNext = */ nullptr,
-      /* flags = */ VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+      /* flags = */ VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT |
+          (use_protected_memory ? VK_COMMAND_POOL_CREATE_PROTECTED_BIT : 0u),
       // TODO(antiagainst): use a graphics + compute queue family.
       /* queueFamilyIndex = */ queueFamilyIndex,
   };
