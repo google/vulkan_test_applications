@@ -51,9 +51,11 @@ class InstanceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceFeatures),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceMemoryProperties),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceProperties),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceProperties2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceQueueFamilyProperties),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceFormatProperties),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceImageFormatProperties),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceImageFormatProperties2),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSparseImageFormatProperties),
         CONSTRUCT_LAZY_FUNCTION(vkDestroySurfaceKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR),
@@ -106,9 +108,11 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkGetPhysicalDeviceFeatures);
   LAZY_FUNCTION(vkGetPhysicalDeviceMemoryProperties);
   LAZY_FUNCTION(vkGetPhysicalDeviceProperties);
+  LAZY_FUNCTION(vkGetPhysicalDeviceProperties2KHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceQueueFamilyProperties);
   LAZY_FUNCTION(vkGetPhysicalDeviceFormatProperties);
   LAZY_FUNCTION(vkGetPhysicalDeviceImageFormatProperties);
+  LAZY_FUNCTION(vkGetPhysicalDeviceImageFormatProperties2);
   LAZY_FUNCTION(vkGetPhysicalDeviceSparseImageFormatProperties);
   LAZY_FUNCTION(vkDestroySurfaceKHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR);
@@ -326,6 +330,7 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkGetSwapchainImagesKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetImageMemoryRequirements),
         CONSTRUCT_LAZY_FUNCTION(vkGetImageSparseMemoryRequirements),
+        CONSTRUCT_LAZY_FUNCTION(vkGetImageMemoryRequirements2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetImageSubresourceLayout),
         CONSTRUCT_LAZY_FUNCTION(vkCreateImageView),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyImageView),
@@ -340,10 +345,11 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkAllocateMemory),
         CONSTRUCT_LAZY_FUNCTION(vkFreeMemory),
         CONSTRUCT_LAZY_FUNCTION(vkBindImageMemory),
-        CONSTRUCT_LAZY_FUNCTION(vkBindImageMemory2),
+        CONSTRUCT_LAZY_FUNCTION(vkBindImageMemory2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkCreateShaderModule),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyShaderModule),
         CONSTRUCT_LAZY_FUNCTION(vkCreateSampler),
+        CONSTRUCT_LAZY_FUNCTION(vkCreateSamplerYcbcrConversionKHR),
         CONSTRUCT_LAZY_FUNCTION(vkDestroySampler),
         CONSTRUCT_LAZY_FUNCTION(vkCreateBuffer),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyBuffer),
@@ -443,6 +449,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkGetSwapchainImagesKHR);
   LAZY_FUNCTION(vkGetImageMemoryRequirements);
   LAZY_FUNCTION(vkGetImageSparseMemoryRequirements);
+  LAZY_FUNCTION(vkGetImageMemoryRequirements2KHR);
   LAZY_FUNCTION(vkGetImageSubresourceLayout);
   LAZY_FUNCTION(vkCreateImageView);
   LAZY_FUNCTION(vkDestroyImageView);
@@ -457,10 +464,11 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkAllocateMemory);
   LAZY_FUNCTION(vkFreeMemory);
   LAZY_FUNCTION(vkBindImageMemory);
-  LAZY_FUNCTION(vkBindImageMemory2);
+  LAZY_FUNCTION(vkBindImageMemory2KHR);
   LAZY_FUNCTION(vkCreateShaderModule);
   LAZY_FUNCTION(vkDestroyShaderModule);
   LAZY_FUNCTION(vkCreateSampler);
+  LAZY_FUNCTION(vkCreateSamplerYcbcrConversionKHR);
   LAZY_FUNCTION(vkDestroySampler);
   LAZY_FUNCTION(vkCreateBuffer);
   LAZY_FUNCTION(vkDestroyBuffer);
