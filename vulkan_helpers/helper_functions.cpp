@@ -1023,14 +1023,12 @@ VkCommandBuffer CreateCommandBuffer(VkCommandPool* pool,
   return vulkan::VkCommandBuffer(raw_command_buffer, pool, device);
 }
 
-VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
-                                      VkSurfaceKHR* surface,
-                                      containers::Allocator* allocator,
-                                      uint32_t graphics_queue_index,
-                                      uint32_t present_queue_index,
-                                      const entry::EntryData* data,
-                                      VkColorSpaceKHR swapchain_color_space,
-	                                  bool use_shared_presentation) {
+VkSwapchainKHR CreateDefaultSwapchain(
+    VkInstance* instance, VkDevice* device, VkSurfaceKHR* surface,
+    containers::Allocator* allocator, uint32_t graphics_queue_index,
+    uint32_t present_queue_index, const entry::EntryData* data,
+    VkColorSpaceKHR swapchain_color_space, bool use_shared_presentation,
+    VkSwapchainCreateFlagsKHR flags, const void* extensions) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
   containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
@@ -1129,8 +1127,8 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
 
     VkSwapchainCreateInfoKHR swapchainCreateInfo{
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,  // sType
-        nullptr,                                      // pNext
-        0,                                            // flags
+        extensions,                                   // pNext
+        flags,                                        // flags
         *surface,                                     // surface
         std::min(surface_caps.minImageCount + 1,
                  maxSwapchains),    // minImageCount
@@ -1139,9 +1137,7 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
         image_extent,               // imageExtent
         1,                          // imageArrayLayers
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL | use_shared_presentation
-            ? VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR
-            : VK_IMAGE_LAYOUT_UNDEFINED,  // imageUsage
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT,  // imageUsage
         has_multiple_queues ? VK_SHARING_MODE_CONCURRENT
                             : VK_SHARING_MODE_EXCLUSIVE,  // sharingMode
         has_multiple_queues ? 2u : 0u,
