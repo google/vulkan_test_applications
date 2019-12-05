@@ -28,7 +28,7 @@ int main_entry(const entry::EntryData* data) {
 
   uint32_t queues[2];
   vulkan::VkDevice device(vulkan::CreateDeviceForSwapchain(
-      data->allocator(), &instance, &surface, &queues[0], &queues[1]));
+      data->allocator(), &instance, &surface, &queues[0], &queues[1], false));
   vulkan::VkSwapchainKHR swapchain(vulkan::CreateDefaultSwapchain(
       &instance, &device, &surface, data->allocator(), queues[0], queues[1],
       data));

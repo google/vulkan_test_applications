@@ -436,7 +436,8 @@ class VulkanApplication {
       uint32_t device_buffer_size = 1024 * 128,
       uint32_t coherent_buffer_size = 1024 * 128,
       bool use_async_compute_queue = false, bool use_sparse_binding = false,
-      bool use_device_groups = false, uint32_t device_peer_memory_size = 0);
+      bool use_device_groups = false, uint32_t device_peer_memory_size = 0,
+      bool use_protected_memory = false);
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.
@@ -552,14 +553,16 @@ class VulkanApplication {
   // Creates and returns a new primary level CommandBuffer using the
   // Application's default VkCommandPool.
   VkCommandBuffer GetCommandBuffer(uint32_t queueFamilyIndex = 0) {
-    return CreateCommandBuffer(&GetCommandPool(queueFamilyIndex), VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                               &device_);
+    return CreateCommandBuffer(&GetCommandPool(queueFamilyIndex),
+                               VK_COMMAND_BUFFER_LEVEL_PRIMARY, &device_);
   }
 
   // Creates and returns a new CommandBuffer with given command buffer level
   // using the Application's default VkCommandPool
-  VkCommandBuffer GetCommandBuffer(VkCommandBufferLevel level, uint32_t queueFamilyIndex = 0) {
-    return CreateCommandBuffer(&GetCommandPool(queueFamilyIndex), level, &device_);
+  VkCommandBuffer GetCommandBuffer(VkCommandBufferLevel level,
+                                   uint32_t queueFamilyIndex = 0) {
+    return CreateCommandBuffer(&GetCommandPool(queueFamilyIndex), level,
+                               &device_);
   }
 
   // Begins the given command buffer with the given command buffer usage flags
@@ -782,11 +785,14 @@ class VulkanApplication {
       const std::initializer_list<const char*> extensions,
       const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue,
       bool use_sparse_binding);
-  
+
   VkCommandPool& GetCommandPool(uint32_t queueFamilyIndex = 0) {
     if (command_pools_.find(queueFamilyIndex) == command_pools_.end()) {
-      command_pools_.emplace(queueFamilyIndex, CreateDefaultCommandPool(allocator_, device_, queueFamilyIndex));
-    }    
+      command_pools_.emplace(
+          queueFamilyIndex,
+          CreateDefaultCommandPool(allocator_, device_, use_protected_memory_,
+                                   queueFamilyIndex));
+    }
     return command_pools_.at(queueFamilyIndex);
   }
 
@@ -804,6 +810,7 @@ class VulkanApplication {
   uint32_t present_queue_index_;
   uint32_t compute_queue_index_;
   uint32_t sparse_binding_queue_index_;
+  bool use_protected_memory_;
 
   LibraryWrapper library_wrapper_;
   VkInstance instance_;

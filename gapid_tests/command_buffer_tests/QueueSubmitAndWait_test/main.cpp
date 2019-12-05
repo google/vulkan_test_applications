@@ -29,7 +29,7 @@ int main_entry(const entry::EntryData* data) {
 
   uint32_t queues[2];
   vulkan::VkDevice device(vulkan::CreateDeviceForSwapchain(
-      data->allocator(), &instance, &surface, &queues[0], &queues[1]));
+      data->allocator(), &instance, &surface, &queues[0], &queues[1], false));
 
   vulkan::VkQueue queue = vulkan::GetQueue(&device, queues[0]);
   {  // 0 submits
@@ -57,7 +57,7 @@ int main_entry(const entry::EntryData* data) {
 
   {  // 1 submit, 1 command_buffer
     vulkan::VkCommandPool pool(
-        vulkan::CreateDefaultCommandPool(data->allocator(), device));
+        vulkan::CreateDefaultCommandPool(data->allocator(), device, false));
     vulkan::VkCommandBuffer command_buffer =
         vulkan::CreateDefaultCommandBuffer(&pool, &device);
 
@@ -91,7 +91,7 @@ int main_entry(const entry::EntryData* data) {
 
   {  // 1 submit, 2 command_buffers
     vulkan::VkCommandPool pool(
-        vulkan::CreateDefaultCommandPool(data->allocator(), device));
+        vulkan::CreateDefaultCommandPool(data->allocator(), device, false));
     vulkan::VkCommandBuffer command_buffer =
         vulkan::CreateDefaultCommandBuffer(&pool, &device);
 

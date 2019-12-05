@@ -35,6 +35,7 @@ struct SampleOptions {
   bool verbose_output = false;
   bool async_compute = false;
   bool sparse_binding = false;
+  bool protected_memory = false;
 
   SampleOptions& EnableMultisampling() {
     enable_multisampling = true;
@@ -58,6 +59,10 @@ struct SampleOptions {
   }
   SampleOptions& EnableSparseBinding() {
     sparse_binding = true;
+    return *this;
+  }
+  SampleOptions& EnableProtectedMemory() {
+    protected_memory = true;
     return *this;
   }
 };
@@ -140,14 +145,14 @@ class Sample {
       : options_(options),
         data_(entry_data),
         allocator_(allocator),
-        application_(allocator, entry_data->logger(), entry_data,
-                     instance_extensions, device_extensions,
-                     physical_device_features,
-                     host_buffer_size_in_MB * 1024 * 1024,
-                     image_memory_size_in_MB * 1024 * 1024,
-                     device_buffer_size_in_MB * 1024 * 1024,
-                     coherent_buffer_size_in_MB * 1024 * 1024,
-                     options.async_compute, options.sparse_binding),
+        application_(
+            allocator, entry_data->logger(), entry_data, instance_extensions,
+            device_extensions, physical_device_features,
+            host_buffer_size_in_MB * 1024 * 1024,
+            image_memory_size_in_MB * 1024 * 1024,
+            device_buffer_size_in_MB * 1024 * 1024,
+            coherent_buffer_size_in_MB * 1024 * 1024, options.async_compute,
+            options.sparse_binding, false, 0, options.protected_memory),
         frame_data_(allocator),
         swapchain_images_(application_.swapchain_images()),
         last_frame_time_(std::chrono::high_resolution_clock::now()),

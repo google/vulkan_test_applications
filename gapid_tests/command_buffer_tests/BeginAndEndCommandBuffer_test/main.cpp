@@ -29,7 +29,7 @@ int main_entry(const entry::EntryData* data) {
   vulkan::VkDevice device(
       vulkan::CreateDefaultDevice(data->allocator(), instance));
   vulkan::VkCommandPool pool(
-      vulkan::CreateDefaultCommandPool(data->allocator(), device));
+      vulkan::CreateDefaultCommandPool(data->allocator(), device, false));
   vulkan::VkCommandBuffer command_buffer =
       vulkan::CreateDefaultCommandBuffer(&pool, &device);
 
