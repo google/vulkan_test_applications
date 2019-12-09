@@ -177,7 +177,8 @@ VkSwapchainKHR CreateDefaultSwapchain(
     VkInstance* instance, VkDevice* device, VkSurfaceKHR* surface,
     containers::Allocator* allocator, uint32_t present_queue_index,
     uint32_t graphics_queue_index, const entry::EntryData* data,
-    VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+    VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+    bool use_shared_presentation = false);
 
 // Returns a uint32_t with only the lowest bit set.
 uint32_t inline GetLSB(uint32_t val) { return ((val - 1) ^ val) & val; }

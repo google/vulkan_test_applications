@@ -1005,7 +1005,8 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
                                       uint32_t graphics_queue_index,
                                       uint32_t present_queue_index,
                                       const entry::EntryData* data,
-                                      VkColorSpaceKHR swapchain_color_space) {
+                                      VkColorSpaceKHR swapchain_color_space,
+	                                  bool use_shared_presentation) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
   containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
@@ -1114,17 +1115,20 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
         image_extent,               // imageExtent
         1,                          // imageArrayLayers
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // imageUsage
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL | use_shared_presentation
+            ? VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR
+            : VK_IMAGE_LAYOUT_UNDEFINED,  // imageUsage
         has_multiple_queues ? VK_SHARING_MODE_CONCURRENT
                             : VK_SHARING_MODE_EXCLUSIVE,  // sharingMode
         has_multiple_queues ? 2u : 0u,
         has_multiple_queues ? queues : nullptr,  // pQueueFamilyIndices
         surface_caps.currentTransform,           // preTransform,
         static_cast<VkCompositeAlphaFlagBitsKHR>(
-            chosenAlpha),       // compositeAlpha
-        present_modes.front(),  // presentModes
-        false,                  // clipped
-        VK_NULL_HANDLE          // oldSwapchain
+            chosenAlpha),  // compositeAlpha
+        use_shared_presentation ? VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR
+                                : present_modes.front(),  // presentModes
+        false,                                            // clipped
+        VK_NULL_HANDLE                                    // oldSwapchain
     };
 
     LOG_ASSERT(==, instance->GetLogger(),
