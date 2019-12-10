@@ -602,21 +602,45 @@ VkDevice CreateDeviceForSwapchain(
 
     VkPhysicalDeviceHostQueryResetFeaturesEXT host_query_reset_feature{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT,
-        nullptr, use_host_query_reset ? true : false};
-
-    VkPhysicalDeviceProtectedMemoryFeatures protected_memory_feature{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,
-        &host_query_reset_feature, use_protected_memory ? true : false};
+        nullptr, use_host_query_reset};
 
     VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcr_sampler_features{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR,
-        &protected_memory_feature,         // pNext;
-        use_ycbcr_sampling ? true : false  // samplerYcbcrConversion
+        &host_query_reset_feature,  // pNext;
+        use_ycbcr_sampling          // samplerYcbcrConversion
     };
+
+    VkPhysicalDeviceFloatControlsPropertiesKHR float_control_properties{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR,
+        &ycbcr_sampler_features,  // pNext
+        VkShaderFloatControlsIndependenceKHR::
+            VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR,  // denormBehaviorIndependence;
+        VkShaderFloatControlsIndependenceKHR::
+            VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR,  // roundingModeIndependence;
+        1,  //  shaderSignedZeroInfNanPreserveFloat16;
+        1,  //  shaderSignedZeroInfNanPreserveFloat32;
+        1,  //  shaderSignedZeroInfNanPreserveFloat64;
+        1,  //  shaderDenormPreserveFloat16;
+        1,  //  shaderDenormPreserveFloat32;
+        1,  //  shaderDenormPreserveFloat64;
+        1,  //  shaderDenormFlushToZeroFloat16;
+        1,  //  shaderDenormFlushToZeroFloat32;
+        1,  //  shaderDenormFlushToZeroFloat64;
+        1,  //  shaderRoundingModeRTEFloat16;
+        1,  //  shaderRoundingModeRTEFloat32;
+        1,  //  shaderRoundingModeRTEFloat64;
+        1,  //  shaderRoundingModeRTZFloat16;
+        1,  //  shaderRoundingModeRTZFloat32;
+        1,  //  shaderRoundingModeRTZFloat64;
+    };
+
+    VkPhysicalDeviceProtectedMemoryFeatures protected_memory_feature{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,
+        &float_control_properties, use_protected_memory};
 
     VkDeviceCreateInfo info{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // stype
-        &ycbcr_sampler_features,                        // pNext
+        &protected_memory_feature,                      // pNext
         0,                                              // flags
         static_cast<uint32_t>(raw_queue_infos.size()),  // queueCreateInfoCount
         raw_queue_infos.data(),                         // pQueueCreateInfos

@@ -65,7 +65,7 @@ VulkanApplication::VulkanApplication(
     bool use_sparse_binding, bool use_device_group,
     uint32_t device_peer_memory_size, bool use_ycbcr_sampling,
     bool use_protected_memory, bool use_host_query_reset,
-    VkColorSpaceKHR swapchain_color_space)
+    VkColorSpaceKHR swapchain_color_space, bool use_vulkan_1_1)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -76,7 +76,7 @@ VulkanApplication::VulkanApplication(
       present_queue_index_(0u),
       use_protected_memory_(use_protected_memory),
       library_wrapper_(allocator_, log_),
-      instance_(!use_device_group ? CreateInstanceForApplication(
+      instance_(!use_vulkan_1_1 ? CreateInstanceForApplication(
                                         allocator_, &library_wrapper_,
                                         entry_data_, instance_extensions)
                                   : Create11InstanceForApplication(

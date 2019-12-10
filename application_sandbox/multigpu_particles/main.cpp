@@ -100,7 +100,7 @@ int main_entry(const entry::EntryData* data) {
                                 VkPhysicalDeviceFeatures{}, 1024 * 1024 * 256,
                                 1024 * 1024 * 256, 1024 * 1024 * 512,
                                 1024 * 1024 * 256, false, false, true,
-                                1024 * 1024 * 256);
+                                1024 * 1024 * 256, false, true);
   // So we don't have to type app.device every time.
   vulkan::VkDevice& device = app.device();
   vulkan::VkQueue& render_queue = app.render_queue();
