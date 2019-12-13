@@ -35,7 +35,7 @@ class InternalDynamicLibrary : public DynamicLibrary {
 
   ~InternalDynamicLibrary() override {
     if (is_valid()) {
-      CloseHandle(lib_);
+      FreeLibrary(lib_);
     }
   }
 
