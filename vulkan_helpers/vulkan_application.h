@@ -121,7 +121,9 @@ class VulkanGraphicsPipeline {
   // patch_size is unused unless there is a tessellation shader.
   void SetTopology(VkPrimitiveTopology topology, uint32_t patch_size = 0);
   void SetViewport(const VkViewport& viewport);
+  void SetViewports(const VkViewport* viewports, uint32_t viewport_count);
   void SetScissor(const VkRect2D& scissor);
+  void SetScissors(const VkRect2D* scissors, uint32_t scissor_count);
 
   void SetSamples(VkSampleCountFlagBits samples);
 

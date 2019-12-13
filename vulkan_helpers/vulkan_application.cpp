@@ -1494,6 +1494,17 @@ void VulkanGraphicsPipeline::SetViewport(const VkViewport& viewport) {
   viewport_state_.pViewports = &viewport_;
 }
 
+void VulkanGraphicsPipeline::SetViewports(const VkViewport* viewports,
+                                          uint32_t viewport_count) {
+  auto state = std::find(dynamic_states_.begin(), dynamic_states_.end(),
+                         VK_DYNAMIC_STATE_VIEWPORT);
+  if (state != dynamic_states_.end()) {
+    dynamic_states_.erase(state);
+  }
+	viewport_state_.viewportCount = viewport_count;
+  viewport_state_.pViewports = viewports;
+}
+
 void VulkanGraphicsPipeline::SetScissor(const VkRect2D& scissor) {
   auto state = std::find(dynamic_states_.begin(), dynamic_states_.end(),
                          VK_DYNAMIC_STATE_SCISSOR);
@@ -1502,6 +1513,16 @@ void VulkanGraphicsPipeline::SetScissor(const VkRect2D& scissor) {
   }
   scissor_ = scissor;
   viewport_state_.pScissors = &scissor_;
+}
+
+void VulkanGraphicsPipeline::SetScissors(const VkRect2D* scissors, uint32_t scissor_count) {
+  auto state = std::find(dynamic_states_.begin(), dynamic_states_.end(),
+                         VK_DYNAMIC_STATE_SCISSOR);
+  if (state != dynamic_states_.end()) {
+    dynamic_states_.erase(state);
+  }
+	viewport_state_.scissorCount = scissor_count;
+  viewport_state_.pScissors = scissors;
 }
 
 void VulkanGraphicsPipeline::SetSamples(VkSampleCountFlagBits samples) {

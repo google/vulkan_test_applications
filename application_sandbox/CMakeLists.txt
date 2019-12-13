@@ -68,6 +68,7 @@ add_vulkan_subdirectory(stencil)
 add_vulkan_subdirectory(set_event)
 add_vulkan_subdirectory(sparse_binding)
 add_vulkan_subdirectory(textured_cube)
+add_vulkan_subdirectory(viewport_index)
 add_vulkan_subdirectory(wireframe)
 add_vulkan_subdirectory(write_timestamp)
 
