@@ -46,7 +46,8 @@ void dummy_function() {}
 EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
                      uint32_t height, bool fixed_timestep,
                      bool separate_present, int64_t output_frame_index,
-                     const char* output_frame_file, const char* shader_compiler
+                     const char* output_frame_file, const char* shader_compiler,
+                     bool validation
 #if defined __ANDROID__
                      ,
                      android_app* app
@@ -59,6 +60,7 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
       output_frame_index_(output_frame_index),
       output_frame_file_(output_frame_file),
       shader_compiler_(shader_compiler),
+      validation_(validation),
       log_(logging::GetLogger(allocator)),
       allocator_(allocator)
 #if defined __ANDROID__
@@ -131,6 +133,7 @@ struct CommandLineArgs {
   const char* output_file;
   const char* shader_compiler;
   bool wait_for_debugger;
+  bool validation;
 };
 
 void parse_args(CommandLineArgs* args, int argc, const char** argv) {
@@ -142,6 +145,7 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
   args->output_file = OUTPUT_FILE;
   args->shader_compiler = SHADER_COMPILER;
   args->wait_for_debugger = false;
+  args->validation = false;
 
   for (int i = 0; i < argc; ++i) {
     if (strncmp(argv[i], "-w=", 3) == 0) {
@@ -158,6 +162,8 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
     }
     if (strncmp(argv[i], "-output-frame=", 14) == 0) {
       args->output_frame = atoi(argv[i] + 14);
+    } else if (strncmp(argv[i], "-validation", 11) == 0) {
+      args->validation = true;
     }
     if (strncmp(argv[i], "-output-file=", 13) == 0) {
       args->output_file = argv[i] + 13;
@@ -231,7 +237,7 @@ void android_main(android_app* app) {
       entry::EntryData entry_data(&root_allocator, static_cast<uint32_t>(width),
                                   static_cast<uint32_t>(height), FIXED_TIMESTEP,
                                   PREFER_SEPARATE_PRESENT, output_frame,
-                                  output_file, shader_compiler, app);
+                                  output_file, shader_compiler, false, app);
       data.entry_data = &entry_data;
       int return_value = main_entry(&entry_data);
       // Do not modify this line, scripts may look for it in the output.
@@ -308,37 +314,40 @@ static char file_path[1024 * 1024] = {};
 // -w=X will set the window width to X
 // -h=Y will set the window height to Y
 int main(int argc, const char** argv) {
-  int path_len = readlink("/proc/self/exe", file_path, 1024 * 1024 - 1);
-  if (path_len != -1) {
-    file_path[path_len] = '\0';
-    for (ssize_t i = path_len - 1; i >= 0; --i) {
-      // Cut off the exe name
-      if (file_path[i] == '/') {
-        file_path[i] = '\0';
-        break;
-      }
-    }
-    const char* env = getenv("VK_LAYER_PATH");
-    std::string layer_path = env ? env : "";
-    if (!layer_path.empty()) {
-      layer_path = layer_path + ":" + file_path;
-    } else {
-      layer_path = file_path;
-    }
-    setenv("VK_LAYER_PATH", layer_path.c_str(), 1);
-  }
   CommandLineArgs args;
   parse_args(&args, argc, argv);
+
+  if (args.output_frame != -1) {
+    int path_len = readlink("/proc/self/exe", file_path, 1024 * 1024 - 1);
+    if (path_len != -1) {
+      file_path[path_len] = '\0';
+      for (ssize_t i = path_len - 1; i >= 0; --i) {
+        // Cut off the exe name
+        if (file_path[i] == '/') {
+          file_path[i] = '\0';
+          break;
+        }
+      }
+      const char* env = getenv("VK_LAYER_PATH");
+      std::string layer_path = env ? env : "";
+      if (!layer_path.empty()) {
+        layer_path = layer_path + ":" + file_path;
+      } else {
+        layer_path = file_path;
+      }
+      setenv("VK_LAYER_PATH", layer_path.c_str(), 1);
+    }
+  }
   while (args.wait_for_debugger)
     ;
 
   int return_value = 0;
   containers::LeakCheckAllocator root_allocator;
   {
-    entry::EntryData entry_data(&root_allocator, args.window_width,
-                                args.window_height, args.fixed_timestep,
-                                args.prefer_separate_present, args.output_frame,
-                                args.output_file, args.shader_compiler);
+    entry::EntryData entry_data(
+        &root_allocator, args.window_width, args.window_height,
+        args.fixed_timestep, args.prefer_separate_present, args.output_frame,
+        args.output_file, args.shader_compiler, args.validation);
     if (args.output_frame == -1) {
       bool window_created = entry_data.CreateWindow();
       if (!window_created) {
@@ -422,32 +431,33 @@ int main(int argc, const char** argv) {
   CommandLineArgs args;
   parse_args(&args, argc, argv);
 
-  DWORD path_len = GetModuleFileNameA(NULL, file_path, 1024 * 1024 - 1);
-  if (path_len != -1) {
-    file_path[path_len] = '\0';
-    for (DWORD i = path_len - 1; i >= 0; --i) {
-      // Cut off the exe name
-      if (file_path[i] == '/' || file_path[i] == '\\') {
-        file_path[i] = '\0';
-        break;
+  if (args.output_frame != -1) {
+    DWORD path_len = GetModuleFileNameA(NULL, file_path, 1024 * 1024 - 1);
+    if (path_len != -1) {
+      file_path[path_len] = '\0';
+      for (DWORD i = path_len - 1; i >= 0; --i) {
+        // Cut off the exe name
+        if (file_path[i] == '/' || file_path[i] == '\\') {
+          file_path[i] = '\0';
+          break;
+        }
       }
+      DWORD d =
+          GetEnvironmentVariableA("VK_LAYER_PATH", layer_path, 1024 * 1024 - 1);
+      std::string lp = layer_path;
+      if (d > 0 && !lp.empty()) {
+        lp = lp + ";" + file_path;
+      } else {
+        lp = file_path;
+      }
+      SetEnvironmentVariableA("VK_LAYER_PATH", lp.c_str());
     }
-    DWORD d =
-        GetEnvironmentVariableA("VK_LAYER_PATH", layer_path, 1024 * 1024 - 1);
-    std::string lp = layer_path;
-    if (d > 0 && !lp.empty()) {
-      lp = lp + ";" + file_path;
-    } else {
-      lp = file_path;
-    }
-    SetEnvironmentVariableA("VK_LAYER_PATH", lp.c_str());
   }
-
   containers::LeakCheckAllocator root_allocator;
-  entry::EntryData entry_data(&root_allocator, args.window_width,
-                              args.window_height, args.fixed_timestep,
-                              args.prefer_separate_present, args.output_frame,
-                              args.output_file, args.shader_compiler);
+  entry::EntryData entry_data(
+      &root_allocator, args.window_width, args.window_height,
+      args.fixed_timestep, args.prefer_separate_present, args.output_frame,
+      args.output_file, args.shader_compiler, args.validation);
 
   if (args.output_frame == -1) {
     bool window_created = entry_data.CreateWindowWin32();
@@ -491,10 +501,10 @@ extern "C" {
     while (args.wait_for_debugger)
       ;
     containers::LeakCheckAllocator root_allocator;
-    entry::EntryData entry_data(&root_allocator, args.window_width,
-                                args.window_height, args.fixed_timestep,
-                                args.prefer_separate_present, args.output_frame,
-                                args.output_file, args.shader_compiler);
+    entry::EntryData entry_data(
+        &root_allocator, args.window_width, args.window_height,
+        args.fixed_timestep, args.prefer_separate_present, args.output_frame,
+        args.output_file, args.shader_compiler, args.validation);
     if (args.output_frame == -1) {
       bool window_created = entry_data.CreateWindow();
         if (!window_created) {

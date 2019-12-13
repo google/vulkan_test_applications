@@ -129,7 +129,15 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
   const auto num_default_extensions =
       sizeof(default_extensions) / sizeof(default_extensions[0]);
 
-  const char* layers[] = {"CallbackSwapchain"};
+  const char* validation_layer = "VK_LAYER_LUNARG_standard_validation";
+  const char* callback_layer = "CallbackSwapchain";
+  const char* layer = nullptr;
+
+  if (data->output_frame_index() >= 0) {
+    layer = callback_layer;
+  } else if (data->validation()) {
+		layer = validation_layer;
+  }
 
   std::vector<const char*> extensions;
   extensions.reserve(num_default_extensions + instance_extensions.size());
@@ -147,10 +155,8 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
                             nullptr,
                             0,
                             &app_info,
-                            uint32_t(data->output_frame_index() >= 0
-                                         ? (sizeof(layers) / sizeof(layers[0]))
-                                         : 0),
-                            layers,
+                            !!layer,
+                            &layer,
                             uint32_t(extensions.size()),
                             extensions.data()};
 
