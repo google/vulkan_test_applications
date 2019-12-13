@@ -64,6 +64,8 @@ class InstanceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormats2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPastPresentationTimingGOOGLE),
+        CONSTRUCT_LAZY_FUNCTION(vkGetRefreshCycleDurationGOOGLE),
         CONSTRUCT_LAZY_FUNCTION(vkEnumeratePhysicalDeviceGroups),
         CONSTRUCT_LAZY_FUNCTION(vkCreateDebugUtilsMessengerEXT),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyDebugUtilsMessengerEXT),
@@ -127,6 +129,8 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormats2KHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR);
+  LAZY_FUNCTION(vkGetPastPresentationTimingGOOGLE);
+  LAZY_FUNCTION(vkGetRefreshCycleDurationGOOGLE);
   LAZY_FUNCTION(vkEnumeratePhysicalDeviceGroups);
   LAZY_FUNCTION(vkCreateDebugUtilsMessengerEXT);
   LAZY_FUNCTION(vkDestroyDebugUtilsMessengerEXT);
