@@ -361,6 +361,18 @@ struct QueryPoolTraits {
 };
 using VkQueryPool = VkSubObject<QueryPoolTraits, DeviceTraits>;
 
+struct DescriptorUpdateTemplateTraits {
+  using type = ::VkDescriptorUpdateTemplate;
+  using destruction_function_pointer_type =
+      LazyDeviceFunction<PFN_vkDestroyDescriptorUpdateTemplateKHR>*;
+  static destruction_function_pointer_type get_destruction_function(
+      DeviceFunctions* functions) {
+    return &functions->vkDestroyDescriptorUpdateTemplateKHR;
+  }
+};
+using VkDescriptorUpdateTemplate =
+    VkSubObject<DescriptorUpdateTemplateTraits, DeviceTraits>;
+
 }  // namespace vulkan
 
 #endif  // VULKAN_WRAPPER_SUB_OBJECTS_H_

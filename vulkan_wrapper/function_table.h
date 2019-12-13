@@ -390,7 +390,10 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkGetRenderAreaGranularity),
         CONSTRUCT_LAZY_FUNCTION(vkGetDeviceGroupPeerMemoryFeatures),
         CONSTRUCT_LAZY_FUNCTION(vkSetDebugUtilsObjectNameEXT),
-        CONSTRUCT_LAZY_FUNCTION(vkSetDebugUtilsObjectTagEXT)
+        CONSTRUCT_LAZY_FUNCTION(vkSetDebugUtilsObjectTagEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCreateDescriptorUpdateTemplateKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkDestroyDescriptorUpdateTemplateKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkUpdateDescriptorSetWithTemplateKHR)
 #if defined _WIN32
         ,
         CONSTRUCT_LAZY_FUNCTION(vkGetMemoryWin32HandleKHR),
@@ -508,6 +511,9 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkGetDeviceGroupPeerMemoryFeatures);
   LAZY_FUNCTION(vkSetDebugUtilsObjectNameEXT);
   LAZY_FUNCTION(vkSetDebugUtilsObjectTagEXT);
+  LAZY_FUNCTION(vkCreateDescriptorUpdateTemplateKHR);
+  LAZY_FUNCTION(vkDestroyDescriptorUpdateTemplateKHR);
+  LAZY_FUNCTION(vkUpdateDescriptorSetWithTemplateKHR);
 #if defined _WIN32
   LAZY_FUNCTION(vkGetMemoryWin32HandleKHR);
   LAZY_FUNCTION(vkGetFenceWin32HandleKHR);
