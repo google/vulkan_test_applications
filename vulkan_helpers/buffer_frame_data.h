@@ -140,11 +140,11 @@ class BufferFrameData {
   // Enqueues an update operation on the queue if needed, to ensure
   // that the buffer is correct for the given index.
   void UpdateBuffer(VkQueue* update_queue, size_t buffer_index,
-                    uint32_t kDeviceMask = 0) {
+                    uint32_t kDeviceMask = 0, bool force = false) {
     const size_t offset = get_offset_for_frame(buffer_index);
     bool equal =
         memcmp(&set_value_, host_buffer_->base_address() + offset, size()) == 0;
-    if (!equal || uninitialized_[buffer_index]) {
+    if (force || !equal || uninitialized_[buffer_index]) {
       // If the data for this frame is not what was previously recorded into
       // the buffer, then copy the data into the buffer and update it.
       uninitialized_[buffer_index] = false;
