@@ -30,6 +30,7 @@ endmacro()
 add_vulkan_subdirectory(dummy)
 
 add_vulkan_subdirectory(async_compute)
+add_vulkan_subdirectory(atomic_int64)
 add_vulkan_subdirectory(blend_constants)
 add_vulkan_subdirectory(blit_image)
 add_vulkan_subdirectory(bufferview)
