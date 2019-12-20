@@ -67,8 +67,7 @@ VulkanApplication::VulkanApplication(
     bool use_protected_memory, bool use_host_query_reset,
     VkColorSpaceKHR swapchain_color_space, bool use_shared_presentation,
     bool use_mutable_swapchain_format, const void* swapchain_extensions,
-    bool use_vulkan_1_1,
-    void* device_next)
+    bool use_vulkan_1_1, void* device_next)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -418,7 +417,7 @@ VkDevice VulkanApplication::SetupDevice(VkDevice device,
 VkDevice VulkanApplication::CreateDeviceGroup(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue,
-    bool use_sparse_binding, const void* device_next) {
+    bool use_sparse_binding, void* device_next) {
   vulkan::VkDevice device(vulkan::CreateDeviceGroupForSwapchain(
       allocator_, &instance_, &surface_, &render_queue_index_,
       &present_queue_index_, extensions, features,

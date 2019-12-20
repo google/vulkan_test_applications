@@ -219,6 +219,7 @@ class Sample {
     render_target_format_ = application_.swapchain().format();
     num_samples_ = options.enable_multisampling ? kVkMultiSampledSampleCount
                                                 : VK_SAMPLE_COUNT_1_BIT;
+
     num_color_samples_ =
         options.enable_mixed_multisampling ? VK_SAMPLE_COUNT_1_BIT
                                            : num_samples_;
