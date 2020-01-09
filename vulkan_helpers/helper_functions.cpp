@@ -15,6 +15,8 @@
 
 #include "vulkan_helpers/helper_functions.h"
 
+#include <vulkan/vulkan_core.h>
+
 #include <algorithm>
 #include <tuple>
 
@@ -597,14 +599,29 @@ VkDevice CreateDeviceForSwapchain(
       raw_queue_infos.emplace_back(qi.GetVkDeviceQueueCreateInfo());
     }
 
+    // Structs for enabling/configuring device extensions.
     VkPhysicalDeviceProtectedMemoryFeatures protected_memory_feature{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, nullptr,
         true};
 
+    VkPhysicalDeviceHostQueryResetFeaturesEXT host_query_reset_feature{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT,
+        nullptr, true};
+
+    void* p_next = nullptr;
+    if (use_protected_memory) {
+      UpdatePNextChain(p_next, protected_memory_feature);
+    }
+    for (const char* extension : enabled_extensions) {
+      if (strcmp(extension, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME) == 0) {
+        UpdatePNextChain(p_next, host_query_reset_feature);
+      }
+    }
+
     VkDeviceCreateInfo info{
-        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,                        // stype
-        use_protected_memory ? &protected_memory_feature : nullptr,  // pNext
-        0,                                                           // flags
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // stype
+        p_next,                                         // pNext
+        0,                                              // flags
         static_cast<uint32_t>(raw_queue_infos.size()),  // queueCreateInfoCount
         raw_queue_infos.data(),                         // pQueueCreateInfos
         0,                                              // enabledLayerCount
@@ -858,10 +875,21 @@ VkDevice CreateDeviceGroupForSwapchain(
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, nullptr,
         group.physicalDeviceCount > 2 ? 2 : group.physicalDeviceCount,
         &group.physicalDevices[0]};
+    VkPhysicalDeviceHostQueryResetFeaturesEXT host_query_reset_feature{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT,
+        nullptr, true};
+
+    void* p_next = nullptr;
+    UpdatePNextChain(p_next, device_group);
+    for (const char* extension : enabled_extensions) {
+      if (strcmp(extension, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME) == 0) {
+        UpdatePNextChain(p_next, host_query_reset_feature);
+      }
+    }
 
     VkDeviceCreateInfo info{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // stype
-        &device_group,                                  // pNext
+        p_next,                                         // pNext
         0,                                              // flags
         static_cast<uint32_t>(raw_queue_infos.size()),  // queueCreateInfoCount
         raw_queue_infos.data(),                         // pQueueCreateInfos

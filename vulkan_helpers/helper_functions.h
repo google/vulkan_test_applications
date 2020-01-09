@@ -38,6 +38,14 @@ void MemoryClear(T* val) {
   ::memset(val, 0x00, sizeof(T));
 }
 
+// Updates the given pNext pointer reference with the provided struct. Useful
+// for creating a pNext chain for enabling multiple extensions.
+template <typename T>
+void UpdatePNextChain(void*& p_next, T& feature_struct) {
+  feature_struct.pNext = p_next;
+  p_next = &feature_struct;
+}
+
 // Create an empty instance. Vulkan functions that are resolved by the created
 // instance will be stored in the space allocated by the given |allocator|. The
 // |allocator| must continue to exist until the instance is destroied.
