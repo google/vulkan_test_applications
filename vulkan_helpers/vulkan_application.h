@@ -16,6 +16,8 @@
 #ifndef VULKAN_HELPERS_VULKAN_APPLICATION
 #define VULKAN_HELPERS_VULKAN_APPLICATION
 
+#include <algorithm>
+
 #include "support/containers/allocator.h"
 #include "support/containers/ordered_multimap.h"
 #include "support/containers/unordered_map.h"
@@ -29,8 +31,6 @@
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/queue_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
-
-#include <algorithm>
 
 namespace vulkan {
 struct VulkanModel;
@@ -442,7 +442,8 @@ class VulkanApplication {
       uint32_t coherent_buffer_size = 1024 * 128,
       bool use_async_compute_queue = false, bool use_sparse_binding = false,
       bool use_device_groups = false, uint32_t device_peer_memory_size = 0,
-      bool use_ycbcr_sampling = false, bool use_protected_memory = false);
+      bool use_ycbcr_sampling = false, bool use_protected_memory = false,
+      bool use_host_query_reset = false);
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.
@@ -785,7 +786,8 @@ class VulkanApplication {
   VkDevice CreateDevice(const std::initializer_list<const char*> extensions,
                         const VkPhysicalDeviceFeatures& features,
                         bool create_async_compute_queue,
-                        bool use_sparse_binding, bool use_ycbcr_sampling);
+                        bool use_sparse_binding, bool use_ycbcr_sampling,
+                        bool use_host_query_reset);
 
   VkDevice SetupDevice(VkDevice device, bool create_async_compute_queue,
                        bool use_sparse_binding);

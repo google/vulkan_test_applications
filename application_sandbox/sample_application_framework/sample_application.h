@@ -37,6 +37,7 @@ struct SampleOptions {
   bool sparse_binding = false;
   bool ycbcr_sampling = false;
   bool protected_memory = false;
+  bool host_query_reset = false;
 
   SampleOptions& EnableMultisampling() {
     enable_multisampling = true;
@@ -68,6 +69,10 @@ struct SampleOptions {
   }
   SampleOptions& EnableProtectedMemory() {
     protected_memory = true;
+    return *this;
+  }
+  SampleOptions& EnableHostQueryReset() {
+    host_query_reset = true;
     return *this;
   }
 };

@@ -19,6 +19,7 @@ output that demonstrates the feature.
 [copy_image_2d3d](copy_image_2d3d/README.md)
 [copy_image_buffer](copy_image_buffer/README.md)
 [copy_querypool_results](copy_querypool_results/README.md)
+[copy_querypool_results_host_reset](copy_querypool_results_host_reset/README.md)
 [cube](cube/README.md)
 [debug_utils](debug_utils/README.md)
 [depth_bounds](depth_bounds/README.md)

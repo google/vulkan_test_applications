@@ -397,7 +397,8 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkSetDebugUtilsObjectTagEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCreateDescriptorUpdateTemplateKHR),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyDescriptorUpdateTemplateKHR),
-        CONSTRUCT_LAZY_FUNCTION(vkUpdateDescriptorSetWithTemplateKHR)
+        CONSTRUCT_LAZY_FUNCTION(vkUpdateDescriptorSetWithTemplateKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkResetQueryPoolEXT)
 #if defined _WIN32
         ,
         CONSTRUCT_LAZY_FUNCTION(vkGetMemoryWin32HandleKHR),
@@ -520,6 +521,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkCreateDescriptorUpdateTemplateKHR);
   LAZY_FUNCTION(vkDestroyDescriptorUpdateTemplateKHR);
   LAZY_FUNCTION(vkUpdateDescriptorSetWithTemplateKHR);
+  LAZY_FUNCTION(vkResetQueryPoolEXT);
 #if defined _WIN32
   LAZY_FUNCTION(vkGetMemoryWin32HandleKHR);
   LAZY_FUNCTION(vkGetFenceWin32HandleKHR);
