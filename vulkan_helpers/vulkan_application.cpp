@@ -64,7 +64,7 @@ VulkanApplication::VulkanApplication(
     uint32_t coherent_buffer_size, bool use_async_compute_queue,
     bool use_sparse_binding, bool use_device_group,
     uint32_t device_peer_memory_size, bool use_ycbcr_sampling,
-    bool use_protected_memory)
+    bool use_protected_memory, bool use_host_query_reset)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -85,7 +85,7 @@ VulkanApplication::VulkanApplication(
       device_(!use_device_group
                   ? CreateDevice(device_extensions, features,
                                  use_async_compute_queue, use_sparse_binding,
-                                 use_ycbcr_sampling)
+                                 use_ycbcr_sampling, use_host_query_reset)
                   : CreateDeviceGroup(device_extensions, features,
                                       use_async_compute_queue,
                                       use_sparse_binding)),
@@ -423,7 +423,8 @@ VkDevice VulkanApplication::CreateDeviceGroup(
 VkDevice VulkanApplication::CreateDevice(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue,
-    bool use_sparse_binding, bool use_ycbcr_sampling) {
+    bool use_sparse_binding, bool use_ycbcr_sampling,
+    bool use_host_query_reset) {
   // Since this is called by the constructor be careful not to
   // use any data other than what has already been initialized.
   // allocator_, log_, entry_data_, library_wrapper_, instance_,
@@ -435,7 +436,7 @@ VkDevice VulkanApplication::CreateDevice(
       entry_data_->prefer_separate_present(),
       create_async_compute_queue ? &compute_queue_index_ : nullptr,
       use_sparse_binding ? &sparse_binding_queue_index_ : nullptr,
-      use_ycbcr_sampling));
+      use_ycbcr_sampling, use_host_query_reset));
 
   return SetupDevice(std::move(device), create_async_compute_queue,
                      use_sparse_binding);
@@ -1523,7 +1524,7 @@ void VulkanGraphicsPipeline::SetRasterizationFill(VkPolygonMode mode) {
   rasterization_state_.polygonMode = mode;
 }
 
-void VulkanGraphicsPipeline::SetRasterizationExtension(const void * extension) {
+void VulkanGraphicsPipeline::SetRasterizationExtension(const void* extension) {
   rasterization_state_.pNext = extension;
 }
 
@@ -1587,7 +1588,7 @@ void VulkanGraphicsPipeline::SetViewports(const VkViewport* viewports,
   if (state != dynamic_states_.end()) {
     dynamic_states_.erase(state);
   }
-	viewport_state_.viewportCount = viewport_count;
+  viewport_state_.viewportCount = viewport_count;
   viewport_state_.pViewports = viewports;
 }
 
@@ -1601,13 +1602,14 @@ void VulkanGraphicsPipeline::SetScissor(const VkRect2D& scissor) {
   viewport_state_.pScissors = &scissor_;
 }
 
-void VulkanGraphicsPipeline::SetScissors(const VkRect2D* scissors, uint32_t scissor_count) {
+void VulkanGraphicsPipeline::SetScissors(const VkRect2D* scissors,
+                                         uint32_t scissor_count) {
   auto state = std::find(dynamic_states_.begin(), dynamic_states_.end(),
                          VK_DYNAMIC_STATE_SCISSOR);
   if (state != dynamic_states_.end()) {
     dynamic_states_.erase(state);
   }
-	viewport_state_.scissorCount = scissor_count;
+  viewport_state_.scissorCount = scissor_count;
   viewport_state_.pScissors = scissors;
 }
 
