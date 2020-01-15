@@ -461,7 +461,7 @@ VkDevice CreateDeviceForSwapchain(
     const VkPhysicalDeviceFeatures& features,
     bool try_to_find_separate_present_queue,
     uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index,
-    bool use_host_query_reset, void* pNext) {
+    bool use_host_query_reset, void* device_next) {
   containers::vector<VkPhysicalDevice> physical_devices =
       GetPhysicalDevices(allocator, *instance);
   float priority = 1.f;
@@ -607,8 +607,8 @@ VkDevice CreateDeviceForSwapchain(
     }
 
     VkPhysicalDeviceHostQueryResetFeaturesEXT host_query_reset_feature{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT, pNext,
-        use_host_query_reset};
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT,
+        device_next, use_host_query_reset};
 
     VkPhysicalDeviceFloatControlsPropertiesKHR float_control_properties{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR,
