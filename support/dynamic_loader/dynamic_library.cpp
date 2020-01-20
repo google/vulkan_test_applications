@@ -62,7 +62,7 @@ class InternalDynamicLibrary : public DynamicLibrary {
 #ifdef __APPLE__
     lib_with_extension = "lib" + lib_with_extension + ".dylib";
 #else
-    lib_with_extension = "lib" + lib_with_extension + ".so";
+    lib_with_extension = "lib" + lib_with_extension + ".so.1";
 #endif
     // We choose RTLD_LAZY because we expect most of the functions
     // in this library to be resolved by other calls to dlsym.
