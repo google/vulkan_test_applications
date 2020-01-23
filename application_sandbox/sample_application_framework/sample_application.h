@@ -39,6 +39,8 @@ struct SampleOptions {
   bool protected_memory = false;
   bool host_query_reset = false;
   bool extended_swapchain_color_space = false;
+  bool shared_presentation = false;
+  bool enable_vulkan_1_1 = false;
 
   SampleOptions& EnableMultisampling() {
     enable_multisampling = true;
@@ -78,6 +80,16 @@ struct SampleOptions {
   }
   SampleOptions& EnableExtendedSwapchainColorSpace() {
     extended_swapchain_color_space = true;
+    return *this;
+  }
+  SampleOptions& EnableSharedPresentation() {
+    shared_presentation = true;
+
+    return *this;
+  }
+  SampleOptions& EnableVulkan11() {
+    enable_vulkan_1_1 = true;
+
     return *this;
   }
 };
@@ -171,7 +183,9 @@ class Sample {
             options.protected_memory, options.host_query_reset,
             options.extended_swapchain_color_space
                 ? VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT
-                : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR),
+                : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+            options.shared_presentation,
+            options.enable_vulkan_1_1),
         frame_data_(allocator),
         swapchain_images_(application_.swapchain_images()),
         last_frame_time_(std::chrono::high_resolution_clock::now()),

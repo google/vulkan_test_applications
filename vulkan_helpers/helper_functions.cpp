@@ -602,21 +602,45 @@ VkDevice CreateDeviceForSwapchain(
 
     VkPhysicalDeviceHostQueryResetFeaturesEXT host_query_reset_feature{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT,
-        nullptr, use_host_query_reset ? true : false};
-
-    VkPhysicalDeviceProtectedMemoryFeatures protected_memory_feature{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,
-        &host_query_reset_feature, use_protected_memory ? true : false};
+        nullptr, use_host_query_reset};
 
     VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcr_sampler_features{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR,
-        &protected_memory_feature,         // pNext;
-        use_ycbcr_sampling ? true : false  // samplerYcbcrConversion
+        &host_query_reset_feature,  // pNext;
+        use_ycbcr_sampling          // samplerYcbcrConversion
     };
+
+    VkPhysicalDeviceFloatControlsPropertiesKHR float_control_properties{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR,
+        &ycbcr_sampler_features,  // pNext
+        VkShaderFloatControlsIndependenceKHR::
+            VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR,  // denormBehaviorIndependence;
+        VkShaderFloatControlsIndependenceKHR::
+            VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR,  // roundingModeIndependence;
+        1,  //  shaderSignedZeroInfNanPreserveFloat16;
+        1,  //  shaderSignedZeroInfNanPreserveFloat32;
+        1,  //  shaderSignedZeroInfNanPreserveFloat64;
+        1,  //  shaderDenormPreserveFloat16;
+        1,  //  shaderDenormPreserveFloat32;
+        1,  //  shaderDenormPreserveFloat64;
+        1,  //  shaderDenormFlushToZeroFloat16;
+        1,  //  shaderDenormFlushToZeroFloat32;
+        1,  //  shaderDenormFlushToZeroFloat64;
+        1,  //  shaderRoundingModeRTEFloat16;
+        1,  //  shaderRoundingModeRTEFloat32;
+        1,  //  shaderRoundingModeRTEFloat64;
+        1,  //  shaderRoundingModeRTZFloat16;
+        1,  //  shaderRoundingModeRTZFloat32;
+        1,  //  shaderRoundingModeRTZFloat64;
+    };
+
+    VkPhysicalDeviceProtectedMemoryFeatures protected_memory_feature{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,
+        &float_control_properties, use_protected_memory};
 
     VkDeviceCreateInfo info{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // stype
-        &ycbcr_sampler_features,                        // pNext
+        &protected_memory_feature,                      // pNext
         0,                                              // flags
         static_cast<uint32_t>(raw_queue_infos.size()),  // queueCreateInfoCount
         raw_queue_infos.data(),                         // pQueueCreateInfos
@@ -1005,7 +1029,8 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
                                       uint32_t graphics_queue_index,
                                       uint32_t present_queue_index,
                                       const entry::EntryData* data,
-                                      VkColorSpaceKHR swapchain_color_space) {
+                                      VkColorSpaceKHR swapchain_color_space,
+	                                  bool use_shared_presentation) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
   containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
@@ -1114,17 +1139,20 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
         image_extent,               // imageExtent
         1,                          // imageArrayLayers
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // imageUsage
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL | use_shared_presentation
+            ? VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR
+            : VK_IMAGE_LAYOUT_UNDEFINED,  // imageUsage
         has_multiple_queues ? VK_SHARING_MODE_CONCURRENT
                             : VK_SHARING_MODE_EXCLUSIVE,  // sharingMode
         has_multiple_queues ? 2u : 0u,
         has_multiple_queues ? queues : nullptr,  // pQueueFamilyIndices
         surface_caps.currentTransform,           // preTransform,
         static_cast<VkCompositeAlphaFlagBitsKHR>(
-            chosenAlpha),       // compositeAlpha
-        present_modes.front(),  // presentModes
-        false,                  // clipped
-        VK_NULL_HANDLE          // oldSwapchain
+            chosenAlpha),  // compositeAlpha
+        use_shared_presentation ? VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR
+                                : present_modes.front(),  // presentModes
+        false,                                            // clipped
+        VK_NULL_HANDLE                                    // oldSwapchain
     };
 
     LOG_ASSERT(==, instance->GetLogger(),
