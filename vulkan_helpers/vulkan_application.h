@@ -155,6 +155,10 @@ class VulkanGraphicsPipeline {
   // Sets the vertex input streams from the given model.
   void SetInputStreams(VulkanModel* model);
 
+  // Sets the extensions to create the pipeline with. This is pNext of
+  // VkGraphicsPipelineCreateInfo
+  void SetPipelineExtensions(const void* pipeline_extensions);
+
   // Gets the reference of the VkPipelineDepthStencilStateCreateInfo
   VkPipelineDepthStencilStateCreateInfo& DepthStencilState() {
     return depth_stencil_state_;
@@ -189,6 +193,7 @@ class VulkanGraphicsPipeline {
   ::VkPipelineLayout layout_;
   VkPipeline pipeline_;
   uint32_t contained_stages_;
+  const void* pipeline_extensions_;
 };
 
 // Customizable Compute pipeline state.
