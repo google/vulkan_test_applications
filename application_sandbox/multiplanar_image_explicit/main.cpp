@@ -103,7 +103,11 @@ class MultiPlanarImageSample
     sampler_ = containers::make_unique<vulkan::VkSampler>(
         data_->allocator(),
         vulkan::CreateSampler(&app()->device(), VK_FILTER_LINEAR,
-                              VK_FILTER_LINEAR, &samplerYcbcrConversionInfo));
+                              VK_FILTER_LINEAR,
+                              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                              &samplerYcbcrConversionInfo));
 
     cube_descriptor_set_layouts_[0] = {
         0,                                  // binding
