@@ -61,6 +61,7 @@ class InstanceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceCapabilitiesKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormats2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR),
         CONSTRUCT_LAZY_FUNCTION(vkEnumeratePhysicalDeviceGroups),
         CONSTRUCT_LAZY_FUNCTION(vkCreateDebugUtilsMessengerEXT),
@@ -118,6 +119,7 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR);
+  LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormats2KHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR);
   LAZY_FUNCTION(vkEnumeratePhysicalDeviceGroups);
   LAZY_FUNCTION(vkCreateDebugUtilsMessengerEXT);
@@ -348,6 +350,7 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkBindImageMemory2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkCreateShaderModule),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyShaderModule),
+        CONSTRUCT_LAZY_FUNCTION(vkGetShaderInfoAMD),
         CONSTRUCT_LAZY_FUNCTION(vkCreateSampler),
         CONSTRUCT_LAZY_FUNCTION(vkCreateSamplerYcbcrConversionKHR),
         CONSTRUCT_LAZY_FUNCTION(vkDestroySampler),
@@ -471,6 +474,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkBindImageMemory2KHR);
   LAZY_FUNCTION(vkCreateShaderModule);
   LAZY_FUNCTION(vkDestroyShaderModule);
+  LAZY_FUNCTION(vkGetShaderInfoAMD);
   LAZY_FUNCTION(vkCreateSampler);
   LAZY_FUNCTION(vkCreateSamplerYcbcrConversionKHR);
   LAZY_FUNCTION(vkDestroySampler);

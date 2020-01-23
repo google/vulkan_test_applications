@@ -250,7 +250,7 @@ struct VulkanTexture {
 
       (*cmdBuffer)
           ->vkCmdCopyBufferToImage(*cmdBuffer, *upload_buffer_, image(),
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 3,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                    &copy_params);
     }
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;

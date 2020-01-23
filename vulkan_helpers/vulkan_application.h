@@ -448,7 +448,9 @@ class VulkanApplication {
       bool use_async_compute_queue = false, bool use_sparse_binding = false,
       bool use_device_groups = false, uint32_t device_peer_memory_size = 0,
       bool use_ycbcr_sampling = false, bool use_protected_memory = false,
-      bool use_host_query_reset = false);
+      bool use_host_query_reset = false,
+      VkColorSpaceKHR swapchain_color_space =
+          VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.
