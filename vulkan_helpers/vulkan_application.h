@@ -450,7 +450,8 @@ class VulkanApplication {
       bool use_ycbcr_sampling = false, bool use_protected_memory = false,
       bool use_host_query_reset = false,
       VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-      bool use_shared_presentation = false);
+      bool use_shared_presentation = false,
+      bool use_vulkan_1_1 = false);
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.

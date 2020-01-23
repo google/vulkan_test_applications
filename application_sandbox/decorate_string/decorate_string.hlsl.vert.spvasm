@@ -1,0 +1,91 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Google Shaderc over Glslang; 7
+; Bound: 92
+; Schema: 0
+               OpCapability Shader
+               OpExtension "SPV_GOOGLE_hlsl_functionality1"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %input__position %input__texture_coord %input__normal %_entryPointOutput_Position %_entryPointOutput_texcoord
+               OpSource HLSL 500
+               OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
+               OpSourceExtension "GL_GOOGLE_include_directive"
+               OpName %main "main"
+               OpName %model_data "model_data"
+               OpMemberName %model_data 0 "transform"
+               OpName %_ ""
+               OpName %camera_data "camera_data"
+               OpMemberName %camera_data 0 "projection"
+               OpName %__0 ""
+               OpName %input__position "input._position"
+               OpName %input__texture_coord "input._texture_coord"
+               OpName %input__normal "input._normal"
+               OpName %_entryPointOutput_Position "@entryPointOutput.Position"
+               OpName %_entryPointOutput_texcoord "@entryPointOutput.texcoord"
+               OpMemberDecorate %model_data 0 RowMajor
+               OpMemberDecorate %model_data 0 Offset 0
+               OpMemberDecorate %model_data 0 MatrixStride 16
+               OpDecorate %model_data Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 1
+               OpMemberDecorate %camera_data 0 RowMajor
+               OpMemberDecorate %camera_data 0 Offset 0
+               OpMemberDecorate %camera_data 0 MatrixStride 16
+               OpDecorate %camera_data Block
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %__0 Binding 0
+               OpDecorate %input__position Location 0
+               OpDecorateString %input__position UserSemantic "POSITION"
+               OpDecorate %input__texture_coord Location 1
+               OpDecorateString %input__texture_coord UserSemantic "TEXCOORD"
+               OpDecorate %input__normal Location 2
+               OpDecorateString %input__normal UserSemantic "NORMAL"
+               OpDecorate %_entryPointOutput_Position BuiltIn Position
+               OpDecorateString %_entryPointOutput_Position UserSemantic "SV_POSITION"
+               OpDecorate %_entryPointOutput_texcoord Location 0
+               OpDecorateString %_entryPointOutput_texcoord UserSemantic "TEXCOORD"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+    %v2float = OpTypeVector %float 2
+    %v4float = OpTypeVector %float 4
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %float_1 = OpConstant %float 1
+%mat4v4float = OpTypeMatrix %v4float 4
+ %model_data = OpTypeStruct %mat4v4float
+%_ptr_Uniform_model_data = OpTypePointer Uniform %model_data
+          %_ = OpVariable %_ptr_Uniform_model_data Uniform
+%_ptr_Uniform_mat4v4float = OpTypePointer Uniform %mat4v4float
+%camera_data = OpTypeStruct %mat4v4float
+%_ptr_Uniform_camera_data = OpTypePointer Uniform %camera_data
+        %__0 = OpVariable %_ptr_Uniform_camera_data Uniform
+%_ptr_Input_v3float = OpTypePointer Input %v3float
+%input__position = OpVariable %_ptr_Input_v3float Input
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+%input__texture_coord = OpVariable %_ptr_Input_v2float Input
+%input__normal = OpVariable %_ptr_Input_v3float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_entryPointOutput_Position = OpVariable %_ptr_Output_v4float Output
+%_ptr_Output_v2float = OpTypePointer Output %v2float
+%_entryPointOutput_texcoord = OpVariable %_ptr_Output_v2float Output
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %56 = OpLoad %v3float %input__position
+         %60 = OpLoad %v2float %input__texture_coord
+         %82 = OpCompositeExtract %float %56 0
+         %83 = OpCompositeExtract %float %56 1
+         %84 = OpCompositeExtract %float %56 2
+         %85 = OpCompositeConstruct %v4float %82 %83 %84 %float_1
+         %86 = OpAccessChain %_ptr_Uniform_mat4v4float %_ %int_0
+         %87 = OpLoad %mat4v4float %86
+         %88 = OpAccessChain %_ptr_Uniform_mat4v4float %__0 %int_0
+         %89 = OpLoad %mat4v4float %88
+         %90 = OpMatrixTimesMatrix %mat4v4float %87 %89
+         %91 = OpVectorTimesMatrix %v4float %85 %90
+               OpStore %_entryPointOutput_Position %91
+               OpStore %_entryPointOutput_texcoord %60
+               OpReturn
+               OpFunctionEnd
