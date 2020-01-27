@@ -1458,6 +1458,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(containers::Allocator* allocator,
     : render_pass_(*render_pass),
       subpass_(subpass),
       application_(application),
+      flags_(0),
       stages_(allocator),
       dynamic_states_(allocator),
       vertex_binding_descriptions_(allocator),
@@ -1698,7 +1699,7 @@ void VulkanGraphicsPipeline::Commit() {
   VkGraphicsPipelineCreateInfo create_info{
       VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,  // sType
       pipeline_extensions_,                             // pNext
-      0,                                                // flags
+      flags_,                                           // flags
       static_cast<uint32_t>(stages_.size()),            // stageCount
       stages_.data(),                                   // pStage
       &vertex_input_state_,                             // pVertexInputState

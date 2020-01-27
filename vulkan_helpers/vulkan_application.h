@@ -164,6 +164,8 @@ class VulkanGraphicsPipeline {
     return depth_stencil_state_;
   }
 
+	VkPipelineCreateFlags& flags() { return flags_; }
+
   void Commit();
   operator ::VkPipeline() const { return pipeline_; }
 
@@ -171,6 +173,7 @@ class VulkanGraphicsPipeline {
   ::VkRenderPass render_pass_;
   uint32_t subpass_;
   VulkanApplication* application_;
+  VkPipelineCreateFlags flags_;
   containers::vector<VkPipelineShaderStageCreateInfo> stages_;
   VkPipelineVertexInputStateCreateInfo vertex_input_state_;
   VkPipelineInputAssemblyStateCreateInfo input_assembly_state_;
