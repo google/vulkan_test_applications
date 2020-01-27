@@ -1257,7 +1257,8 @@ VkSampler CreateSampler(VkDevice* device, VkFilter minFilter,
 
 VkDescriptorSetLayout CreateDescriptorSetLayout(
     containers::Allocator* allocator, VkDevice* device,
-    std::initializer_list<VkDescriptorSetLayoutBinding> bindings) {
+    std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
+    VkDescriptorSetLayoutCreateFlags flags) {
   containers::vector<VkDescriptorSetLayoutBinding> contiguous_bindings(
       allocator);
   contiguous_bindings.resize(bindings.size());
@@ -1267,7 +1268,7 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(
   }
 
   VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info{
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, 0,
+      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, flags,
       static_cast<uint32_t>(contiguous_bindings.size()),
       contiguous_bindings.data()};
 
