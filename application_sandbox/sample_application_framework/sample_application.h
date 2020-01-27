@@ -172,7 +172,8 @@ class Sample {
  public:
   Sample(containers::Allocator* allocator, const entry::EntryData* entry_data,
          uint32_t host_buffer_size_in_MB, uint32_t image_memory_size_in_MB,
-         uint32_t device_buffer_size_in_MB, uint32_t coherent_buffer_size_in_MB,
+         uint32_t device_buffer_size_in_MB,
+         uint32_t coherent_buffer_size_in_MB,
          const SampleOptions& options,
          const VkPhysicalDeviceFeatures& physical_device_features = {0},
          const std::initializer_list<const char*> instance_extensions = {},
