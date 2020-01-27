@@ -219,7 +219,8 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdDrawIndexedIndirectCountKHR),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdEndDebugUtilsLabelEXT),
-        CONSTRUCT_LAZY_FUNCTION(vkCmdInsertDebugUtilsLabelEXT)
+        CONSTRUCT_LAZY_FUNCTION(vkCmdInsertDebugUtilsLabelEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdPushDescriptorSetKHR)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -278,6 +279,7 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT);
   LAZY_FUNCTION(vkCmdEndDebugUtilsLabelEXT);
   LAZY_FUNCTION(vkCmdInsertDebugUtilsLabelEXT);
+  LAZY_FUNCTION(vkCmdPushDescriptorSetKHR);
 #undef LAZY_FUNCTION
 };
 
