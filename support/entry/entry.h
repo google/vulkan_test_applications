@@ -66,7 +66,7 @@ class EntryData {
   EntryData(containers::Allocator* allocator, uint32_t width, uint32_t height,
             bool fixed_timestep, bool separate_present,
             int64_t output_frame_index, const char* output_frame_file,
-            const char* shader_compiler
+            const char* shader_compiler, bool validation
 #if defined __ANDROID__
             ,
             android_app* app
@@ -122,6 +122,7 @@ class EntryData {
   int64_t output_frame_index() const { return output_frame_index_; }
   const char* output_frame_file() const { return output_frame_file_; }
   const char* shader_compiler() const { return shader_compiler_; }
+  bool validation() const { return validation_; }
 
  private:
   bool fixed_timestep_;
@@ -131,6 +132,7 @@ class EntryData {
   int64_t output_frame_index_;
   const char* output_frame_file_;
   const char* shader_compiler_;
+  const bool validation_;
   containers::unique_ptr<logging::Logger> log_;
   containers::Allocator* allocator_;
 
