@@ -26,6 +26,9 @@
 #if defined __ANDROID__
 struct android_app;
 struct ANativeWindow;
+#elif defined __ggp__
+#define VK_USE_PLATFORM_GGP 1
+#include <ggp/ggp.h>
 #elif defined __linux__
 #include <xcb/xcb.h>
 #elif defined _WIN32
@@ -80,6 +83,8 @@ class EntryData {
     if (native_window_handle_) {
       DestroyWindow(native_window_handle_);
     }
+#elif defined __ggp__
+// Empty
 #elif defined __linux__
     free(delete_window_atom_);
     xcb_disconnect(native_connection_);
@@ -106,6 +111,8 @@ class EntryData {
 #elif defined _WIN32
   HWND native_window_handle() const { return native_window_handle_; }
   HINSTANCE native_hinstance() const { return native_hinstance_; }
+#elif defined __ggp__
+// Empty
 #elif defined __linux__
   xcb_window_t native_window_handle() const { return native_window_handle_; }
   xcb_connection_t* native_connection() const { return native_connection_; }
@@ -141,6 +148,8 @@ class EntryData {
 #elif defined _WIN32
   HINSTANCE native_hinstance_;
   HWND native_window_handle_;
+#elif defined __ggp__
+// Empty
 #elif defined __linux__
   xcb_window_t native_window_handle_;
   xcb_connection_t* native_connection_;

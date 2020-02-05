@@ -18,6 +18,8 @@
 
 #if defined __ANDROID__
 #define VK_USE_PLATFORM_ANDROID_KHR 1
+#elif defined __ggp__
+#define VK_USE_PLATFORM_GGP 1
 #elif defined __linux__
 #define VK_USE_PLATFORM_XCB_KHR 1
 #elif defined _WIN32

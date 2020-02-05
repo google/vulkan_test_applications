@@ -70,6 +70,9 @@ class InstanceFunctions {
 #if defined __ANDROID__
         ,
         CONSTRUCT_LAZY_FUNCTION(vkCreateAndroidSurfaceKHR)
+#elif defined __ggp__
+        ,
+        CONSTRUCT_LAZY_FUNCTION(vkCreateStreamDescriptorSurfaceGGP)
 #elif defined __linux__
         ,
         CONSTRUCT_LAZY_FUNCTION(vkCreateXcbSurfaceKHR),
@@ -127,6 +130,8 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkSubmitDebugUtilsMessageEXT);
 #if defined __ANDROID__
   LAZY_FUNCTION(vkCreateAndroidSurfaceKHR);
+#elif defined __ggp__
+  LAZY_FUNCTION(vkCreateStreamDescriptorSurfaceGGP);
 #elif defined __linux__
   LAZY_FUNCTION(vkCreateXcbSurfaceKHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceXcbPresentationSupportKHR);

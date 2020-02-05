@@ -67,6 +67,8 @@ VkInstance CreateDefaultInstance(containers::Allocator* allocator,
     VK_KHR_SURFACE_EXTENSION_NAME,
 #if defined __ANDROID__
     VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+#elif defined __ggp__
+    VK_GGP_STREAM_DESCRIPTOR_SURFACE_EXTENSION_NAME,
 #elif defined __linux__
     VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 #elif defined _WIN32
@@ -117,6 +119,8 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
     VK_KHR_SURFACE_EXTENSION_NAME,
 #if defined __ANDROID__
     VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+#elif defined __ggp__
+    VK_GGP_STREAM_DESCRIPTOR_SURFACE_EXTENSION_NAME,
 #elif defined __linux__
     VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 #elif defined _WIN32
@@ -950,6 +954,13 @@ VkSurfaceKHR CreateDefaultSurface(VkInstance* instance,
       data->native_window_handle()};
 
   (*instance)->vkCreateAndroidSurfaceKHR(*instance, &create_info, nullptr,
+                                         &surface);
+#elif defined __ggp__
+  VkStreamDescriptorSurfaceCreateInfoGGP create_info {
+    VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP,
+    nullptr, 0, 1
+  } ;
+  (*instance)->vkCreateStreamDescriptorSurfaceGGP(*instance, &create_info, nullptr,
                                          &surface);
 #elif defined __linux__
   VkXcbSurfaceCreateInfoKHR create_info{
