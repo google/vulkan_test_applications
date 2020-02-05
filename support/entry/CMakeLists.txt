@@ -13,13 +13,19 @@
 # limitations under the License.
 #
 
+find_library(LIBGGP ggp)
+
 if(ANDROID)
 set(ADDITIONAL_LIBS android android_native_app_glue atomic)
 elseif(APPLE)
 set(ADDITIONAL_FILES "macos/main.m")
 set(ADDITIONAL_LIBS "-framework Cocoa -framework QuartzCore")
 elseif(UNIX)
+if(LIBGGP)
+set(ADDITIONAL_LIBS ggp pthread)
+else()
 set(ADDITIONAL_LIBS xcb pthread)
+endif()
 endif()
 
 if (NOT OUTPUT_FRAME)

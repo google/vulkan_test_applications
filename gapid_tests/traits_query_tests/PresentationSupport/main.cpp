@@ -48,6 +48,8 @@ int main_entry(const entry::EntryData* data) {
           "on Android must be capable of presentation with any native window. "
           "So there is no Android-specific query for presentation support");
       break;
+#elif defined __ggp__
+      break;
 #elif defined __linux__
       data->logger()->LogInfo("API: vkGetPhysicalDeviceXcbPresentationSupportKHR");
       result = instance->vkGetPhysicalDeviceXcbPresentationSupportKHR(

@@ -23,7 +23,7 @@
 #include <mutex>
 #include <thread>
 
-#include "entry_config.h"
+#include "support/entry/entry_config.h"
 #include "support/log/log.h"
 
 #if defined __ANDROID__
@@ -31,10 +31,12 @@
 #include <android_native_app_glue.h>
 #include <sys/system_properties.h>
 #include <unistd.h>
-
 #elif defined __linux__
 #include <unistd.h>
+#endif
 
+#if defined __ggp__
+#include <ggp/ggp.h>
 #endif
 
 namespace entry {
@@ -72,6 +74,8 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
       ,
       native_hinstance_(0),
       native_window_handle_(0)
+#elif defined __ggp__ // Keep this before __linux__
+// Nothing here
 #elif defined __linux__
       ,
       native_window_handle_(0),
@@ -88,12 +92,20 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
 #endif
 }
 
-void EntryData::NotifyReady() const {}
+#ifdef __ggp__
+static std::atomic<bool> k_window_closing(false);
+static std::atomic<bool> k_stream_started(false);
+#endif
+
+void EntryData::NotifyReady() const {
+}
 
 // Returns true when window is to be closed.
 bool EntryData::WindowClosing() const {
 #if defined __ANDROID__
   return window_closing_;
+#elif defined __ggp__
+  return k_window_closing;
 #elif defined __linux__
   if (native_connection_ && delete_window_atom_) {
     // The memory of 'event' is 'new'ed by xcb call, so we cannot track it
@@ -271,6 +283,88 @@ void android_main(android_app* app) {
   main_thread.join();
 }
 
+#elif defined __ggp__ // Keep this before __linux__
+bool entry::EntryData::CreateWindow() { return true; }
+static void HandleStreamChanged(const ggp::StreamStateChangedEvent& event) {
+  if (event.new_state == ggp::StreamState::kStarted) {
+    entry::k_stream_started = true;
+  } else if (event.new_state == ggp::StreamState::kExited) {
+    entry::k_window_closing = true;
+  }
+}
+
+uint32_t         stream_state_changed_handler_id   = 0;
+static ggp::EventQueue ggp_event_queue;
+static char file_path[1024 * 1024] = {};
+
+// Main for Ggp
+// This initialized Ggp
+int main(int argc, const char** argv) {
+  int path_len = readlink("/proc/self/exe", file_path, 1024 * 1024 - 1);
+  if (path_len != -1) {
+    file_path[path_len] = '\0';
+    for (ssize_t i = path_len - 1; i >= 0; --i) {
+      // Cut off the exe name
+      if (file_path[i] == '/') {
+        file_path[i] = '\0';
+        break;
+      }
+    }
+    const char* env = getenv("VK_LAYER_PATH");
+    std::string layer_path = env ? env : "";
+    if (!layer_path.empty()) {
+      layer_path = layer_path + ":" + file_path;
+    } else {
+      layer_path = file_path;
+    }
+    setenv("VK_LAYER_PATH", layer_path.c_str(), 1);
+  }
+  ggp::Initialize();
+
+  stream_state_changed_handler_id = ggp::AddStreamStateChangedHandler(
+            &ggp_event_queue, HandleStreamChanged);
+
+  CommandLineArgs args;
+  parse_args(&args, argc, argv);
+  while (args.wait_for_debugger)
+    ;
+  int return_value = 0;
+  containers::LeakCheckAllocator root_allocator;
+  {
+    entry::EntryData entry_data(&root_allocator, args.window_width,
+                                args.window_height, args.fixed_timestep,
+                                args.prefer_separate_present, args.output_frame,
+                                args.output_file, args.shader_compiler);
+    if (args.output_frame == -1) {
+      bool window_created = entry_data.CreateWindow();
+      if (!window_created) {
+        entry_data.logger()->LogError("Window creation failed");
+        return -1;
+      }
+    }
+    std::thread main_thread([&entry_data, &return_value]() {
+      while(!entry::k_stream_started) {} // Wait for the stream to be started
+      return_value = main_entry(&entry_data);
+    });
+    std::atomic<bool> exited(false);
+    std::thread ggp_thread([&exited]() {
+      while(!exited) {
+        while(ggp_event_queue.ProcessEvent()) {}
+      }
+    });
+    main_thread.join();
+    exited = true;
+    ggp_thread.join();
+
+    ggp::RemoveStreamStateChangedHandler(stream_state_changed_handler_id);
+
+    // Indicate that ggp should shutdown.
+    ggp::StopStream();
+  }
+  assert(root_allocator.currently_allocated_bytes_.load() == 0);
+  return return_value;
+}
+ 
 #elif defined __linux__
 
 // Create Xcb window

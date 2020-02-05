@@ -39,6 +39,12 @@ int main_entry(const entry::EntryData* data) {
 
   instance->vkCreateAndroidSurfaceKHR(instance, &create_info, nullptr,
                                       &surface);
+#elif defined __ggp__ // Keep this line before __linux__
+  VkStreamDescriptorSurfaceCreateInfoGGP create_info{
+      VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP, nullptr, 1};
+
+  instance->vkCreateStreamDescriptorSurfaceGGP(instance, &create_info, nullptr,
+                                      &surface);
 #elif defined __linux__
   VkXcbSurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR, 0, 0,
