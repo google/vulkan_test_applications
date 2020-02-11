@@ -105,7 +105,9 @@ class VulkanGraphicsPipeline {
         vertex_attribute_descriptions_(allocator),
         shader_modules_(allocator),
         attachments_(allocator),
-        pipeline_(VK_NULL_HANDLE, nullptr, nullptr) {}
+        pipeline_(VK_NULL_HANDLE, nullptr, nullptr),
+        contained_stages_(0),
+        pipeline_extensions_(nullptr) {}
 
   VulkanGraphicsPipeline(VulkanGraphicsPipeline&& other) = default;
 

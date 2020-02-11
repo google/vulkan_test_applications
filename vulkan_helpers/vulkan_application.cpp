@@ -1465,9 +1465,9 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(containers::Allocator* allocator,
       shader_modules_(allocator),
       attachments_(allocator),
       layout_(*layout),
+      pipeline_(VK_NULL_HANDLE, nullptr, &application->device()),
       contained_stages_(0),
-      pipeline_extensions_(nullptr),
-      pipeline_(VK_NULL_HANDLE, nullptr, &application->device()) {
+      pipeline_extensions_(nullptr) {
   MemoryClear(&vertex_input_state_);
   MemoryClear(&input_assembly_state_);
   MemoryClear(&tessellation_state_);
@@ -1663,7 +1663,8 @@ void VulkanGraphicsPipeline::SetInputStreams(VulkanModel* model) {
                          &vertex_attribute_descriptions_);
 }
 
-void VulkanGraphicsPipeline::SetPipelineExtensions(const void* pipeline_extensions) {
+void VulkanGraphicsPipeline::SetPipelineExtensions(
+    const void* pipeline_extensions) {
   pipeline_extensions_ = pipeline_extensions;
 }
 
