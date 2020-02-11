@@ -462,7 +462,7 @@ class VulkanApplication {
       bool use_shared_presentation = false,
       bool use_mutable_swapchain_format = false,
       const void* swapchain_extensions = nullptr, bool use_vulkan_1_1 = false,
-      void* device_next = nullptr);
+      bool use_10bit_hdr = false, void* device_next = nullptr);
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.

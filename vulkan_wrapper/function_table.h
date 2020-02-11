@@ -420,7 +420,8 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkResetQueryPoolEXT),
         CONSTRUCT_LAZY_FUNCTION(vkGetPipelineExecutablePropertiesKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPipelineExecutableStatisticsKHR),
-        CONSTRUCT_LAZY_FUNCTION(vkGetPipelineExecutableInternalRepresentationsKHR)
+        CONSTRUCT_LAZY_FUNCTION(vkGetPipelineExecutableInternalRepresentationsKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkSetHdrMetadataEXT)
 #if defined _WIN32
         ,
         CONSTRUCT_LAZY_FUNCTION(vkGetMemoryWin32HandleKHR),
@@ -548,6 +549,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkGetPipelineExecutablePropertiesKHR);
   LAZY_FUNCTION(vkGetPipelineExecutableStatisticsKHR);
   LAZY_FUNCTION(vkGetPipelineExecutableInternalRepresentationsKHR);
+  LAZY_FUNCTION(vkSetHdrMetadataEXT);
 #if defined _WIN32
   LAZY_FUNCTION(vkGetMemoryWin32HandleKHR);
   LAZY_FUNCTION(vkGetFenceWin32HandleKHR);
