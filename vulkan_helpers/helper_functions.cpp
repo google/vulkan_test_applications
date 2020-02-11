@@ -1029,7 +1029,8 @@ VkSwapchainKHR CreateDefaultSwapchain(
     containers::Allocator* allocator, uint32_t graphics_queue_index,
     uint32_t present_queue_index, const entry::EntryData* data,
     VkColorSpaceKHR swapchain_color_space, bool use_shared_presentation,
-    VkSwapchainCreateFlagsKHR flags, const void* extensions) {
+    VkSwapchainCreateFlagsKHR flags, bool use_10bit_hdr,
+    const void* extensions) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
   containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
@@ -1126,17 +1127,22 @@ VkSwapchainKHR CreateDefaultSwapchain(
     uint32_t maxSwapchains =
         std::max(surface_caps.maxImageCount, surface_caps.minImageCount + 1);
 
+    if (use_10bit_hdr) {
+      surface_formats[0].format = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+      surface_formats[0].colorSpace = VK_COLOR_SPACE_HDR10_ST2084_EXT;
+    }
+
     VkSwapchainCreateInfoKHR swapchainCreateInfo{
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,  // sType
         extensions,                                   // pNext
         flags,                                        // flags
         *surface,                                     // surface
         std::min(surface_caps.minImageCount + 1,
-                 maxSwapchains),    // minImageCount
-        surface_format.format,      // surfaceFormat
-        surface_format.colorSpace,  // colorSpace
-        image_extent,               // imageExtent
-        1,                          // imageArrayLayers
+                 maxSwapchains),        // minImageCount
+        surface_formats[0].format,      // surfaceFormat
+        surface_formats[0].colorSpace,  // colorSpace
+        image_extent,                   // imageExtent
+        1,                              // imageArrayLayers
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
             VK_IMAGE_USAGE_TRANSFER_DST_BIT,  // imageUsage
         has_multiple_queues ? VK_SHARING_MODE_CONCURRENT

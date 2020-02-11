@@ -47,6 +47,7 @@ struct SampleOptions {
   bool enable_vulkan_1_1 = false;
   bool mutable_swapchain_format = false;
   bool enable_display_timing = false;
+  bool enable_10bit_hdr = false;
   void* device_extension_structures = nullptr;
 
   SampleOptions& EnableMultisampling() {
@@ -99,6 +100,10 @@ struct SampleOptions {
   }
   SampleOptions& EnableDisplayTiming() {
     enable_display_timing = true;
+    return *this;
+  }
+  SampleOptions& Enable10BitHDR() {
+    enable_10bit_hdr = true;
     return *this;
   }
   SampleOptions& AddDeviceExtensionStructure(void* device_extension_structure) {
@@ -201,7 +206,8 @@ class Sample {
             options.shared_presentation, options.mutable_swapchain_format,
             options.mutable_swapchain_format ? &kMutableSwapchainImageFormatList
                                              : nullptr,
-            options.enable_vulkan_1_1, options.device_extension_structures),
+            options.enable_vulkan_1_1, options.enable_10bit_hdr,
+            options.device_extension_structures),
         frame_data_(allocator),
         swapchain_images_(application_.swapchain_images()),
         last_frame_time_(std::chrono::high_resolution_clock::now()),
@@ -248,6 +254,25 @@ class Sample {
 
     InitializeApplicationData(&initialization_command_buffer_,
                               swapchain_images_.size());
+	
+    if (options_.enable_10bit_hdr) {
+      VkHdrMetadataEXT hdr10_metadata{
+          VK_STRUCTURE_TYPE_HDR_METADATA_EXT,
+          nullptr,             // pNext;
+          {0.708f, 0.292f},    // displayPrimaryRed;
+          {0.17f, 0.797f},     // displayPrimaryGreen;
+          {0.131f, 0.046f},    // displayPrimaryBlue;
+          {0.3127f, 0.329f},   // whitePoint;
+          1000.0f * 10000.0f,  // maxLuminance;
+          0.001 * 10000.0f,    // minLuminance;
+          2000.0f,             // maxContentLightLevel;
+          500.0f               // maxFrameAverageLightLevel;
+      };
+
+      application_.device()->vkSetHdrMetadataEXT(
+          application_.device(), 1, &application_.swapchain().get_raw_object(),
+          &hdr10_metadata);
+    }
 
     for (size_t i = 0; i < swapchain_images_.size(); ++i) {
       frame_data_.push_back(SampleFrameData());

@@ -63,11 +63,11 @@ VulkanApplication::VulkanApplication(
     uint32_t device_image_size, uint32_t device_buffer_size,
     uint32_t coherent_buffer_size, bool use_async_compute_queue,
     bool use_sparse_binding, bool use_device_group,
-    uint32_t device_peer_memory_size,
-    bool use_protected_memory, bool use_host_query_reset,
-    VkColorSpaceKHR swapchain_color_space, bool use_shared_presentation,
-    bool use_mutable_swapchain_format, const void* swapchain_extensions,
-    bool use_vulkan_1_1, void* device_next)
+    uint32_t device_peer_memory_size, bool use_protected_memory,
+    bool use_host_query_reset, VkColorSpaceKHR swapchain_color_space,
+    bool use_shared_presentation, bool use_mutable_swapchain_format,
+    const void* swapchain_extensions, bool use_vulkan_1_1, bool use_10bit_hdr,
+    void* device_next)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -99,7 +99,7 @@ VulkanApplication::VulkanApplication(
           use_mutable_swapchain_format
               ? VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR
               : 0,
-          swapchain_extensions)),
+          use_10bit_hdr, swapchain_extensions)),
       command_pools_(allocator_),
       pipeline_cache_(CreateDefaultPipelineCache(&device_)),
       host_accessible_heap_(allocator_),
