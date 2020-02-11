@@ -222,7 +222,8 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdDrawIndexedIndirectCountKHR),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdEndDebugUtilsLabelEXT),
-        CONSTRUCT_LAZY_FUNCTION(vkCmdInsertDebugUtilsLabelEXT)
+        CONSTRUCT_LAZY_FUNCTION(vkCmdInsertDebugUtilsLabelEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdPushDescriptorSetKHR)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -284,6 +285,7 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT);
   LAZY_FUNCTION(vkCmdEndDebugUtilsLabelEXT);
   LAZY_FUNCTION(vkCmdInsertDebugUtilsLabelEXT);
+  LAZY_FUNCTION(vkCmdPushDescriptorSetKHR);
 #undef LAZY_FUNCTION
 };
 
@@ -421,7 +423,8 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCreateDescriptorUpdateTemplateKHR),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyDescriptorUpdateTemplateKHR),
         CONSTRUCT_LAZY_FUNCTION(vkUpdateDescriptorSetWithTemplateKHR),
-        CONSTRUCT_LAZY_FUNCTION(vkResetQueryPoolEXT)
+        CONSTRUCT_LAZY_FUNCTION(vkResetQueryPoolEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkSetHdrMetadataEXT)
 #if defined _WIN32
         ,
         CONSTRUCT_LAZY_FUNCTION(vkGetMemoryWin32HandleKHR),
@@ -546,6 +549,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkDestroyDescriptorUpdateTemplateKHR);
   LAZY_FUNCTION(vkUpdateDescriptorSetWithTemplateKHR);
   LAZY_FUNCTION(vkResetQueryPoolEXT);
+  LAZY_FUNCTION(vkSetHdrMetadataEXT);
 #if defined _WIN32
   LAZY_FUNCTION(vkGetMemoryWin32HandleKHR);
   LAZY_FUNCTION(vkGetFenceWin32HandleKHR);
