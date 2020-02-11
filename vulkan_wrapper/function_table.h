@@ -65,10 +65,16 @@ class InstanceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormats2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPastPresentationTimingGOOGLE),
+        CONSTRUCT_LAZY_FUNCTION(vkGetRefreshCycleDurationGOOGLE),
         CONSTRUCT_LAZY_FUNCTION(vkEnumeratePhysicalDeviceGroups),
         CONSTRUCT_LAZY_FUNCTION(vkCreateDebugUtilsMessengerEXT),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyDebugUtilsMessengerEXT),
-        CONSTRUCT_LAZY_FUNCTION(vkSubmitDebugUtilsMessageEXT)
+        CONSTRUCT_LAZY_FUNCTION(vkSubmitDebugUtilsMessageEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceDisplayProperties2KHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceDisplayPlaneProperties2KHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetDisplayModeProperties2KHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetDisplayPlaneCapabilities2KHR)
 #if defined __ANDROID__
         ,
         CONSTRUCT_LAZY_FUNCTION(vkCreateAndroidSurfaceKHR)
@@ -125,10 +131,16 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfaceFormats2KHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR);
+  LAZY_FUNCTION(vkGetPastPresentationTimingGOOGLE);
+  LAZY_FUNCTION(vkGetRefreshCycleDurationGOOGLE);
   LAZY_FUNCTION(vkEnumeratePhysicalDeviceGroups);
   LAZY_FUNCTION(vkCreateDebugUtilsMessengerEXT);
   LAZY_FUNCTION(vkDestroyDebugUtilsMessengerEXT);
   LAZY_FUNCTION(vkSubmitDebugUtilsMessageEXT);
+  LAZY_FUNCTION(vkGetPhysicalDeviceDisplayProperties2KHR);
+	LAZY_FUNCTION(vkGetPhysicalDeviceDisplayPlaneProperties2KHR);
+	LAZY_FUNCTION(vkGetDisplayModeProperties2KHR);
+	LAZY_FUNCTION(vkGetDisplayPlaneCapabilities2KHR);
 #if defined __ANDROID__
   LAZY_FUNCTION(vkCreateAndroidSurfaceKHR);
 #elif defined __linux__

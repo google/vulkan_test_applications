@@ -134,7 +134,7 @@ VkDevice CreateDeviceForSwapchain(
     bool try_to_find_separate_present_queue = false,
     uint32_t* aync_compute_queue_index = nullptr,
     uint32_t* sparse_binding_queue_index = nullptr,
-    bool use_ycbcr_sampling = false, bool use_host_query_reset = false);
+    bool use_host_query_reset = false, void* device_next = nullptr);
 
 // Creates a device capable of presenting to the given surface.
 // The device is created with the given extensions.
@@ -157,7 +157,8 @@ VkDevice CreateDeviceGroupForSwapchain(
     const VkPhysicalDeviceFeatures& features = {0},
     bool try_to_find_separate_present_queue = false,
     uint32_t* aync_compute_queue_index = nullptr,
-    uint32_t* sparse_binding_queue_index = nullptr);
+    uint32_t* sparse_binding_queue_index = nullptr,
+    const void* device_next = nullptr);
 
 // Creates a primary level default command buffer from the given command pool
 // and the device.
@@ -178,7 +179,8 @@ VkSwapchainKHR CreateDefaultSwapchain(
     containers::Allocator* allocator, uint32_t present_queue_index,
     uint32_t graphics_queue_index, const entry::EntryData* data,
     VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-    bool use_shared_presentation = false);
+    bool use_shared_presentation = false, VkSwapchainCreateFlagsKHR flags = 0,
+    const void* extensions = nullptr);
 
 // Returns a uint32_t with only the lowest bit set.
 uint32_t inline GetLSB(uint32_t val) { return ((val - 1) ^ val) & val; }

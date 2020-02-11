@@ -18,7 +18,6 @@
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-#include "vulkan_helpers/vulkan_texture.h"
 
 #include <chrono>
 #include "mathfu/matrix.h"
@@ -32,27 +31,15 @@ namespace cube_model {
 }
 const auto& cube_data = cube_model::model;
 
-uint32_t textured_cube_vertex_shader[] =
-#include "multiplanar_image.vert.spv"
+uint32_t cube_vertex_shader[] =
+#include "cube.vert.spv"
     ;
 
-uint32_t textured_cube_fragment_shader[] =
-#include "multiplanar_image.frag.spv"
+uint32_t cube_fragment_shader[] =
+#include "cube.frag.spv"
     ;
 
-namespace simple_texture {
-#include "multiplanar.jpg.h"
-}
-
-const auto& texture_data = simple_texture::texture;
-
-static VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcr_sampler_features{
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR,
-    nullptr,  // pNext
-    true      // samplerYcbcrConversion
-};
-
-struct TexturedCubeFrameData {
+struct CubeFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
   containers::unique_ptr<vulkan::DescriptorSet> cube_descriptor_set_;
@@ -60,63 +47,21 @@ struct TexturedCubeFrameData {
 
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
-class MultiPlanarImageSample
-    : public sample_application::Sample<TexturedCubeFrameData> {
+class CubeSample : public sample_application::Sample<CubeFrameData> {
  public:
-  MultiPlanarImageSample(const entry::EntryData* data)
+  CubeSample(const entry::EntryData* data)
       : data_(data),
-        Sample<TexturedCubeFrameData>(
-            data->allocator(), data, 1, 512, 1, 1,
-            sample_application::SampleOptions().AddDeviceExtensionStructure(
-                &ycbcr_sampler_features),
-            {0}, {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
-            {VK_KHR_MAINTENANCE1_EXTENSION_NAME,
-             VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
-             VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
-             VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME}),
-
-        cube_(data->allocator(), data->logger(), cube_data),
-        texture_(data->allocator(), data->logger(), texture_data) {}
+        Sample<CubeFrameData>(data->allocator(), data, 1, 512, 1, 1,
+                              sample_application::SampleOptions()
+                                  .EnableMultisampling()
+                                  .EnableDisplayTiming(),
+                              {0}, {},
+                              {VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME}),
+        cube_(data->allocator(), data->logger(), cube_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
     cube_.InitializeData(app(), initialization_buffer);
-
-    VkSamplerYcbcrConversionCreateInfo samplerYcbcrConversionCreateInfo{
-        VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-        nullptr,  // pNext
-        simple_texture::texture.format,
-        VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020,  // VkSamplerYcbcrModelConversion
-        VK_SAMPLER_YCBCR_RANGE_ITU_FULL,               // VkSamplerYcbcrRange
-        {VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_R,
-         VK_COMPONENT_SWIZZLE_A},     // VkComponentMapping
-        VK_CHROMA_LOCATION_MIDPOINT,  // xChromaOffset
-        VK_CHROMA_LOCATION_MIDPOINT,  // yChromaOffset
-        VK_FILTER_NEAREST,            // chromaFilter
-        true                          // forceExplicitReconstruction;
-    };
-
-    // Setup Ycbcr conversion sampler
-    app()->device()->vkCreateSamplerYcbcrConversionKHR(
-        app()->device(), &samplerYcbcrConversionCreateInfo, nullptr,
-        &samplerYcbcr_);
-
-    VkSamplerYcbcrConversionInfo samplerYcbcrConversionInfo{
-        VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO, nullptr,
-        samplerYcbcr_};
-
-    texture_.InitializeData(app(), initialization_buffer,
-                            VK_IMAGE_USAGE_SAMPLED_BIT, 0,
-                            &samplerYcbcrConversionInfo);
-
-    sampler_ = containers::make_unique<vulkan::VkSampler>(
-        data_->allocator(),
-        vulkan::CreateSampler(&app()->device(), VK_FILTER_LINEAR,
-                              VK_FILTER_LINEAR,
-                              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                              &samplerYcbcrConversionInfo));
 
     cube_descriptor_set_layouts_[0] = {
         0,                                  // binding
@@ -132,19 +77,11 @@ class MultiPlanarImageSample
         VK_SHADER_STAGE_VERTEX_BIT,         // stageFlags
         nullptr                             // pImmutableSamplers
     };
-    cube_descriptor_set_layouts_[2] = {
-        2,                                          // binding
-        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  // descriptorType
-        1,                                          // descriptorCount
-        VK_SHADER_STAGE_FRAGMENT_BIT,               // stageFlags
-        &sampler_->get_raw_object()                 // pImmutableSamplers
-    };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
         data_->allocator(),
-        app()->CreatePipelineLayout(
-            {{cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
-              cube_descriptor_set_layouts_[2]}}));
+        app()->CreatePipelineLayout({{cube_descriptor_set_layouts_[0],
+                                      cube_descriptor_set_layouts_[1]}}));
 
     VkAttachmentReference color_attachment = {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -179,12 +116,13 @@ class MultiPlanarImageSample
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(), app()->CreateGraphicsPipeline(
-                                pipeline_layout_.get(), render_pass_.get(), 0));
+        data_->allocator(),
+        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
+                                      render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
-                              textured_cube_vertex_shader);
+                              cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
-                              textured_cube_fragment_shader);
+                              cube_fragment_shader);
     cube_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     cube_pipeline_->SetInputStreams(&cube_);
     cube_pipeline_->SetViewport(viewport());
@@ -211,13 +149,8 @@ class MultiPlanarImageSample
         mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
   }
 
-  virtual void InitializationComplete() override {
-    texture_.InitializationComplete();
-  }
-
   virtual void InitializeFrameData(
-      TexturedCubeFrameData* frame_data,
-      vulkan::VkCommandBuffer* initialization_buffer,
+      CubeFrameData* frame_data, vulkan::VkCommandBuffer* initialization_buffer,
       size_t frame_index) override {
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
@@ -227,8 +160,7 @@ class MultiPlanarImageSample
         containers::make_unique<vulkan::DescriptorSet>(
             data_->allocator(),
             app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
-                                          cube_descriptor_set_layouts_[1],
-                                          cube_descriptor_set_layouts_[2]}));
+                                          cube_descriptor_set_layouts_[1]}));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -242,40 +174,20 @@ class MultiPlanarImageSample
             model_data_->size(),                             // range
         }};
 
-    VkDescriptorImageInfo image_infos[1] = {{
-        *sampler_,                                 // sampler
-        texture_.view(),                           // imageView
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // imageLayout
-    }};
-
-    VkWriteDescriptorSet writes[3] = {
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
-            nullptr,                                 // pNext
-            *frame_data->cube_descriptor_set_,       // dstSet
-            0,                                       // dstbinding
-            0,                                       // dstArrayElement
-            2,                                       // descriptorCount
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       // descriptorType
-            nullptr,                                 // pImageInfo
-            &buffer_infos[0],                        // pBufferInfo
-            nullptr,                                 // pTexelBufferView
-        },
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,     // sType
-            nullptr,                                    // pNext
-            *frame_data->cube_descriptor_set_,          // dstSet
-            2,                                          // dstbinding
-            0,                                          // dstArrayElement
-            1,                                          // descriptorCount
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  // descriptorType
-            image_infos,                                // pImageInfo
-            nullptr,                                    // pBufferInfo
-            nullptr,                                    // pTexelBufferView
-        },
+    VkWriteDescriptorSet write{
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
+        nullptr,                                 // pNext
+        *frame_data->cube_descriptor_set_,       // dstSet
+        0,                                       // dstbinding
+        0,                                       // dstArrayElement
+        2,                                       // descriptorCount
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       // descriptorType
+        nullptr,                                 // pImageInfo
+        buffer_infos,                            // pBufferInfo
+        nullptr,                                 // pTexelBufferView
     };
 
-    app()->device()->vkUpdateDescriptorSets(app()->device(), 2, writes, 0,
+    app()->device()->vkUpdateDescriptorSets(app()->device(), 1, &write, 0,
                                             nullptr);
 
     ::VkImageView raw_view = color_view(frame_data);
@@ -344,7 +256,7 @@ class MultiPlanarImageSample
             Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
-                      TexturedCubeFrameData* frame_data) override {
+                      CubeFrameData* frame_data) override {
     // Update our uniform buffers.
     camera_data_->UpdateBuffer(queue, frame_index);
     model_data_->UpdateBuffer(queue, frame_index);
@@ -379,11 +291,8 @@ class MultiPlanarImageSample
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> cube_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
-  VkDescriptorSetLayoutBinding cube_descriptor_set_layouts_[3];
+  VkDescriptorSetLayoutBinding cube_descriptor_set_layouts_[2];
   vulkan::VulkanModel cube_;
-  vulkan::VulkanTexture texture_;
-  VkSamplerYcbcrConversion samplerYcbcr_;
-  containers::unique_ptr<vulkan::VkSampler> sampler_;
 
   containers::unique_ptr<vulkan::BufferFrameData<CameraData>> camera_data_;
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
@@ -391,7 +300,7 @@ class MultiPlanarImageSample
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
-  MultiPlanarImageSample sample(data);
+  CubeSample sample(data);
   sample.Initialize();
 
   while (!sample.should_exit() && !data->WindowClosing()) {

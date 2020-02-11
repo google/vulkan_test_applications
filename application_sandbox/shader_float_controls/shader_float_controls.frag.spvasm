@@ -1,0 +1,90 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Google Shaderc over Glslang; 7
+; Bound: 50
+; Schema: 0
+               OpCapability Shader
+               OpCapability DenormFlushToZero
+               OpCapability SignedZeroInfNanPreserve
+               OpCapability RoundingModeRTE
+               OpExtension "SPV_KHR_float_controls"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %out_color %texcoord
+               OpExecutionMode %main OriginUpperLeft
+               OpExecutionMode %main DenormFlushToZero 32
+               OpExecutionMode %main SignedZeroInfNanPreserve 32
+               OpExecutionMode %main RoundingModeRTE 32
+               OpSource GLSL 450
+               OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
+               OpSourceExtension "GL_GOOGLE_include_directive"
+               OpName %main "main"
+               OpName %out_color "out_color"
+               OpName %texcoord "texcoord"
+               OpName %test_value "test_value"
+               OpName %i "i"
+               OpDecorate %out_color Location 0
+               OpDecorate %texcoord Location 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %out_color = OpVariable %_ptr_Output_v4float Output
+    %v2float = OpTypeVector %float 2
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+   %texcoord = OpVariable %_ptr_Input_v2float Input
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+ %float_1000 = OpConstant %float 1000
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_ptr_Output_float = OpTypePointer Output %float
+%_ptr_Function_float = OpTypePointer Function %float
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_1 = OpConstant %int 1
+  %int_10000 = OpConstant %int 10000
+       %bool = OpTypeBool
+%float_0_100000001 = OpConstant %float 0.100000001
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+ %test_value = OpVariable %_ptr_Function_float Function
+          %i = OpVariable %_ptr_Function_int Function
+         %13 = OpLoad %v2float %texcoord
+         %16 = OpCompositeExtract %float %13 0
+         %17 = OpCompositeExtract %float %13 1
+         %18 = OpCompositeConstruct %v4float %16 %17 %float_0 %float_1
+               OpStore %out_color %18
+         %23 = OpAccessChain %_ptr_Output_float %out_color %uint_2
+               OpStore %23 %float_1000
+               OpStore %test_value %float_0
+               OpStore %i %int_1
+               OpBranch %30
+         %30 = OpLabel
+               OpLoopMerge %32 %33 None
+               OpBranch %34
+         %34 = OpLabel
+         %35 = OpLoad %int %i
+         %38 = OpSLessThanEqual %bool %35 %int_10000
+               OpBranchConditional %38 %31 %32
+         %31 = OpLabel
+         %39 = OpLoad %float %test_value
+         %41 = OpFAdd %float %39 %float_0_100000001
+               OpStore %test_value %41
+               OpBranch %33
+         %33 = OpLabel
+         %42 = OpLoad %int %i
+         %43 = OpIAdd %int %42 %int_1
+               OpStore %i %43
+               OpBranch %30
+         %32 = OpLabel
+         %44 = OpAccessChain %_ptr_Output_float %out_color %uint_2
+         %45 = OpLoad %float %44
+         %46 = OpLoad %float %test_value
+         %47 = OpFSub %float %45 %46
+         %48 = OpExtInst %float %1 FAbs %47
+         %49 = OpAccessChain %_ptr_Output_float %out_color %uint_2
+               OpStore %49 %48
+               OpReturn
+               OpFunctionEnd

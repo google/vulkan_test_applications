@@ -63,10 +63,12 @@ VulkanApplication::VulkanApplication(
     uint32_t device_image_size, uint32_t device_buffer_size,
     uint32_t coherent_buffer_size, bool use_async_compute_queue,
     bool use_sparse_binding, bool use_device_group,
-    uint32_t device_peer_memory_size, bool use_ycbcr_sampling,
+    uint32_t device_peer_memory_size,
     bool use_protected_memory, bool use_host_query_reset,
-    VkColorSpaceKHR swapchain_color_space,
-    bool use_shared_presentation, bool use_vulkan_1_1)
+    VkColorSpaceKHR swapchain_color_space, bool use_shared_presentation,
+    bool use_mutable_swapchain_format, const void* swapchain_extensions,
+    bool use_vulkan_1_1,
+    void* device_next)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -78,23 +80,27 @@ VulkanApplication::VulkanApplication(
       use_protected_memory_(use_protected_memory),
       library_wrapper_(allocator_, log_),
       instance_(!use_vulkan_1_1 ? CreateInstanceForApplication(
-                                        allocator_, &library_wrapper_,
-                                        entry_data_, instance_extensions)
-                                  : Create11InstanceForApplication(
-                                        allocator_, &library_wrapper_,
-                                        entry_data_, instance_extensions)),
+                                      allocator_, &library_wrapper_,
+                                      entry_data_, instance_extensions)
+                                : Create11InstanceForApplication(
+                                      allocator_, &library_wrapper_,
+                                      entry_data_, instance_extensions)),
       surface_(CreateDefaultSurface(&instance_, entry_data_)),
       device_(!use_device_group
                   ? CreateDevice(device_extensions, features,
                                  use_async_compute_queue, use_sparse_binding,
-                                 use_ycbcr_sampling, use_host_query_reset)
+                                 use_host_query_reset, device_next)
                   : CreateDeviceGroup(device_extensions, features,
                                       use_async_compute_queue,
-                                      use_sparse_binding)),
+                                      use_sparse_binding, device_next)),
       swapchain_(CreateDefaultSwapchain(
           &instance_, &device_, &surface_, allocator_, render_queue_index_,
           present_queue_index_, entry_data_, swapchain_color_space,
-          use_shared_presentation)),
+          use_shared_presentation,
+          use_mutable_swapchain_format
+              ? VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR
+              : 0,
+          swapchain_extensions)),
       command_pools_(allocator_),
       pipeline_cache_(CreateDefaultPipelineCache(&device_)),
       host_accessible_heap_(allocator_),
@@ -412,13 +418,14 @@ VkDevice VulkanApplication::SetupDevice(VkDevice device,
 VkDevice VulkanApplication::CreateDeviceGroup(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue,
-    bool use_sparse_binding) {
+    bool use_sparse_binding, const void* device_next) {
   vulkan::VkDevice device(vulkan::CreateDeviceGroupForSwapchain(
       allocator_, &instance_, &surface_, &render_queue_index_,
       &present_queue_index_, extensions, features,
       entry_data_->prefer_separate_present(),
       create_async_compute_queue ? &compute_queue_index_ : nullptr,
-      use_sparse_binding ? &sparse_binding_queue_index_ : nullptr));
+      use_sparse_binding ? &sparse_binding_queue_index_ : nullptr,
+      device_next));
   return SetupDevice(std::move(device), create_async_compute_queue,
                      use_sparse_binding);
 }
@@ -426,8 +433,7 @@ VkDevice VulkanApplication::CreateDeviceGroup(
 VkDevice VulkanApplication::CreateDevice(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue,
-    bool use_sparse_binding, bool use_ycbcr_sampling,
-    bool use_host_query_reset) {
+    bool use_sparse_binding, bool use_host_query_reset, void* device_next) {
   // Since this is called by the constructor be careful not to
   // use any data other than what has already been initialized.
   // allocator_, log_, entry_data_, library_wrapper_, instance_,
@@ -439,7 +445,7 @@ VkDevice VulkanApplication::CreateDevice(
       entry_data_->prefer_separate_present(),
       create_async_compute_queue ? &compute_queue_index_ : nullptr,
       use_sparse_binding ? &sparse_binding_queue_index_ : nullptr,
-      use_ycbcr_sampling, use_host_query_reset));
+      use_host_query_reset, device_next));
 
   return SetupDevice(std::move(device), create_async_compute_queue,
                      use_sparse_binding);

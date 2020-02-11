@@ -81,9 +81,16 @@ def main():
             f.write(" VkFormat format;\n")
             f.write(" size_t width;")
             f.write(" size_t height;")
-            f.write(
-                " " + data_types[image.mode] +
-                " data[" + str(image.size[0] * image.size[1] * 2) + "];\n} texture = { \n")
+            
+            if (image.mode == "YCbCr"):
+                f.write(
+                    " " + data_types[image.mode] +
+                    " data[" + str(image.size[0] * image.size[1] * 2) + "];\n} texture = { \n")
+            else:
+                f.write(
+                    " " + data_types[image.mode] +
+                    " data[" + str(image.size[0] * image.size[1]) + "];\n} texture = { \n")
+            
             f.write("   " + vulkan_types[image.mode] + ",\n")
             f.write("   " + str(image.size[0]) + ",\n")
             f.write("   " + str(image.size[1]) + ",\n")

@@ -129,7 +129,15 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
   const auto num_default_extensions =
       sizeof(default_extensions) / sizeof(default_extensions[0]);
 
-  const char* layers[] = {"CallbackSwapchain"};
+  const char* validation_layer = "VK_LAYER_LUNARG_standard_validation";
+  const char* callback_layer = "CallbackSwapchain";
+  const char* layer = nullptr;
+
+  if (data->output_frame_index() >= 0) {
+    layer = callback_layer;
+  } else if (data->validation()) {
+		layer = validation_layer;
+  }
 
   std::vector<const char*> extensions;
   extensions.reserve(num_default_extensions + instance_extensions.size());
@@ -147,10 +155,8 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
                             nullptr,
                             0,
                             &app_info,
-                            uint32_t(data->output_frame_index() >= 0
-                                         ? (sizeof(layers) / sizeof(layers[0]))
-                                         : 0),
-                            layers,
+                            !!layer,
+                            &layer,
                             uint32_t(extensions.size()),
                             extensions.data()};
 
@@ -175,7 +181,7 @@ VkInstance Create11InstanceForApplication(
     const entry::EntryData* data,
     const std::initializer_list<const char*> extensions) {
   return CreateVerisonedInstanceForApplicaiton(
-      allocator, wrapper, data, VK_MAKE_VERSION(1, 1, 0), extensions);
+      allocator, wrapper, data, VK_MAKE_VERSION(1, 0, 0), extensions);
 }
 
 containers::vector<VkPhysicalDevice> GetPhysicalDevices(
@@ -455,7 +461,7 @@ VkDevice CreateDeviceForSwapchain(
     const VkPhysicalDeviceFeatures& features,
     bool try_to_find_separate_present_queue,
     uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index,
-    bool use_ycbcr_sampling, bool use_host_query_reset) {
+    bool use_host_query_reset, void* device_next) {
   containers::vector<VkPhysicalDevice> physical_devices =
       GetPhysicalDevices(allocator, *instance);
   float priority = 1.f;
@@ -602,17 +608,11 @@ VkDevice CreateDeviceForSwapchain(
 
     VkPhysicalDeviceHostQueryResetFeaturesEXT host_query_reset_feature{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT,
-        nullptr, use_host_query_reset};
-
-    VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcr_sampler_features{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR,
-        &host_query_reset_feature,  // pNext;
-        use_ycbcr_sampling          // samplerYcbcrConversion
-    };
+        device_next, use_host_query_reset};
 
     VkPhysicalDeviceFloatControlsPropertiesKHR float_control_properties{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR,
-        &ycbcr_sampler_features,  // pNext
+        &host_query_reset_feature,  // pNext
         VkShaderFloatControlsIndependenceKHR::
             VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR,  // denormBehaviorIndependence;
         VkShaderFloatControlsIndependenceKHR::
@@ -812,7 +812,8 @@ VkDevice CreateDeviceGroupForSwapchain(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features,
     bool try_to_find_separate_present_queue,
-    uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index) {
+    uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index,
+    const void* device_next) {
   uint32_t count = 0;
   LOG_ASSERT(
       ==, instance->GetLogger(), VK_SUCCESS,
@@ -892,7 +893,7 @@ VkDevice CreateDeviceGroupForSwapchain(
     // For now we create 1 or 2 devices, more can be done in the future, but
     // we should plumb down the number of devices.
     VkDeviceGroupDeviceCreateInfo device_group{
-        VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, nullptr,
+        VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, device_next,
         group.physicalDeviceCount > 2 ? 2 : group.physicalDeviceCount,
         &group.physicalDevices[0]};
 
@@ -1023,14 +1024,12 @@ VkCommandBuffer CreateCommandBuffer(VkCommandPool* pool,
   return vulkan::VkCommandBuffer(raw_command_buffer, pool, device);
 }
 
-VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
-                                      VkSurfaceKHR* surface,
-                                      containers::Allocator* allocator,
-                                      uint32_t graphics_queue_index,
-                                      uint32_t present_queue_index,
-                                      const entry::EntryData* data,
-                                      VkColorSpaceKHR swapchain_color_space,
-	                                  bool use_shared_presentation) {
+VkSwapchainKHR CreateDefaultSwapchain(
+    VkInstance* instance, VkDevice* device, VkSurfaceKHR* surface,
+    containers::Allocator* allocator, uint32_t graphics_queue_index,
+    uint32_t present_queue_index, const entry::EntryData* data,
+    VkColorSpaceKHR swapchain_color_space, bool use_shared_presentation,
+    VkSwapchainCreateFlagsKHR flags, const void* extensions) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
   containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
@@ -1129,8 +1128,8 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
 
     VkSwapchainCreateInfoKHR swapchainCreateInfo{
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,  // sType
-        nullptr,                                      // pNext
-        0,                                            // flags
+        extensions,                                   // pNext
+        flags,                                        // flags
         *surface,                                     // surface
         std::min(surface_caps.minImageCount + 1,
                  maxSwapchains),    // minImageCount
@@ -1139,9 +1138,7 @@ VkSwapchainKHR CreateDefaultSwapchain(VkInstance* instance, VkDevice* device,
         image_extent,               // imageExtent
         1,                          // imageArrayLayers
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL | use_shared_presentation
-            ? VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR
-            : VK_IMAGE_LAYOUT_UNDEFINED,  // imageUsage
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT,  // imageUsage
         has_multiple_queues ? VK_SHARING_MODE_CONCURRENT
                             : VK_SHARING_MODE_EXCLUSIVE,  // sharingMode
         has_multiple_queues ? 2u : 0u,
