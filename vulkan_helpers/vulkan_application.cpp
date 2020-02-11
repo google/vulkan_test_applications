@@ -417,7 +417,7 @@ VkDevice VulkanApplication::SetupDevice(VkDevice device,
 VkDevice VulkanApplication::CreateDeviceGroup(
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features, bool create_async_compute_queue,
-    bool use_sparse_binding, const void* device_next) {
+    bool use_sparse_binding, void* device_next) {
   vulkan::VkDevice device(vulkan::CreateDeviceGroupForSwapchain(
       allocator_, &instance_, &surface_, &render_queue_index_,
       &present_queue_index_, extensions, features,

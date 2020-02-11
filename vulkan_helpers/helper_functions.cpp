@@ -813,7 +813,7 @@ VkDevice CreateDeviceGroupForSwapchain(
     const VkPhysicalDeviceFeatures& features,
     bool try_to_find_separate_present_queue,
     uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index,
-    const void* device_next) {
+    void* device_next) {
   uint32_t count = 0;
   LOG_ASSERT(
       ==, instance->GetLogger(), VK_SUCCESS,

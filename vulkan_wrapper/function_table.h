@@ -359,6 +359,7 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCreateImageView),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyImageView),
         CONSTRUCT_LAZY_FUNCTION(vkCreateRenderPass),
+        CONSTRUCT_LAZY_FUNCTION(vkCreateRenderPass2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyRenderPass),
         CONSTRUCT_LAZY_FUNCTION(vkCreatePipelineCache),
         CONSTRUCT_LAZY_FUNCTION(vkMergePipelineCaches),
@@ -487,6 +488,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkCreateImageView);
   LAZY_FUNCTION(vkDestroyImageView);
   LAZY_FUNCTION(vkCreateRenderPass);
+  LAZY_FUNCTION(vkCreateRenderPass2KHR);
   LAZY_FUNCTION(vkDestroyRenderPass);
   LAZY_FUNCTION(vkCreatePipelineCache);
   LAZY_FUNCTION(vkMergePipelineCaches);
