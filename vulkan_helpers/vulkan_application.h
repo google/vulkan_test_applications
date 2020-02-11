@@ -216,6 +216,15 @@ class VulkanComputePipeline {
   ::VkPipelineLayout layout_;
 };
 
+struct DescriptorSetLayoutBinding {
+  DescriptorSetLayoutBinding(
+      std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
+      VkDescriptorSetLayoutCreateFlags flags = 0)
+      : bindings_(bindings), flags_(flags) {}
+  std::initializer_list<VkDescriptorSetLayoutBinding> bindings_;
+  VkDescriptorSetLayoutCreateFlags flags_;
+};
+
 // PipelineLayout holds a VkPipelineLayout object as well as as set of
 // VkDescriptorSetLayout objects used to create that pipeline layout.
 class PipelineLayout {
@@ -228,10 +237,8 @@ class PipelineLayout {
 
  private:
   // TODO(awoloszyn): Handle push constants here too
-  PipelineLayout(
-      containers::Allocator* allocator, VkDevice* device,
-      std::initializer_list<std::initializer_list<VkDescriptorSetLayoutBinding>>
-          layouts)
+  PipelineLayout(containers::Allocator* allocator, VkDevice* device,
+                 std::initializer_list<DescriptorSetLayoutBinding> layouts)
       : pipeline_layout_(VK_NULL_HANDLE, nullptr, device),
         descriptor_set_layouts_(allocator) {
     containers::vector<::VkDescriptorSetLayout> raw_layouts(allocator);
@@ -240,7 +247,7 @@ class PipelineLayout {
     descriptor_set_layouts_.reserve(layouts.size());
     for (auto binding_list : layouts) {
       descriptor_set_layouts_.emplace_back(
-          CreateDescriptorSetLayout(allocator, device, binding_list));
+          CreateDescriptorSetLayout(allocator, device, binding_list.bindings_, binding_list.flags_));
       raw_layouts.push_back(descriptor_set_layouts_.back());
     }
     VkPipelineLayoutCreateInfo create_info = {
@@ -452,7 +459,7 @@ class VulkanApplication {
       bool use_shared_presentation = false,
       bool use_mutable_swapchain_format = false,
       const void* swapchain_extensions = nullptr, bool use_vulkan_1_1 = false,
-      void* device_next = nullptr);
+      bool use_10bit_hdr = false, void* device_next = nullptr);
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.
@@ -701,7 +708,7 @@ class VulkanApplication {
   // Creates and returns a PipelineLayout from the given
   // DescriptorSetLayoutBindings
   PipelineLayout CreatePipelineLayout(
-      std::initializer_list<std::initializer_list<VkDescriptorSetLayoutBinding>>
+      std::initializer_list<DescriptorSetLayoutBinding>
           layouts) {
     return PipelineLayout(allocator_, &device_, layouts);
   }

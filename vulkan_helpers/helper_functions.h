@@ -180,7 +180,7 @@ VkSwapchainKHR CreateDefaultSwapchain(
     uint32_t graphics_queue_index, const entry::EntryData* data,
     VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
     bool use_shared_presentation = false, VkSwapchainCreateFlagsKHR flags = 0,
-    const void* extensions = nullptr);
+    bool use_10bit_hdr = false, const void* extensions = nullptr);
 
 // Returns a uint32_t with only the lowest bit set.
 uint32_t inline GetLSB(uint32_t val) { return ((val - 1) ^ val) & val; }
@@ -211,7 +211,8 @@ VkSampler CreateSampler(
 // Creates a DescriptorSetLayout with the given set of layouts.
 VkDescriptorSetLayout CreateDescriptorSetLayout(
     containers::Allocator* allocator, VkDevice* device,
-    std::initializer_list<VkDescriptorSetLayoutBinding> bindings);
+    std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
+    VkDescriptorSetLayoutCreateFlags flags = 0);
 
 // Creates a descriptor pool with the given pool sizes. At maximum, |max_sets|
 // number of descriptor sets can be allocated from this pool.
