@@ -806,7 +806,7 @@ class VulkanApplication {
                         const VkPhysicalDeviceFeatures& features,
                         bool create_async_compute_queue,
                         bool use_sparse_binding, bool use_host_query_reset,
-                        void* pNext = nullptr);
+                        void* device_next);
 
   VkDevice SetupDevice(VkDevice device, bool create_async_compute_queue,
                        bool use_sparse_binding);

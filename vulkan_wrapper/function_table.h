@@ -177,6 +177,8 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginRenderPass),
         CONSTRUCT_LAZY_FUNCTION(vkCmdEndRenderPass),
         CONSTRUCT_LAZY_FUNCTION(vkCmdNextSubpass),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdBeginTransformFeedbackEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdEndTransformFeedbackEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBindPipeline),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetLineWidth),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetBlendConstants),
@@ -190,6 +192,7 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdCopyBuffer),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBindDescriptorSets),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBindVertexBuffers),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdBindTransformFeedbackBuffersEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdClearColorImage),
         CONSTRUCT_LAZY_FUNCTION(vkCmdClearDepthStencilImage),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBindIndexBuffer),
@@ -236,6 +239,8 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdBeginRenderPass);
   LAZY_FUNCTION(vkCmdEndRenderPass);
   LAZY_FUNCTION(vkCmdNextSubpass);
+  LAZY_FUNCTION(vkCmdBeginTransformFeedbackEXT);
+  LAZY_FUNCTION(vkCmdEndTransformFeedbackEXT);
   LAZY_FUNCTION(vkCmdBindPipeline);
   LAZY_FUNCTION(vkCmdSetLineWidth);
   LAZY_FUNCTION(vkCmdSetBlendConstants);
@@ -249,6 +254,7 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdCopyBuffer);
   LAZY_FUNCTION(vkCmdBindDescriptorSets);
   LAZY_FUNCTION(vkCmdBindVertexBuffers);
+  LAZY_FUNCTION(vkCmdBindTransformFeedbackBuffersEXT);
   LAZY_FUNCTION(vkCmdClearColorImage);
   LAZY_FUNCTION(vkCmdClearDepthStencilImage);
   LAZY_FUNCTION(vkCmdBindIndexBuffer);
