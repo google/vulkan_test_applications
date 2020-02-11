@@ -158,7 +158,7 @@ VkDevice CreateDeviceGroupForSwapchain(
     bool try_to_find_separate_present_queue = false,
     uint32_t* aync_compute_queue_index = nullptr,
     uint32_t* sparse_binding_queue_index = nullptr,
-    const void* pNext = nullptr);
+    const void* device_next = nullptr);
 
 // Creates a primary level default command buffer from the given command pool
 // and the device.

@@ -33,24 +33,18 @@ namespace cube_model {
 const auto& cube_data = cube_model::model;
 
 uint32_t textured_cube_vertex_shader[] =
-#include "multiplanar_image.vert.spv"
+#include "textured_cube.vert.spv"
     ;
 
 uint32_t textured_cube_fragment_shader[] =
-#include "multiplanar_image.frag.spv"
+#include "textured_cube.frag.spv"
     ;
 
 namespace simple_texture {
-#include "multiplanar.jpg.h"
+#include "star.png.h"
 }
 
 const auto& texture_data = simple_texture::texture;
-
-static VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcr_sampler_features{
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR,
-    nullptr,  // pNext
-    true      // samplerYcbcrConversion
-};
 
 struct TexturedCubeFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
@@ -60,63 +54,23 @@ struct TexturedCubeFrameData {
 
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
-class MultiPlanarImageSample
+class TexturedCubeSample
     : public sample_application::Sample<TexturedCubeFrameData> {
  public:
-  MultiPlanarImageSample(const entry::EntryData* data)
+  TexturedCubeSample(const entry::EntryData* data)
       : data_(data),
         Sample<TexturedCubeFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
-            sample_application::SampleOptions().AddDeviceExtensionStructure(
-                &ycbcr_sampler_features),
-            {0}, {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
-            {VK_KHR_MAINTENANCE1_EXTENSION_NAME,
-             VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
-             VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
-             VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME}),
-
+            sample_application::SampleOptions(), {0},
+            {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
+            {VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data),
         texture_(data->allocator(), data->logger(), texture_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
     cube_.InitializeData(app(), initialization_buffer);
-
-    VkSamplerYcbcrConversionCreateInfo samplerYcbcrConversionCreateInfo{
-        VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-        nullptr,  // pNext
-        simple_texture::texture.format,
-        VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020,  // VkSamplerYcbcrModelConversion
-        VK_SAMPLER_YCBCR_RANGE_ITU_FULL,               // VkSamplerYcbcrRange
-        {VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_R,
-         VK_COMPONENT_SWIZZLE_A},     // VkComponentMapping
-        VK_CHROMA_LOCATION_MIDPOINT,  // xChromaOffset
-        VK_CHROMA_LOCATION_MIDPOINT,  // yChromaOffset
-        VK_FILTER_NEAREST,            // chromaFilter
-        true                          // forceExplicitReconstruction;
-    };
-
-    // Setup Ycbcr conversion sampler
-    app()->device()->vkCreateSamplerYcbcrConversionKHR(
-        app()->device(), &samplerYcbcrConversionCreateInfo, nullptr,
-        &samplerYcbcr_);
-
-    VkSamplerYcbcrConversionInfo samplerYcbcrConversionInfo{
-        VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO, nullptr,
-        samplerYcbcr_};
-
-    texture_.InitializeData(app(), initialization_buffer,
-                            VK_IMAGE_USAGE_SAMPLED_BIT, 0,
-                            &samplerYcbcrConversionInfo);
-
-    sampler_ = containers::make_unique<vulkan::VkSampler>(
-        data_->allocator(),
-        vulkan::CreateSampler(&app()->device(), VK_FILTER_LINEAR,
-                              VK_FILTER_LINEAR,
-                              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                              &samplerYcbcrConversionInfo));
+    texture_.InitializeData(app(), initialization_buffer);
 
     cube_descriptor_set_layouts_[0] = {
         0,                                  // binding
@@ -133,18 +87,39 @@ class MultiPlanarImageSample
         nullptr                             // pImmutableSamplers
     };
     cube_descriptor_set_layouts_[2] = {
-        2,                                          // binding
-        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  // descriptorType
-        1,                                          // descriptorCount
-        VK_SHADER_STAGE_FRAGMENT_BIT,               // stageFlags
-        &sampler_->get_raw_object()                 // pImmutableSamplers
+        2,                             // binding
+        VK_DESCRIPTOR_TYPE_SAMPLER,    // descriptorType
+        1,                             // descriptorCount
+        VK_SHADER_STAGE_FRAGMENT_BIT,  // stageFlags
+        nullptr                        // pImmutableSamplers
     };
+    cube_descriptor_set_layouts_[3] = {
+        3,                                 // binding
+        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  // descriptorType
+        1,                                 // descriptorCount
+        VK_SHADER_STAGE_FRAGMENT_BIT,      // stageFlags
+        nullptr                            // pImmutableSamplers
+    };
+
+    VkSamplerReductionModeCreateInfoEXT sampler_reduction_mode{
+        VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT,
+        nullptr,                           // pNext
+        VK_SAMPLER_REDUCTION_MODE_MAX_EXT  // reductionMode
+    };
+    sampler_ = containers::make_unique<vulkan::VkSampler>(
+        data_->allocator(),
+        vulkan::CreateSampler(
+            &app()->device(), VK_FILTER_LINEAR, VK_FILTER_LINEAR,
+            VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, &sampler_reduction_mode));
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
         data_->allocator(),
         app()->CreatePipelineLayout(
             {{cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
-              cube_descriptor_set_layouts_[2]}}));
+              cube_descriptor_set_layouts_[2],
+              cube_descriptor_set_layouts_[3]}}));
 
     VkAttachmentReference color_attachment = {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -179,8 +154,9 @@ class MultiPlanarImageSample
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(), app()->CreateGraphicsPipeline(
-                                pipeline_layout_.get(), render_pass_.get(), 0));
+        data_->allocator(),
+        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
+                                      render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               textured_cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -223,12 +199,13 @@ class MultiPlanarImageSample
         containers::make_unique<vulkan::VkCommandBuffer>(
             data_->allocator(), app()->GetCommandBuffer());
 
-    frame_data->cube_descriptor_set_ =
-        containers::make_unique<vulkan::DescriptorSet>(
-            data_->allocator(),
-            app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
-                                          cube_descriptor_set_layouts_[1],
-                                          cube_descriptor_set_layouts_[2]}));
+    frame_data
+        ->cube_descriptor_set_ = containers::make_unique<vulkan::DescriptorSet>(
+        data_->allocator(),
+        app()->AllocateDescriptorSet({
+            cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
+            cube_descriptor_set_layouts_[2], cube_descriptor_set_layouts_[3],
+        }));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -242,11 +219,16 @@ class MultiPlanarImageSample
             model_data_->size(),                             // range
         }};
 
-    VkDescriptorImageInfo image_infos[1] = {{
-        *sampler_,                                 // sampler
+    VkDescriptorImageInfo sampler_info = {
+        *sampler_,                 // sampler
+        VK_NULL_HANDLE,            // imageView
+        VK_IMAGE_LAYOUT_UNDEFINED  //  imageLayout
+    };
+    VkDescriptorImageInfo texture_info = {
+        VK_NULL_HANDLE,                            // sampler
         texture_.view(),                           // imageView
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // imageLayout
-    }};
+    };
 
     VkWriteDescriptorSet writes[3] = {
         {
@@ -262,20 +244,32 @@ class MultiPlanarImageSample
             nullptr,                                 // pTexelBufferView
         },
         {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,     // sType
-            nullptr,                                    // pNext
-            *frame_data->cube_descriptor_set_,          // dstSet
-            2,                                          // dstbinding
-            0,                                          // dstArrayElement
-            1,                                          // descriptorCount
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  // descriptorType
-            image_infos,                                // pImageInfo
-            nullptr,                                    // pBufferInfo
-            nullptr,                                    // pTexelBufferView
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
+            nullptr,                                 // pNext
+            *frame_data->cube_descriptor_set_,       // dstSet
+            2,                                       // dstbinding
+            0,                                       // dstArrayElement
+            1,                                       // descriptorCount
+            VK_DESCRIPTOR_TYPE_SAMPLER,              // descriptorType
+            &sampler_info,                           // pImageInfo
+            nullptr,                                 // pBufferInfo
+            nullptr,                                 // pTexelBufferView
+        },
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
+            nullptr,                                 // pNext
+            *frame_data->cube_descriptor_set_,       // dstSet
+            3,                                       // dstbinding
+            0,                                       // dstArrayElement
+            1,                                       // descriptorCount
+            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,        // descriptorType
+            &texture_info,                           // pImageInfo
+            nullptr,                                 // pBufferInfo
+            nullptr,                                 // pTexelBufferView
         },
     };
 
-    app()->device()->vkUpdateDescriptorSets(app()->device(), 2, writes, 0,
+    app()->device()->vkUpdateDescriptorSets(app()->device(), 3, writes, 0,
                                             nullptr);
 
     ::VkImageView raw_view = color_view(frame_data);
@@ -337,11 +331,11 @@ class MultiPlanarImageSample
   }
 
   virtual void Update(float time_since_last_render) override {
-    model_data_->data().transform =
-        model_data_->data().transform *
-        Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14f * time_since_last_render) *
-            Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
+   model_data_->data().transform =
+       model_data_->data().transform *
+       Mat44::FromRotationMatrix(
+           Mat44::RotationX(3.14f * time_since_last_render) *
+           Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
   }
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       TexturedCubeFrameData* frame_data) override {
@@ -379,10 +373,9 @@ class MultiPlanarImageSample
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> cube_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
-  VkDescriptorSetLayoutBinding cube_descriptor_set_layouts_[3];
+  VkDescriptorSetLayoutBinding cube_descriptor_set_layouts_[4];
   vulkan::VulkanModel cube_;
   vulkan::VulkanTexture texture_;
-  VkSamplerYcbcrConversion samplerYcbcr_;
   containers::unique_ptr<vulkan::VkSampler> sampler_;
 
   containers::unique_ptr<vulkan::BufferFrameData<CameraData>> camera_data_;
@@ -391,7 +384,7 @@ class MultiPlanarImageSample
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
-  MultiPlanarImageSample sample(data);
+  TexturedCubeSample sample(data);
   sample.Initialize();
 
   while (!sample.should_exit() && !data->WindowClosing()) {

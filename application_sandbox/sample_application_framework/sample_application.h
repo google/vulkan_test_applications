@@ -46,6 +46,7 @@ struct SampleOptions {
   bool shared_presentation = false;
   bool enable_vulkan_1_1 = false;
   bool mutable_swapchain_format = false;
+  bool enable_display_timing = false;
   void* device_extension_structures = nullptr;
 
   SampleOptions& EnableMultisampling() {
@@ -94,6 +95,10 @@ struct SampleOptions {
   }
   SampleOptions& EnableMutableSwapChainFormat() {
     mutable_swapchain_format = true;
+    return *this;
+  }
+  SampleOptions& EnableDisplayTiming() {
+    enable_display_timing = true;
     return *this;
   }
   SampleOptions& AddDeviceExtensionStructure(void* device_extension_structure) {
@@ -311,6 +316,75 @@ class Sample {
     average_frame_time_ =
         elapsed_time.count() * 0.05f + average_frame_time_ * 0.95f;
 
+	// Display Timing
+    VkRefreshCycleDurationGOOGLE rc_dur = {};
+    static unsigned refresh_multiplier = 1;
+    static uint32_t present_id = 0;
+
+    if (options_.enable_display_timing) {
+      VkResult res = app()->instance()->vkGetRefreshCycleDurationGOOGLE(
+          app()->device(), app()->swapchain(), &rc_dur);
+
+      VkPastPresentationTimingGOOGLE past[256] = {};
+      uint32_t count = 0;
+
+      res = app()->instance()->vkGetPastPresentationTimingGOOGLE(
+          app()->device(), app()->swapchain(), &count, nullptr);
+
+      if (count) {
+        static unsigned early_frame_count = 0;
+        static uint32_t last_late_frame_id = 0;
+        bool increase_refresh_multiplier = false;
+        res = app()->instance()->vkGetPastPresentationTimingGOOGLE(
+            app()->device(), app()->swapchain(), &count, &past[0]);
+
+        for (uint32_t i = 0; i < count; ++i) {
+          if (past[i].actualPresentTime >
+              (past[i].desiredPresentTime + rc_dur.refreshDuration)) {
+            early_frame_count = 0;
+            // Mark the end of a group of late frames so that the refresh
+            // multiplier is only updated once per group
+            if (last_late_frame_id < past[i].presentID) {
+              increase_refresh_multiplier = true;
+              last_late_frame_id = present_id - 1;
+            }
+          }
+          // Decrease image present duration by one refresh cycle if image can
+          // be presented early for 3 seconds worth of frames
+          else if (past[i].earliestPresentTime < past[i].actualPresentTime) {
+            uint64_t present_time_difference =
+                past[i].actualPresentTime - past[i].earliestPresentTime;
+            if ((present_time_difference >= 8E6) &&
+                (past[i].presentMargin >= 8E6)) {
+              increase_refresh_multiplier = false;
+              early_frame_count += 1;
+
+              unsigned early_frame_count_limit = static_cast<unsigned>(
+                  3E9 / (rc_dur.refreshDuration * refresh_multiplier));
+
+              if (early_frame_count >= early_frame_count_limit) {
+                early_frame_count = 0;
+                if (refresh_multiplier > 1) {
+                  refresh_multiplier -= 1;
+                }
+              }
+            }
+            // reset late the early frame counter if image presentation occurs
+            // on schedule
+            else {
+              increase_refresh_multiplier = false;
+              early_frame_count = 0;
+            }
+          }
+        }
+        // Increase image present duration by an additional refresh cycle
+        if (increase_refresh_multiplier) {
+          refresh_multiplier += 1;
+        }
+        rc_dur.refreshDuration *= refresh_multiplier;
+      }
+    }
+
     uint32_t image_idx;
 
     // This is a bit weird as we have to make new semaphores every frame, but
@@ -437,6 +511,23 @@ class Sample {
         &image_idx,                            // pImageIndices
         nullptr,                               // pResults
     };
+
+    VkPresentTimeGOOGLE ptime;
+    ptime.desiredPresentTime =
+        (current_time.time_since_epoch().count() + rc_dur.refreshDuration);
+    ptime.presentID = present_id++;
+
+    VkPresentTimesInfoGOOGLE present_time = {
+        VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE,
+        present_info.pNext,           // pNext
+        present_info.swapchainCount,  // swapchainCount
+        &ptime,                       // pTimes
+    };
+
+	if (options_.enable_display_timing) {
+      present_info.pNext = &present_time;
+    }
+
     LOG_ASSERT(==, app()->GetLogger(),
                app()->present_queue()->vkQueuePresentKHR(app()->present_queue(),
                                                          &present_info),

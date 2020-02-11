@@ -813,7 +813,7 @@ VkDevice CreateDeviceGroupForSwapchain(
     const VkPhysicalDeviceFeatures& features,
     bool try_to_find_separate_present_queue,
     uint32_t* async_compute_queue_index, uint32_t* sparse_binding_queue_index,
-    const void* pNext) {
+    const void* device_next) {
   uint32_t count = 0;
   LOG_ASSERT(
       ==, instance->GetLogger(), VK_SUCCESS,
@@ -893,7 +893,7 @@ VkDevice CreateDeviceGroupForSwapchain(
     // For now we create 1 or 2 devices, more can be done in the future, but
     // we should plumb down the number of devices.
     VkDeviceGroupDeviceCreateInfo device_group{
-        VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, pNext,
+        VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, device_next,
         group.physicalDeviceCount > 2 ? 2 : group.physicalDeviceCount,
         &group.physicalDevices[0]};
 
