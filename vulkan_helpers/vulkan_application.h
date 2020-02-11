@@ -762,40 +762,6 @@ class VulkanApplication {
     return vulkan::VkRenderPass(render_pass, nullptr, &device_);
   }
 
-  // Creates a render pass, from the given VkAttachmentDescriptions2,
-  // VkSubpassDescriptions2, and VkSubpassDependencies2
-  VkRenderPass CreateRenderPass2(
-      std::initializer_list<VkAttachmentDescription2KHR> attachments,
-      std::initializer_list<VkSubpassDescription2KHR> subpasses,
-      std::initializer_list<VkSubpassDependency2KHR> dependencies) {
-    containers::vector<VkAttachmentDescription2KHR> attach(allocator_);
-    containers::vector<VkSubpassDescription2KHR> subpass(allocator_);
-    containers::vector<VkSubpassDependency2KHR> dep(allocator_);
-    attach.insert(attach.begin(), attachments.begin(), attachments.end());
-    subpass.insert(subpass.begin(), subpasses.begin(), subpasses.end());
-    dep.insert(dep.begin(), dependencies.begin(), dependencies.end());
-
-    VkRenderPassCreateInfo2KHR create_info{
-        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR,  // sType
-        nullptr,                                          // pNext
-        0,                                                // flags
-        static_cast<uint32_t>(attach.size()),             // attachmentCount
-        attach.size() ? attach.data() : nullptr,          // pAttachments
-        static_cast<uint32_t>(subpass.size()),            // subpassCount
-        subpass.size() ? subpass.data() : nullptr,        // pSubpasses
-        static_cast<uint32_t>(dep.size()),                // dependencyCount
-        dep.size() ? dep.data() : nullptr,                // pDependencies
-        0,       // correlatedViewMaskCount
-        nullptr  // pCorrelatedViewMasks
-    };
-
-    ::VkRenderPass render_pass;
-    LOG_ASSERT(==, log_, VK_SUCCESS,
-               device_->vkCreateRenderPass2KHR(device_, &create_info, nullptr,
-                                           &render_pass));
-    return vulkan::VkRenderPass(render_pass, nullptr, &device_);
-  }
-
   VulkanGraphicsPipeline CreateGraphicsPipeline(PipelineLayout* layout,
                                                 VkRenderPass* render_pass,
                                                 uint32_t subpass_) {
