@@ -334,7 +334,7 @@ int main(int argc, const char** argv) {
     entry::EntryData entry_data(&root_allocator, args.window_width,
                                 args.window_height, args.fixed_timestep,
                                 args.prefer_separate_present, args.output_frame,
-                                args.output_file, args.shader_compiler);
+                                args.output_file, args.shader_compiler, args.validation);
     if (args.output_frame == -1) {
       bool window_created = entry_data.CreateWindow();
       if (!window_created) {
