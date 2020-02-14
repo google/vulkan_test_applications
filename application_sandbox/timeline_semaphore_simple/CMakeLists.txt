@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(UNIX)
-add_vulkan_sample_application(foreign_buffer_import
-  SOURCES buffer_import.cpp
+add_shader_library(timeline_semaphore_simple_shaders
+  SOURCES
+    cube.frag
+    cube.vert
+  SHADER_DEPS
+    shader_library
+)
+
+add_vulkan_sample_application(timeline_semaphore_simple
+  SOURCES main.cpp
   LIBS
     vulkan_helpers
   MODELS
     standard_models
   SHADERS
-    cube_shaders
+    timeline_semaphore_simple_shaders
 )
-
-add_vulkan_sample_application(foreign_buffer_export
-  SOURCES buffer_export.cpp
-  LIBS
-    vulkan_helpers
-)
-endif()

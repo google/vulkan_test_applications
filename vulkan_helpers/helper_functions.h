@@ -340,6 +340,27 @@ inline VkSemaphore CreateSemaphore(VkDevice* device) {
   return VkSemaphore(raw_semaphore, nullptr, device);
 }
 
+inline VkSemaphore CreateTimelineSemaphore(VkDevice* device, uint64_t initial_value) {
+  ::VkSemaphore raw_semaphore = VK_NULL_HANDLE;
+  
+  VkSemaphoreTypeCreateInfoKHR type_create_info = {
+      VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR, // sType
+      nullptr,                                          // pNext
+      VK_SEMAPHORE_TYPE_TIMELINE_KHR,                   // semaphoreType
+      initial_value,                                    // initialValue
+  };
+
+  VkSemaphoreCreateInfo create_info = {
+      VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,  // sType
+      &type_create_info,                        // pNext
+      0,                                        // flags
+  };
+  LOG_ASSERT(==, device->GetLogger(), VK_SUCCESS,
+             (*device)->vkCreateSemaphore(*device, &create_info, nullptr,
+                                          &raw_semaphore));
+  return VkSemaphore(raw_semaphore, nullptr, device);
+}
+
 inline VkEvent CreateEvent(VkDevice* device) {
   ::VkEvent raw_event = VK_NULL_HANDLE;
   VkEventCreateInfo create_info = {
