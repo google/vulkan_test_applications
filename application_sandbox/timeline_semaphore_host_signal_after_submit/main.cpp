@@ -18,7 +18,7 @@
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
+#include <thread>
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 
 struct camera_data_ {
@@ -421,8 +421,8 @@ int main_entry(const entry::EntryData* data) {
         model_data->data().transform *
         Mat44::FromRotationMatrix(Mat44::RotationX(3.14f * speed) *
                                   Mat44::RotationY(3.14f * speed * 0.5f));
-
-    signal_from_swap = signal_to_swap + 1;
+    uint64_t host_wait = signal_to_swap + 1; 
+    signal_from_swap = host_wait + 1;
     signal_to_swap = signal_from_swap + 1;
 
     submit_infos[0].pWaitSemaphores =
@@ -447,6 +447,23 @@ int main_entry(const entry::EntryData* data) {
                app.render_queue()->vkQueueSubmit(
                    app.render_queue(), 3, &submit_infos[0],
                    frame_data_i.rendered_fence->get_raw_object()));
+    VkSemaphoreWaitInfoKHR wait {
+        VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,
+        nullptr,
+        0,
+        1,
+        &timelineSemaphore.get_raw_object(),
+        &host_wait
+    };
+    device->vkWaitSemaphoresKHR(device, &wait, static_cast<uint64_t>(-1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    VkSemaphoreSignalInfoKHR signal {
+        VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR,
+        nullptr,
+        timelineSemaphore,
+        signal_from_swap,
+    };
+    device->vkSignalSemaphoreKHR(device, &signal);
 
     VkPresentInfoKHR present_info{
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,  // sType

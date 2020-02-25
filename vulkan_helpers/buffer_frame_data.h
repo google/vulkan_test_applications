@@ -58,7 +58,7 @@ class BufferFrameData {
     uint32_t indices[VK_MAX_DEVICE_GROUP_SIZE];
 
     uint32_t set = 0;
-    for (size_t i = 0; dm != 0; ++i) {
+    for (uint32_t i = 0; dm != 0; ++i) {
       if (dm & 0x1) {
         // Host visible buffers can only exist on one GPU
         LOG_ASSERT(==, application_->GetLogger(), 0, set);
@@ -68,7 +68,7 @@ class BufferFrameData {
     }
     dm = device_mask;
     if (set != 0) {
-      for (size_t i = 0; i < application_->device().num_devices(); ++i) {
+      for (uint32_t i = 0; i < application_->device().num_devices(); ++i) {
         indices[i] = set - 1;
       }
     }
