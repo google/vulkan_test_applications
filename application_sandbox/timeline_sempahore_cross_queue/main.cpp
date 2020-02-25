@@ -44,12 +44,15 @@ uint32_t cube_fragment_shader[] =
 
 struct FrameData {
   containers::unique_ptr<vulkan::VkFence> rendered_fence;
+  containers::unique_ptr<vulkan::VkFence> copy_fence;
   containers::unique_ptr<vulkan::VkSemaphore> swapchain_sema;
   containers::unique_ptr<vulkan::VkSemaphore> present_ready_sema;
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
+  containers::unique_ptr<vulkan::VkCommandBuffer> copy_model_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
   containers::unique_ptr<vulkan::DescriptorSet> cube_descriptor_set_;
   containers::unique_ptr<vulkan::VkImageView> render_img_view_;
+  containers::unique_ptr<vulkan::VulkanApplication::Buffer> model_buffer_;
 };
 
 int main_entry(const entry::EntryData* data) {
@@ -66,7 +69,7 @@ int main_entry(const entry::EntryData* data) {
       VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
   }, {
       VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME
-  }, {}, 131072, 131072, 131072, 131072, false, false,  false, 0, false, false, VK_COLORSPACE_SRGB_NONLINEAR_KHR, 
+  }, {}, 131072, 131072, 131072, 131072, true, false,  false, 0, false, false, VK_COLORSPACE_SRGB_NONLINEAR_KHR,
     false, false, nullptr, true, false, &timeline_semaphore_features);
 
   vulkan::VkDevice& device = app.device();
@@ -188,7 +191,7 @@ int main_entry(const entry::EntryData* data) {
   containers::unique_ptr<vulkan::BufferFrameData<model_data_>> model_data =
       containers::make_unique<vulkan::BufferFrameData<model_data_>>(
           data->allocator(), &app, num_swapchain_images,
-          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+          VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 0, app.async_compute_queue()->index());
 
   camera_data->data().projection_matrix =
       Mat44::FromScaleVector(mathfu::Vector<float, 3>{1.0f, -1.0f, 1.0f}) *
@@ -202,9 +205,22 @@ int main_entry(const entry::EntryData* data) {
 
   for (int i = 0; i < num_swapchain_images; i++) {
     FrameData& frame_data_i = frame_data[i];
-
+    VkBufferCreateInfo create_info {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
+        nullptr, // pNext
+        0, // flags
+        sizeof(model_data_),
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0,
+        nullptr
+    };
+    frame_data_i.model_buffer_ = app.CreateAndBindDeviceBuffer(&create_info);
     frame_data_i.rendered_fence = containers::make_unique<vulkan::VkFence>(
         data->allocator(), vulkan::CreateFence(&device, true));
+    frame_data_i.copy_fence = containers::make_unique<vulkan::VkFence>(
+        data->allocator(), vulkan::CreateFence(&device, true));
+    
     frame_data_i.swapchain_sema = containers::make_unique<vulkan::VkSemaphore>(
         data->allocator(), vulkan::CreateSemaphore(&device));
     frame_data_i.present_ready_sema =
@@ -233,6 +249,11 @@ int main_entry(const entry::EntryData* data) {
         containers::make_unique<vulkan::VkCommandBuffer>(
             data->allocator(), app.GetCommandBuffer());
 
+    frame_data_i.copy_model_buffer_ = 
+        containers::make_unique<vulkan::VkCommandBuffer>(
+            data->allocator(), app.GetCommandBuffer(app.async_compute_queue()->index())
+        );
+
     frame_data_i.cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
             data->allocator(),
@@ -246,10 +267,11 @@ int main_entry(const entry::EntryData* data) {
             camera_data->size(),                   // range
         },
         {
-            model_data->get_buffer(),             // buffer
-            model_data->get_offset_for_frame(i),  // offset
-            model_data->size(),                   // range
-        }};
+            *frame_data_i.model_buffer_,             // buffer
+            0,                                       // offset
+            frame_data_i.model_buffer_->size(),      // range
+        }
+    };
 
     VkWriteDescriptorSet write{
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
@@ -286,10 +308,45 @@ int main_entry(const entry::EntryData* data) {
         data->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &device));
 
+    vulkan::VkCommandBuffer& copyBuffer = *frame_data_i.copy_model_buffer_;
+
+    copyBuffer->vkBeginCommandBuffer(copyBuffer, &sample_application::kBeginCommandBuffer);
+    VkBufferCopy region{
+        model_data->get_offset_for_frame(i),
+        0,
+        model_data->size()
+    };
+
+    copyBuffer->vkCmdCopyBuffer(copyBuffer, model_data->get_buffer(), 
+        *frame_data_i.model_buffer_, 1, &region);
+
+    // Queue Ownership Release operation
+    VkBufferMemoryBarrier barrier = {
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
+        nullptr,                                  // pNext
+        VK_ACCESS_TRANSFER_WRITE_BIT,             // srcAccessMask
+        VK_ACCESS_TRANSFER_READ_BIT, // Unused    // dstAccessMask
+        app.async_compute_queue()->index(),       // srcQueueFamilyIndex
+        app.render_queue().index(),               // dstQueueFamilyIndex
+        *frame_data_i.model_buffer_,              // buffer
+        0,                                        //  offset
+        frame_data_i.model_buffer_->size(),       // size
+    };
+    copyBuffer->vkCmdPipelineBarrier(copyBuffer, 
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
+        nullptr);
+    (*frame_data_i.copy_model_buffer_)
+        ->vkEndCommandBuffer(*frame_data_i.copy_model_buffer_);
+
     vulkan::VkCommandBuffer& cmdBuffer = (*frame_data_i.command_buffer_);
     cmdBuffer->vkBeginCommandBuffer(cmdBuffer,
                                     &sample_application::kBeginCommandBuffer);
-
+    // Transfer acquire operation
+    cmdBuffer->vkCmdPipelineBarrier(cmdBuffer, 
+    VK_PIPELINE_STAGE_TRANSFER_BIT,
+    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
+    nullptr);
     VkClearValue clear;
     // Make the clear color white.
     clear.color = {0.0, 0.0, 0.0, 1.0};
@@ -323,6 +380,7 @@ int main_entry(const entry::EntryData* data) {
 
   uint64_t zero = 0;
   uint64_t signal_from_swap = 0;
+  uint64_t signal_from_second_queue = 0;
   uint64_t signal_to_swap = 0;
   VkPipelineStageFlags waitStageMask =
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -339,7 +397,7 @@ int main_entry(const entry::EntryData* data) {
           VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR, // sType
           nullptr,  // pNext 
           1, // waitSemaphoreValueCount
-          &signal_from_swap, // waitSemaphoreValues,
+          &signal_from_second_queue, // waitSemaphoreValues,
           1, // signalSemaphoreValueCount
           &signal_to_swap // signalSemaphoreValues
       },
@@ -391,6 +449,32 @@ int main_entry(const entry::EntryData* data) {
   // TimelineSemaphore
   auto timelineSemaphore = vulkan::CreateTimelineSemaphore(&device, 0);
     
+  VkTimelineSemaphoreSubmitInfoKHR timelineSubmitInfos2[] = {
+    VkTimelineSemaphoreSubmitInfoKHR{
+        VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR, // sType
+        nullptr,  // pNext 
+        1, // waitSemaphoreValueCount
+        &signal_from_swap, // waitSemaphoreValues,
+        1, // signalSemaphoreValueCount
+        &signal_from_second_queue // signalSemaphoreValues
+    },
+  };
+
+
+  VkSubmitInfo second_submit_infos[] = {
+    VkSubmitInfo{
+      VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
+      &timelineSubmitInfos2[0],              // pNext
+      1,                                     // waitSemaphoreCount
+      &timelineSemaphore.get_raw_object(),   // pWaitSemaphores
+      &waitStageMask,                        // pWaitDstStageMask,
+      1,                                     // commandBufferCount
+      nullptr,                               // pCommandBuffers
+      1,                                     // signalSemaphoreCount
+      &timelineSemaphore.get_raw_object()    // pSignalSemaphores
+    },
+  };
+
   uint32_t i = 0;
   auto last_frame_time = std::chrono::high_resolution_clock::now();
   while (true) {
@@ -414,16 +498,25 @@ int main_entry(const entry::EntryData* data) {
     device->vkResetFences(device, 1,
                           &frame_data_i.rendered_fence->get_raw_object());
 
+    device->vkWaitForFences(device, 1,
+                            &frame_data_i.copy_fence->get_raw_object(),
+                            VK_TRUE, UINT64_MAX);
+    device->vkResetFences(device, 1,
+                          &frame_data_i.copy_fence->get_raw_object());
     camera_data->UpdateBuffer(&app.render_queue(), image_i);
-    model_data->UpdateBuffer(&app.render_queue(), image_i);
+    model_data->UpdateBuffer(app.async_compute_queue(), image_i);
 
     model_data->data().transform =
         model_data->data().transform *
         Mat44::FromRotationMatrix(Mat44::RotationX(3.14f * speed) *
                                   Mat44::RotationY(3.14f * speed * 0.5f));
 
+    // Now just have to submit a copy from model_data -> model_buffer. Using a timeline
+    // semaphore
+ 
     signal_from_swap = signal_to_swap + 1;
-    signal_to_swap = signal_from_swap + 1;
+    signal_from_second_queue = signal_from_swap + 1;
+    signal_to_swap = signal_from_second_queue + 1;
 
     submit_infos[0].pWaitSemaphores =
         &frame_data[i].swapchain_sema->get_raw_object();
@@ -442,12 +535,25 @@ int main_entry(const entry::EntryData* data) {
         &timelineSemaphore.get_raw_object();
     submit_infos[2].pSignalSemaphores =
         &frame_data[i].present_ready_sema->get_raw_object();
-
+    
+    second_submit_infos[0].pCommandBuffers =
+        &frame_data_i.copy_model_buffer_->get_command_buffer();
+    
+    // This submission should proceed through the first submit, then
+    // wait
     LOG_ASSERT(==, log, VK_SUCCESS,
                app.render_queue()->vkQueueSubmit(
                    app.render_queue(), 3, &submit_infos[0],
                    frame_data_i.rendered_fence->get_raw_object()));
-
+    
+    // This submission will wait until the first submission from the
+    // first queue is done, and then run the copy operation, 
+    // and then unblock the first submission
+    LOG_ASSERT(==, log, VK_SUCCESS, 
+        (*app.async_compute_queue())->vkQueueSubmit(
+            *app.async_compute_queue(), 1, &second_submit_infos[0],
+            frame_data_i.copy_fence->get_raw_object()));
+    
     VkPresentInfoKHR present_info{
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,  // sType
         nullptr        ,                     // pNext

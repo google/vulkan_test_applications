@@ -133,7 +133,7 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
   const auto num_default_extensions =
       sizeof(default_extensions) / sizeof(default_extensions[0]);
 
-  const char* validation_layer = "VK_LAYER_LUNARG_standard_validation";
+  const char* validation_layer = "VK_LAYER_KHRONOS_validation";
   const char* callback_layer = "CallbackSwapchain";
   const char* layer = nullptr;
 
