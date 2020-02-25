@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_shader_library(timeline_semaphore_simple_shaders
+add_shader_library(timeline_sempahore_cross_queue_shaders
   SOURCES
     cube.frag
     cube.vert
@@ -20,12 +20,12 @@ add_shader_library(timeline_semaphore_simple_shaders
     shader_library
 )
 
-add_vulkan_sample_application(timeline_semaphore_simple
+add_vulkan_sample_application(timeline_sempahore_cross_queue
   SOURCES main.cpp
   LIBS
     vulkan_helpers
   MODELS
     standard_models
   SHADERS
-    timeline_semaphore_simple_shaders
+    timeline_sempahore_cross_queue_shaders
 )
