@@ -294,7 +294,7 @@ static void HandleStreamChanged(const ggp::StreamStateChangedEvent& event) {
 }
 
 uint32_t         stream_state_changed_handler_id   = 0;
-static ggp::EventQueue ggp_event_queue;
+static ggp::EventQueue* ggp_event_queue = nullptr;
 static char file_path[1024 * 1024] = {};
 
 // Main for Ggp
@@ -321,8 +321,10 @@ int main(int argc, const char** argv) {
   }
   ggp::Initialize();
 
+  ggp_event_queue = new ggp::EventQueue();
+  assert(ggp_event_queue);
   stream_state_changed_handler_id = ggp::AddStreamStateChangedHandler(
-            &ggp_event_queue, HandleStreamChanged);
+            ggp_event_queue, HandleStreamChanged);
 
   CommandLineArgs args;
   parse_args(&args, argc, argv);
@@ -349,7 +351,7 @@ int main(int argc, const char** argv) {
     std::atomic<bool> exited(false);
     std::thread ggp_thread([&exited]() {
       while(!exited) {
-        while(ggp_event_queue.ProcessEvent()) {}
+        while(ggp_event_queue->ProcessEvent()) {}
       }
     });
     main_thread.join();
