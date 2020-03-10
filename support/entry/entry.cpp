@@ -49,7 +49,9 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
                      uint32_t height, bool fixed_timestep,
                      bool separate_present, int64_t output_frame_index,
                      const char* output_frame_file, const char* shader_compiler,
-                     bool validation
+                     bool validation,
+                     const char* load_pipeline_cache,
+                     const char* write_pipeline_cache
 #if defined __ANDROID__
                      ,
                      android_app* app
@@ -64,7 +66,9 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
       shader_compiler_(shader_compiler),
       validation_(validation),
       log_(logging::GetLogger(allocator)),
-      allocator_(allocator)
+      allocator_(allocator),
+      load_pipeline_cache_(load_pipeline_cache? load_pipeline_cache: ""),
+      write_pipeline_cache_(write_pipeline_cache? write_pipeline_cache: "")
 #if defined __ANDROID__
       ,
       native_window_handle_(app->window),
@@ -146,6 +150,8 @@ struct CommandLineArgs {
   const char* shader_compiler;
   bool wait_for_debugger;
   bool validation;
+  const char* load_pipeline_cache;
+  const char* write_pipeline_cache;
 };
 
 void parse_args(CommandLineArgs* args, int argc, const char** argv) {
@@ -158,6 +164,8 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
   args->shader_compiler = SHADER_COMPILER;
   args->wait_for_debugger = false;
   args->validation = false;
+  args->load_pipeline_cache = nullptr;
+  args->write_pipeline_cache = nullptr;
 
   for (int i = 0; i < argc; ++i) {
     if (strncmp(argv[i], "-w=", 3) == 0) {
@@ -174,7 +182,14 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
     }
     if (strncmp(argv[i], "-output-frame=", 14) == 0) {
       args->output_frame = atoi(argv[i] + 14);
-    } else if (strncmp(argv[i], "-validation", 11) == 0) {
+    }
+    if (strncmp(argv[i], "-load-pipeline-cache=", 21) == 0) {
+      args->load_pipeline_cache = argv[i] + 21;
+    }
+    if (strncmp(argv[i], "-write-pipeline-cache=", 22) == 0) {
+      args->write_pipeline_cache = argv[i] + 22;
+    }
+    if (strncmp(argv[i], "-validation", 11) == 0) {
       args->validation = true;
     }
     if (strncmp(argv[i], "-output-file=", 13) == 0) {
@@ -249,7 +264,7 @@ void android_main(android_app* app) {
       entry::EntryData entry_data(&root_allocator, static_cast<uint32_t>(width),
                                   static_cast<uint32_t>(height), FIXED_TIMESTEP,
                                   PREFER_SEPARATE_PRESENT, output_frame,
-                                  output_file, shader_compiler, false, app);
+                                  output_file, shader_compiler, false, nullptr, nullptr, app);
       data.entry_data = &entry_data;
       int return_value = main_entry(&entry_data);
       // Do not modify this line, scripts may look for it in the output.
@@ -336,7 +351,8 @@ int main(int argc, const char** argv) {
     entry::EntryData entry_data(&root_allocator, args.window_width,
                                 args.window_height, args.fixed_timestep,
                                 args.prefer_separate_present, args.output_frame,
-                                args.output_file, args.shader_compiler, args.validation);
+                                args.output_file, args.shader_compiler, args.validation,
+                                args.load_pipeline_cache, args.write_pipeline_cache);
     if (args.output_frame == -1) {
       bool window_created = entry_data.CreateWindow();
       if (!window_created) {
@@ -443,7 +459,8 @@ int main(int argc, const char** argv) {
     entry::EntryData entry_data(
         &root_allocator, args.window_width, args.window_height,
         args.fixed_timestep, args.prefer_separate_present, args.output_frame,
-        args.output_file, args.shader_compiler, args.validation);
+        args.output_file, args.shader_compiler, args.validation,
+        args.load_pipeline_cache, args.write_pipeline_cache);
     if (args.output_frame == -1) {
       bool window_created = entry_data.CreateWindow();
       if (!window_created) {
@@ -553,7 +570,8 @@ int main(int argc, const char** argv) {
   entry::EntryData entry_data(
       &root_allocator, args.window_width, args.window_height,
       args.fixed_timestep, args.prefer_separate_present, args.output_frame,
-      args.output_file, args.shader_compiler, args.validation);
+      args.output_file, args.shader_compiler, args.validation,
+      args.load_pipeline_cache, args.write_pipeline_cache);
 
   if (args.output_frame == -1) {
     bool window_created = entry_data.CreateWindowWin32();
@@ -600,7 +618,8 @@ extern "C" {
     entry::EntryData entry_data(
         &root_allocator, args.window_width, args.window_height,
         args.fixed_timestep, args.prefer_separate_present, args.output_frame,
-        args.output_file, args.shader_compiler, args.validation);
+        args.output_file, args.shader_compiler, args.validation,
+        args.load_pipeline_cache, args.write_pipeline_cache);
     if (args.output_frame == -1) {
       bool window_created = entry_data.CreateWindow();
         if (!window_created) {

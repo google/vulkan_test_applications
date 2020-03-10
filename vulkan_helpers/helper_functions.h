@@ -264,7 +264,12 @@ VkQueue inline GetQueue(VkDevice* device, uint32_t queue_family_index,
 }
 
 // Creates a default pipeline cache, it does not load anything from disk.
-VkPipelineCache CreateDefaultPipelineCache(VkDevice* device);
+VkPipelineCache CreateDefaultPipelineCache(VkDevice* device,
+    const entry::EntryData* entry_data);
+
+// Writes the given pipeline cache to the given file.
+void WritePipelineCache(VkDevice* device, VkPipelineCache* cache,
+    const char* location);
 
 // Creates a query pool with the given query pool create info from the given
 // device if the given device is valid. Otherwise returns a query pool with

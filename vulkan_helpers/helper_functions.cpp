@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <tuple>
+#include <fstream>
 
 #include "support/containers/vector.h"
 #include "support/log/log.h"
@@ -1295,15 +1296,30 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(
 }
 
 // Creates a default pipeline cache, it does not load anything from disk.
-VkPipelineCache CreateDefaultPipelineCache(VkDevice* device) {
+VkPipelineCache CreateDefaultPipelineCache(VkDevice* device, const entry::EntryData* entry_data) {
   ::VkPipelineCache cache = VK_NULL_HANDLE;
+  void* initial_data = nullptr;
+  size_t initial_size = 0;
+  std::vector<char> buffer;
+  if (entry_data->load_pipeline_cache()) {
+    std::ifstream in_file(entry_data->load_pipeline_cache(), std::ios::binary | std::ios::ate);
+    initial_size = in_file.tellg();
+    in_file.seekg(0, std::ios::beg);
+    buffer.resize(initial_size);
+    in_file.read(buffer.data(), initial_size);
+    LOG_ASSERT(==, entry_data->logger(), false, in_file.bad());
+    initial_data = buffer.data();
+
+    entry_data->logger()->LogInfo("Loaded pipeline cache from \"",
+      entry_data->load_pipeline_cache(), "\" [", initial_size, "] bytes");
+  }
 
   VkPipelineCacheCreateInfo create_info{
       VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,  // sType
       nullptr,                                       // pNext
       0,                                             // flags
-      0,                                             // initialDataSize
-      nullptr                                        // pInitialData
+      initial_size,                                  // initialDataSize
+      initial_data                                   // pInitialData
   };
   if (device->is_valid()) {
     LOG_ASSERT(==, device->GetLogger(), VK_SUCCESS,
@@ -1311,6 +1327,21 @@ VkPipelineCache CreateDefaultPipelineCache(VkDevice* device) {
                                                 &cache));
   }
   return VkPipelineCache(cache, nullptr, device);
+}
+
+// Writes the given pipeline cache to the given location on disk.
+void WritePipelineCache(VkDevice* device, VkPipelineCache* cache, const char* location) {
+   device->GetLogger()->LogInfo("Wrote pipeline cache to \"", location, "\"");
+  std::vector<char> buffer;
+  size_t size = 0;
+  LOG_ASSERT(==, device->GetLogger(), VK_SUCCESS,
+    (*device)->vkGetPipelineCacheData(*device, *cache, &size, nullptr));
+  buffer.resize(size);
+  LOG_ASSERT(==, device->GetLogger(), VK_SUCCESS,
+    (*device)->vkGetPipelineCacheData(*device, *cache, &size, buffer.data()));
+  std::ofstream out_file(location, std::ios::binary);
+  out_file.write(buffer.data(), size);
+  LOG_ASSERT(==, device->GetLogger(), false, out_file.bad());
 }
 
 VkQueryPool CreateQueryPool(VkDevice* device,
