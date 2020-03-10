@@ -769,6 +769,12 @@ class VulkanApplication {
                                   subpass_);
   }
 
+  // Call this when all initialization has been done, and applications
+  // are expected to be in their main loop. This will cause the
+  // VulkanApplication to write out its pipeline cache if
+  // requested on the command-line.
+  void InitializationComplete();
+
   // Creates a render pass, from the given VkAttachmentDescriptions2,
   // VkSubpassDescriptions2, and VkSubpassDependencies2
   VkRenderPass CreateRenderPass2(

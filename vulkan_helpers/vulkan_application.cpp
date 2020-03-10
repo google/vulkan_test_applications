@@ -101,7 +101,7 @@ VulkanApplication::VulkanApplication(
               : 0,
           use_10bit_hdr, swapchain_extensions)),
       command_pools_(allocator_),
-      pipeline_cache_(CreateDefaultPipelineCache(&device_)),
+      pipeline_cache_(CreateDefaultPipelineCache(&device_, entry_data)),
       host_accessible_heap_(allocator_),
       coherent_heap_(allocator_),
       device_peer_memory_heaps_(allocator_),
@@ -448,6 +448,12 @@ VkDevice VulkanApplication::CreateDevice(
 
   return SetupDevice(std::move(device), create_async_compute_queue,
                      use_sparse_binding);
+}
+
+void VulkanApplication::InitializationComplete() {
+  if (entry_data_->write_pipeline_cache()) {
+    WritePipelineCache(&device_, &pipeline_cache_, entry_data_->write_pipeline_cache());
+  }
 }
 
 containers::unique_ptr<VulkanApplication::Image>

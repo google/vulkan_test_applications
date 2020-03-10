@@ -302,6 +302,7 @@ class Sample {
           application_.render_queue(), 0, nullptr, *frame_data.ready_fence_);
     }
 
+    application_.InitializationComplete();
     InitializationComplete();
     data_->NotifyReady();
   }
