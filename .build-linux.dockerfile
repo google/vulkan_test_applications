@@ -17,7 +17,7 @@ FROM ubuntu
 COPY . /root/vulkan_test_applications
 
 RUN apt-get update -qq && \
-apt-get install -qq -y git gcc g++ ninja-build python3 python3-pip cmake libxcb1-dev
+apt-get --no-install-recommends install -qq -y git gcc g++ ninja-build python3 python3-pip cmake libxcb1-dev
 
 RUN pip3 install pillow
 
