@@ -49,8 +49,7 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
                      uint32_t height, bool fixed_timestep,
                      bool separate_present, int64_t output_frame_index,
                      const char* output_frame_file, const char* shader_compiler,
-                     bool validation,
-                     const char* load_pipeline_cache,
+                     bool validation, const char* load_pipeline_cache,
                      const char* write_pipeline_cache
 #if defined __ANDROID__
                      ,
@@ -67,8 +66,8 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
       validation_(validation),
       log_(logging::GetLogger(allocator)),
       allocator_(allocator),
-      load_pipeline_cache_(load_pipeline_cache? load_pipeline_cache: ""),
-      write_pipeline_cache_(write_pipeline_cache? write_pipeline_cache: "")
+      load_pipeline_cache_(load_pipeline_cache ? load_pipeline_cache : ""),
+      write_pipeline_cache_(write_pipeline_cache ? write_pipeline_cache : "")
 #if defined __ANDROID__
       ,
       native_window_handle_(app->window),
@@ -78,7 +77,7 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
       ,
       native_hinstance_(0),
       native_window_handle_(0)
-#elif defined __ggp__ // Keep this before __linux__
+#elif defined __ggp__  // Keep this before __linux__
 // Nothing here
 #elif defined __linux__
       ,
@@ -101,8 +100,7 @@ static std::atomic<bool> k_window_closing(false);
 static std::atomic<bool> k_stream_started(false);
 #endif
 
-void EntryData::NotifyReady() const {
-}
+void EntryData::NotifyReady() const {}
 
 // Returns true when window is to be closed.
 bool EntryData::WindowClosing() const {
@@ -154,6 +152,23 @@ struct CommandLineArgs {
   const char* write_pipeline_cache;
 };
 
+void print_usage(const char** argv) {
+  std::cerr << "Usage: " << argv[0] << " [OPTIONS]" << std::endl;
+  std::cerr << "Arguments: " << std::endl;
+  std::cerr << "  -w=<width>                    Set the integer width of the application in pixels" << std::endl;
+  std::cerr << "  -h=<height>                   Set the integer height of the application in pixels" << std::endl;
+  std::cerr << "  -fixed                        Simulates the application with a fixed timestep" << std::endl;
+  std::cerr << "  -separate-present             Prefers a separate present queue" << std::endl;
+  std::cerr << "  -output-frame=<frame>         Dumps the given frame to a file an exits" << std::endl;
+  std::cerr << "  -load-pipeline-cache=<file>   Loads and uses a pipeline cache from the given location" << std::endl;
+  std::cerr << "  -write-pipeline-cache=<file>  Writes the applicaitons pipeline cache to the given location" << std::endl;
+  std::cerr << "  -shader-compiler=<string>     Sets the shader compiler to the given one, if the sample could use multiple" << std::endl;
+  std::cerr << "  -validation                   Turns on the validation layers if available" << std::endl;
+  std::cerr << "  -output-file                  Sets the output file for the output-frame argument" << std::endl;
+  std::cerr << "  -wait-for-debugger            Forces the application to pause on starup until a debugger is attached" << std::endl;
+  std::cerr << "  -help                         Print this help" << std::endl;
+}
+
 void parse_args(CommandLineArgs* args, int argc, const char** argv) {
   args->window_width = DEFAULT_WINDOW_WIDTH;
   args->window_height = DEFAULT_WINDOW_HEIGHT;
@@ -167,39 +182,36 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
   args->load_pipeline_cache = nullptr;
   args->write_pipeline_cache = nullptr;
 
-  for (int i = 0; i < argc; ++i) {
+  for (int i = 1; i < argc; ++i) {
     if (strncmp(argv[i], "-w=", 3) == 0) {
       args->window_width = atoi(argv[i] + 3);
-    }
-    if (strncmp(argv[i], "-h=", 3) == 0) {
+    } else if (strncmp(argv[i], "-h=", 3) == 0) {
       args->window_height = atoi(argv[i] + 3);
-    }
-    if (strncmp(argv[i], "-fixed", 6) == 0) {
+    } else if (strncmp(argv[i], "-fixed", 6) == 0) {
       args->fixed_timestep = true;
-    }
-    if (strncmp(argv[i], "-separate-present", 17) == 0) {
+    } else if (strncmp(argv[i], "-separate-present", 17) == 0) {
       args->prefer_separate_present = true;
-    }
-    if (strncmp(argv[i], "-output-frame=", 14) == 0) {
+    } else if (strncmp(argv[i], "-output-frame=", 14) == 0) {
       args->output_frame = atoi(argv[i] + 14);
-    }
-    if (strncmp(argv[i], "-load-pipeline-cache=", 21) == 0) {
+    } else if (strncmp(argv[i], "-load-pipeline-cache=", 21) == 0) {
       args->load_pipeline_cache = argv[i] + 21;
-    }
-    if (strncmp(argv[i], "-write-pipeline-cache=", 22) == 0) {
+    } else if (strncmp(argv[i], "-write-pipeline-cache=", 22) == 0) {
       args->write_pipeline_cache = argv[i] + 22;
-    }
-    if (strncmp(argv[i], "-validation", 11) == 0) {
+    } else if (strncmp(argv[i], "-validation", 11) == 0) {
       args->validation = true;
-    }
-    if (strncmp(argv[i], "-output-file=", 13) == 0) {
+    } else if (strncmp(argv[i], "-output-file=", 13) == 0) {
       args->output_file = argv[i] + 13;
-    }
-    if (strncmp(argv[i], "-shader-compiler=", 17) == 0) {
+    } else if (strncmp(argv[i], "-shader-compiler=", 17) == 0) {
       args->shader_compiler = argv[i] + 17;
-    }
-    if (strncmp(argv[i], "--wait-for-debugger", 19) == 0) {
+    } else if (strncmp(argv[i], "-wait-for-debugger", 19) == 0) {
       args->wait_for_debugger = true;
+    } else if (strncmp(argv[i], "-help", 5) == 0) {
+      print_usage(argv);
+      std::exit(0);
+    } else {
+      std::cerr << "Unknown command line argument " << argv[i] << std::endl;
+      print_usage(argv);
+      std::exit(-1);
     }
   }
 }
@@ -264,7 +276,8 @@ void android_main(android_app* app) {
       entry::EntryData entry_data(&root_allocator, static_cast<uint32_t>(width),
                                   static_cast<uint32_t>(height), FIXED_TIMESTEP,
                                   PREFER_SEPARATE_PRESENT, output_frame,
-                                  output_file, shader_compiler, false, nullptr, nullptr, app);
+                                  output_file, shader_compiler, false, nullptr,
+                                  nullptr, app);
       data.entry_data = &entry_data;
       int return_value = main_entry(&entry_data);
       // Do not modify this line, scripts may look for it in the output.
@@ -298,7 +311,7 @@ void android_main(android_app* app) {
   main_thread.join();
 }
 
-#elif defined __ggp__ // Keep this before __linux__
+#elif defined __ggp__  // Keep this before __linux__
 bool entry::EntryData::CreateWindow() { return true; }
 static void HandleStreamChanged(const ggp::StreamStateChangedEvent& event) {
   if (event.new_state == ggp::StreamState::kStarted) {
@@ -308,7 +321,7 @@ static void HandleStreamChanged(const ggp::StreamStateChangedEvent& event) {
   }
 }
 
-uint32_t         stream_state_changed_handler_id   = 0;
+uint32_t stream_state_changed_handler_id = 0;
 static ggp::EventQueue* ggp_event_queue = nullptr;
 static char file_path[1024 * 1024] = {};
 
@@ -338,8 +351,8 @@ int main(int argc, const char** argv) {
 
   ggp_event_queue = new ggp::EventQueue();
   assert(ggp_event_queue);
-  stream_state_changed_handler_id = ggp::AddStreamStateChangedHandler(
-            ggp_event_queue, HandleStreamChanged);
+  stream_state_changed_handler_id =
+      ggp::AddStreamStateChangedHandler(ggp_event_queue, HandleStreamChanged);
 
   CommandLineArgs args;
   parse_args(&args, argc, argv);
@@ -348,11 +361,11 @@ int main(int argc, const char** argv) {
   int return_value = 0;
   containers::LeakCheckAllocator root_allocator;
   {
-    entry::EntryData entry_data(&root_allocator, args.window_width,
-                                args.window_height, args.fixed_timestep,
-                                args.prefer_separate_present, args.output_frame,
-                                args.output_file, args.shader_compiler, args.validation,
-                                args.load_pipeline_cache, args.write_pipeline_cache);
+    entry::EntryData entry_data(
+        &root_allocator, args.window_width, args.window_height,
+        args.fixed_timestep, args.prefer_separate_present, args.output_frame,
+        args.output_file, args.shader_compiler, args.validation,
+        args.load_pipeline_cache, args.write_pipeline_cache);
     if (args.output_frame == -1) {
       bool window_created = entry_data.CreateWindow();
       if (!window_created) {
@@ -361,13 +374,15 @@ int main(int argc, const char** argv) {
       }
     }
     std::thread main_thread([&entry_data, &return_value]() {
-      while(!entry::k_stream_started) {} // Wait for the stream to be started
+      while (!entry::k_stream_started) {
+      }  // Wait for the stream to be started
       return_value = main_entry(&entry_data);
     });
     std::atomic<bool> exited(false);
     std::thread ggp_thread([&exited]() {
-      while(!exited) {
-        while(ggp_event_queue->ProcessEvent()) {}
+      while (!exited) {
+        while (ggp_event_queue->ProcessEvent()) {
+        }
       }
     });
     main_thread.join();
@@ -382,7 +397,7 @@ int main(int argc, const char** argv) {
   assert(root_allocator.currently_allocated_bytes_.load() == 0);
   return return_value;
 }
- 
+
 #elif defined __linux__
 
 // Create Xcb window
@@ -600,40 +615,40 @@ int main(int argc, const char** argv) {
 
 #ifdef __APPLE__
 extern "C" {
-  void RunMacOS();
-  void StopMacOS();
-  void* CreateMacOSWindow(uint32_t width, uint32_t height);
-  bool entry::EntryData::CreateWindow() {
-    void* v = CreateMacOSWindow(this->width_, this->height_);
-    native_window_handle_ = v;
-    return v;
-  }
+void RunMacOS();
+void StopMacOS();
+void* CreateMacOSWindow(uint32_t width, uint32_t height);
+bool entry::EntryData::CreateWindow() {
+  void* v = CreateMacOSWindow(this->width_, this->height_);
+  native_window_handle_ = v;
+  return v;
+}
 
-  int main(int argc, const char** argv) {
-    CommandLineArgs args;
-    parse_args(&args, argc, argv);
-    while (args.wait_for_debugger)
-      ;
-    containers::LeakCheckAllocator root_allocator;
-    entry::EntryData entry_data(
-        &root_allocator, args.window_width, args.window_height,
-        args.fixed_timestep, args.prefer_separate_present, args.output_frame,
-        args.output_file, args.shader_compiler, args.validation,
-        args.load_pipeline_cache, args.write_pipeline_cache);
-    if (args.output_frame == -1) {
-      bool window_created = entry_data.CreateWindow();
-        if (!window_created) {
-          entry_data.logger()->LogError("Window creation failed");
-          return -1;
-        }
+int main(int argc, const char** argv) {
+  CommandLineArgs args;
+  parse_args(&args, argc, argv);
+  while (args.wait_for_debugger)
+    ;
+  containers::LeakCheckAllocator root_allocator;
+  entry::EntryData entry_data(
+      &root_allocator, args.window_width, args.window_height,
+      args.fixed_timestep, args.prefer_separate_present, args.output_frame,
+      args.output_file, args.shader_compiler, args.validation,
+      args.load_pipeline_cache, args.write_pipeline_cache);
+  if (args.output_frame == -1) {
+    bool window_created = entry_data.CreateWindow();
+    if (!window_created) {
+      entry_data.logger()->LogError("Window creation failed");
+      return -1;
     }
-    int ret;
-    std::thread run([&ret, &entry_data]() {
-      ret = main_entry(&entry_data);
-      StopMacOS();
-    });
-    RunMacOS();
-  
+  }
+  int ret;
+  std::thread run([&ret, &entry_data]() {
+    ret = main_entry(&entry_data);
+    StopMacOS();
+  });
+  RunMacOS();
+
   assert(root_allocator.currently_allocated_bytes_.load() == 0);
   return ret;
 }
