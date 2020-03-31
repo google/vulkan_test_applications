@@ -91,7 +91,8 @@ class MixedSamplesSample
             data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions().AddDeviceExtensionStructure(
                 (void*)&kMultiviewFeatures),
-            {0}, {},
+            {0},
+            {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
             {VK_KHR_MULTIVIEW_EXTENSION_NAME,
              VK_KHR_MAINTENANCE2_EXTENSION_NAME,
              VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME}),
