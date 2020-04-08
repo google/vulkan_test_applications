@@ -16,6 +16,7 @@
 #include "vulkan_helpers/helper_functions.h"
 
 #include <algorithm>
+#include <cstring>
 #include <tuple>
 #include <fstream>
 
@@ -643,6 +644,8 @@ VkDevice CreateDeviceForSwapchain(
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,
         &float_control_properties, use_protected_memory};
 
+    VkPhysicalDeviceFeatures empty_features = {0};
+
     VkDeviceCreateInfo info{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // stype
         &protected_memory_feature,                      // pNext
@@ -652,9 +655,10 @@ VkDevice CreateDeviceForSwapchain(
         0,                                              // enabledLayerCount
         nullptr,                                        // ppEnabledLayerNames
         static_cast<uint32_t>(
-            enabled_extensions.size()),  // enabledExtensionCount
-        enabled_extensions.data(),       // ppEnabledExtensionNames
-        &features                        // ppEnabledFeatures
+            enabled_extensions.size()),                 // enabledExtensionCount
+        enabled_extensions.data(),                      // ppEnabledExtensionNames
+        memcmp(&features, &empty_features, sizeof(features)) == 0 ?
+            nullptr : &features                         // ppEnabledFeatures
     };
 
     ::VkDevice raw_device;
