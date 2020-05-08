@@ -565,7 +565,7 @@ VulkanApplication::CreateAndBindSparseImage(
                   VkImage(image, nullptr, &device_), create_info->format);
 
   return containers::unique_ptr<SparseImage>(
-      img, containers::UniqueDeleter(allocator_, sizeof(Image)));
+      img, containers::UniqueDeleter(allocator_, sizeof(SparseImage)));
 }
 
 containers::unique_ptr<VulkanApplication::Image>
