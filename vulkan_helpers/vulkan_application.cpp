@@ -203,7 +203,7 @@ VulkanApplication::VulkanApplication(
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
           (use_protected_memory_ ? VK_MEMORY_PROPERTY_PROTECTED_BIT : 0u),
-      0};
+      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
   bool m_gpu = device_.num_devices() > 1;
   for (size_t j = 0; j < device_.num_devices(); ++j) {
     for (size_t i = 0; i < 3; ++i) {
