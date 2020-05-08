@@ -33,7 +33,7 @@ int main_entry(const entry::EntryData* data) {
       /* pNext = */ nullptr,
       /* flags = */ 0,
       /* imageType = */ VK_IMAGE_TYPE_2D,
-      /* format = */ VK_FORMAT_R8G8B8A8_UNORM,
+      /* format = */ VK_FORMAT_R8G8B8A8_UINT,
       /* extent = */ sample_image_extent,
       /* mipLevels = */ 1,
       /* arrayLayers = */ 1,
@@ -58,9 +58,11 @@ int main_entry(const entry::EntryData* data) {
     vulkan::ImagePointer dst_image =
         application.CreateAndBindImage(&dst_image_create_info);
     // Data in the multi-sampled source image
-    VkClearColorValue clear_color{
-        {0.5, 0.5, 0.5, 0.5}  // uint32[4]
-    };
+    VkClearColorValue clear_color;
+    clear_color.uint32[0] = 150;
+    clear_color.uint32[1] = 150;
+    clear_color.uint32[2] = 150;
+    clear_color.uint32[3] = 150;
     // Range used for vkCmdClearColorImage() to fill the multi-sampled image
     // with data
     VkImageSubresourceRange clear_color_range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1,
@@ -126,7 +128,7 @@ int main_entry(const entry::EntryData* data) {
         &dump_data,                            // data
         {}                                     // wait_semaphores
     );
-    containers::vector<uint8_t> expected_data(32 * 32 * 4, 0.5 * 255,
+    containers::vector<uint8_t> expected_data(32 * 32 * 4, 150,
                                               data->allocator());
     LOG_ASSERT(==, data->logger(), expected_data.size(), dump_data.size());
     LOG_ASSERT(==, data->logger(), true,
