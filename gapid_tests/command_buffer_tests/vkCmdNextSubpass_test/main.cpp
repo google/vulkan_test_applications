@@ -100,7 +100,7 @@ int main_entry(const entry::EntryData* data) {
 
   vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
                                 {}, {}, {0},
-                                1024*1024, 100*1024*1024, 1024*1024, 1024*1024);
+                                1024*1024, 100*1024*1024);
   vulkan::VkDevice& device = app.device();
 
   auto fence = vulkan::CreateFence(&app.device(), false);
