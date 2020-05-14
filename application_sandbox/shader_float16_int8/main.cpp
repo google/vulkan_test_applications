@@ -52,7 +52,7 @@ static VkPhysicalDevice8BitStorageFeaturesKHR eight_bit_storage_feature{
     &float_sixteen_int_eight_feature,  // pNext;
     true,     // storageBuffer8BitAccess;
     true,     // uniformAndStorageBuffer8BitAccess;
-    true      // storagePushConstant8;
+    false     // storagePushConstant8;
 };
 
 static void* device_extension_list = &eight_bit_storage_feature;

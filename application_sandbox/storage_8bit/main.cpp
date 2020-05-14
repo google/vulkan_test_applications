@@ -44,7 +44,7 @@ static VkPhysicalDevice8BitStorageFeaturesKHR eight_bit_storage_feature{
     nullptr,  // pNext;
     true,     // storageBuffer8BitAccess;
     true,     // uniformAndStorageBuffer8BitAccess;
-    true      // storagePushConstant8;
+    false     // storagePushConstant8;
 };
 
 struct CubeFrameData {
