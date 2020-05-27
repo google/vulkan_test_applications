@@ -198,7 +198,7 @@ VulkanApplication::VulkanApplication(
 
   VkBufferUsageFlags usages[3] = {
       VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-      kAllBufferBits, kAllBufferBits};
+      kAllBufferBits, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT};
   VkMemoryPropertyFlags property_flags[3] = {
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
@@ -740,6 +740,10 @@ VulkanApplication::CreateAndBindHostBuffer(
 containers::unique_ptr<VulkanApplication::Buffer>
 VulkanApplication::CreateAndBindCoherentBuffer(
     const VkBufferCreateInfo* create_info, const uint32_t* device_indices) {
+    // If this goes off, you have to update the bits when we create the coherent heap.
+    // Be careful not every implementation supports every usage. They all seem to
+    // support this usage.
+    LOG_ASSERT(==, log_, 0, create_info->usage & ~(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
   uint32_t first_device_index = 0;
   if (device_indices != 0) {
     first_device_index = device_indices[0];

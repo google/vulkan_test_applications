@@ -296,8 +296,13 @@ uint32_t inline GetMemoryIndex(VkDevice* device, logging::Logger* log,
     if ((properties.memoryTypes[memory_index].propertyFlags &
          required_property_flags) != required_property_flags) {
       continue;
-    }
+7
     break;
+  }
+  // If we couldn't find a device-local memory type, fall back to a non-device
+  // local one
+  if (memory_index == properties.memoryTypeCount && (required_property_flags & VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+      return GetMemoryIndex(device, log, required_index_bits, required_property_flags & ~VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
   }
   LOG_ASSERT(!=, log, memory_index, properties.memoryTypeCount);
   return memory_index;
