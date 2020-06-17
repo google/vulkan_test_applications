@@ -16,6 +16,10 @@ FROM ubuntu
 
 COPY . /root/vulkan_test_applications
 
+# Needed to not be stuck on apt commands that trigger a tzdata update
+# that expects user input to select a timezone.
+ARG DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update -qq && \
 apt-get install -qq -y git gcc g++ ninja-build python3 python3-pip cmake libxcb1-dev openjdk-8-jdk wget unzip && \
 pip3 install pillow
