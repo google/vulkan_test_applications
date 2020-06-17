@@ -187,7 +187,7 @@ VkInstance Create11InstanceForApplication(
     const entry::EntryData* data,
     const std::initializer_list<const char*> extensions) {
   return CreateVerisonedInstanceForApplicaiton(
-      allocator, wrapper, data, VK_MAKE_VERSION(1, 0, 0), extensions);
+      allocator, wrapper, data, VK_MAKE_VERSION(1, 1, 0), extensions);
 }
 
 containers::vector<VkPhysicalDevice> GetPhysicalDevices(
