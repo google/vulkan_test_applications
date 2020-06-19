@@ -296,7 +296,8 @@ uint32_t inline GetMemoryIndex(VkDevice* device, logging::Logger* log,
     if ((properties.memoryTypes[memory_index].propertyFlags &
          required_property_flags) != required_property_flags) {
       continue;
-7
+    }
+
     break;
   }
   // If we couldn't find a device-local memory type, fall back to a non-device
