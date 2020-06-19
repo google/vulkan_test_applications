@@ -168,7 +168,7 @@ class ResetCommandBufferBitTransientBitCommandPool(GapitTest):
 class EmptyBitCommandPool(GapitTest):
 
     def expect(self):
-        """3. Expects a command pool created with empty flag bit, then reseted
+        """4. Expects a command pool created with empty flag bit, then reseted
         with VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT, and finally
         destroyed"""
 

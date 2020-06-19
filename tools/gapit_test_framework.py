@@ -320,8 +320,8 @@ class GapitTest(object):
             gapit_args = ['gapit']
             if verbose:
                 gapit_args.extend(['-log-level', 'Debug'])
-            gapit_args.extend(['trace', '-out',
-                               capture_name, '-local-app', host_name])
+            gapit_args.extend(['trace', '-api', 'vulkan', '-out',
+                               capture_name, '-uri', host_name])
             if verbose:
                 subprocess.check_call(gapit_args)
             else:

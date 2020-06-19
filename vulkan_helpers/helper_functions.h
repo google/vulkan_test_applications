@@ -42,7 +42,8 @@ void MemoryClear(T* val) {
 // instance will be stored in the space allocated by the given |allocator|. The
 // |allocator| must continue to exist until the instance is destroied.
 VkInstance CreateEmptyInstance(containers::Allocator* allocator,
-                               LibraryWrapper* _wrapper);
+                               LibraryWrapper* _wrapper,
+                               uint32_t version = VK_MAKE_VERSION(1, 0, 0));
 
 // Creates an instance with the swapchain and surface layers enabled. Vulkan
 // functions that are resolved through the created instance will be stored in
