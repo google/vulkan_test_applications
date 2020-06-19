@@ -25,7 +25,8 @@
 
 namespace vulkan {
 VkInstance CreateEmptyInstance(containers::Allocator* allocator,
-                               LibraryWrapper* wrapper) {
+                               LibraryWrapper* wrapper,
+                               uint32_t version) {
   // Test a non-nullptr pApplicationInfo
   VkApplicationInfo app_info{VK_STRUCTURE_TYPE_APPLICATION_INFO,
                              nullptr,
@@ -33,7 +34,7 @@ VkInstance CreateEmptyInstance(containers::Allocator* allocator,
                              1,
                              "Engine",
                              0,
-                             VK_MAKE_VERSION(1, 0, 0)};
+                             version};
 
   VkInstanceCreateInfo info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
                             nullptr,

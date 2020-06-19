@@ -464,7 +464,7 @@ def get_device_and_architecture_info_from_trace_file(filename):
         elif line.strip() == "Trace ABI Information:":
             abi_info_str = get_json_str()
             abi_info = json.loads(abi_info_str)
-            memory_layout = abi_info["MemoryLayout"]
+            memory_layout = abi_info["memory_layout"]
             layout_dict = {}
             for t in memory_layout:
                 if not isinstance(memory_layout[t], dict):

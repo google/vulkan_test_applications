@@ -347,6 +347,7 @@ class DeviceFunctions {
 #define CONSTRUCT_LAZY_FUNCTION(function) function(device, #function, this)
         CONSTRUCT_LAZY_FUNCTION(vkDestroyDevice),
         CONSTRUCT_LAZY_FUNCTION(vkCreateCommandPool),
+        CONSTRUCT_LAZY_FUNCTION(vkTrimCommandPool),
         CONSTRUCT_LAZY_FUNCTION(vkResetCommandPool),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyCommandPool),
         CONSTRUCT_LAZY_FUNCTION(vkAllocateCommandBuffers),
@@ -478,6 +479,7 @@ class DeviceFunctions {
 #define LAZY_FUNCTION(function) LazyDeviceFunction<PFN_##function> function;
   LAZY_FUNCTION(vkDestroyDevice);
   LAZY_FUNCTION(vkCreateCommandPool);
+  LAZY_FUNCTION(vkTrimCommandPool);
   LAZY_FUNCTION(vkResetCommandPool);
   LAZY_FUNCTION(vkDestroyCommandPool);
   LAZY_FUNCTION(vkAllocateCommandBuffers);

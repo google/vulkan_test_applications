@@ -35,3 +35,4 @@ command buffers.
 - [vkCmdUpdateBuffer_test](vkCmdUpdateBuffer_test/README.md)
 - [vkCmdWriteTimestamp_test](vkCmdWriteTimestamp_test/README.md)
 - [vkQueuePresentKHR_test](vkQueuePresentKHR_test/README.md)
+- [vkTrimCommandPool_test](vkTrimCommandPool_test/README.md)
