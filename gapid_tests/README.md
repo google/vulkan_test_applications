@@ -19,3 +19,15 @@ and expectations checked.
 These tests are explicitly to make sure that a trace file contains the
 data that is required. They do not however make sure that replay
 functions.
+
+Example: how to run the "passthrough.mid_execution" test on the host:
+
+```
+$ # Make sure to have downloaded GAPID, and have the "gapit" tool in your path
+$ which gapit
+/home/user/gapid/gapit
+$ cd path/to/vulkan_test_applications
+$ # We assume here that there is a host-build done under ./build/
+$ cd tools
+$ ./gapid_trace_replay_tests.py --host --test-dir ../build/bin/ --include passthrough.mid_execution
+```
