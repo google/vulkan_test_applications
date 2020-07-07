@@ -35,6 +35,7 @@ output that demonstrates the feature.
 [many_command_buffers_cube](many_command_buffers_cube/README.md)
 [mixed_sample_count](mixed_sample_count/README.md)
 [multigpu_particles](multigpu_particles/README.md)
+[overlapping_frames](overlapping_frames/README.md)
 [passthrough](passthrough/README.md)
 [pci_bus_info](pci_bus_info/README.md)
 [render_3d_image](render_3d_image/README.md)

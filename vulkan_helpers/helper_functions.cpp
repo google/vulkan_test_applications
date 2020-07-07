@@ -1046,7 +1046,7 @@ VkSwapchainKHR CreateDefaultSwapchain(
     uint32_t present_queue_index, const entry::EntryData* data,
     VkColorSpaceKHR swapchain_color_space, bool use_shared_presentation,
     VkSwapchainCreateFlagsKHR flags, bool use_10bit_hdr,
-    const void* extensions) {
+    const void* extensions, uint32_t min_image_count) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
   containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
@@ -1153,8 +1153,9 @@ VkSwapchainKHR CreateDefaultSwapchain(
         extensions,                                   // pNext
         flags,                                        // flags
         *surface,                                     // surface
-        std::min(surface_caps.minImageCount + 1,
-                 maxSwapchains),        // minImageCount
+        (min_image_count == 0) ? std::min(
+            surface_caps.minImageCount + 1,
+            maxSwapchains) : min_image_count,         // minImageCount
         surface_formats[0].format,      // surfaceFormat
         surface_formats[0].colorSpace,  // colorSpace
         image_extent,                   // imageExtent
