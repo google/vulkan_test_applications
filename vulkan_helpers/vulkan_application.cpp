@@ -510,7 +510,7 @@ containers::unique_ptr<VulkanApplication::SparseImage>
 VulkanApplication::CreateAndBindSparseImage(
     const VkImageCreateInfo* create_info, size_t slice_size,
     const uint32_t* device_indices) {
-  LOG_ASSERT(!=, log_, create_info->flags && VK_IMAGE_CREATE_SPARSE_BINDING_BIT,
+  LOG_ASSERT(!=, log_, create_info->flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT,
              0u);
   LOG_ASSERT(==, log_, sparse_binding_queue_ != nullptr, true);
   ::VkImage image;
@@ -802,7 +802,7 @@ containers::unique_ptr<VulkanApplication::Buffer>
 VulkanApplication::CreateAndBindPeerBuffer(
     const VkBufferCreateInfo* create_info, uint32_t device_idx) {
   // For now we only handle 2 buffers
-  LOG_ASSERT(<=, log_, device_idx, 1);
+  LOG_ASSERT(<=, log_, device_idx, 1u);
   uint32_t indices[VK_MAX_DEVICE_GROUP_SIZE];
   for (size_t i = 0; i < device_.num_devices(); ++i) {
     indices[i] = device_idx;
