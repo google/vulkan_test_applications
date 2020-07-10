@@ -129,6 +129,10 @@ class VulkanGraphicsPipeline {
 
   void SetSamples(VkSampleCountFlagBits samples);
 
+  void SetDepthClampEnable(VkBool32 value);
+
+  void EnableDepthBias(float constant, float slope, float clamp);
+
   void SetCullMode(VkCullModeFlagBits mode);
 
   void SetFrontFace(VkFrontFace face);

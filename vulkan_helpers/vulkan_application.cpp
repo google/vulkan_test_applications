@@ -1532,6 +1532,17 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(containers::Allocator* allocator,
   dynamic_state_.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 }
 
+void VulkanGraphicsPipeline::SetDepthClampEnable(VkBool32 value) {
+  rasterization_state_.depthClampEnable = value;
+}
+
+void VulkanGraphicsPipeline::EnableDepthBias(float constant, float slope, float clamp) {
+  rasterization_state_.depthBiasEnable = true;
+  rasterization_state_.depthBiasConstantFactor = constant;
+  rasterization_state_.depthBiasSlopeFactor = slope;
+  rasterization_state_.depthBiasClamp = clamp;
+}
+
 void VulkanGraphicsPipeline::SetCullMode(VkCullModeFlagBits mode) {
   rasterization_state_.cullMode = mode;
 }
