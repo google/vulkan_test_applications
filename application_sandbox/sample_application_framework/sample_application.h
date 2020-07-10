@@ -26,7 +26,8 @@ namespace sample_application {
 
 const static VkSampleCountFlagBits kVkMultiSampledSampleCount =
     VK_SAMPLE_COUNT_4_BIT;
-const static VkFormat kDepthFormat = VK_FORMAT_D16_UNORM;
+const static VkFormat kDepthFormatFixed = VK_FORMAT_D16_UNORM;
+const static VkFormat kDepthFormatFloat = VK_FORMAT_D32_SFLOAT;
 const static VkFormat kMutableSwapchainFormats[] = {VK_FORMAT_B8G8R8A8_UNORM,
                                                     VK_FORMAT_B8G8R8A8_SRGB};
 const static VkImageFormatListCreateInfoKHR kMutableSwapchainImageFormatList = {
@@ -37,6 +38,7 @@ struct SampleOptions {
   bool enable_multisampling = false;
   bool enable_mixed_multisampling = false;
   bool enable_depth_buffer = false;
+  bool enable_depth_buffer_float = false;
   bool verbose_output = false;
   bool async_compute = false;
   bool sparse_binding = false;
@@ -60,6 +62,12 @@ struct SampleOptions {
   }
   SampleOptions& EnableDepthBuffer() {
     enable_depth_buffer = true;
+    enable_depth_buffer_float = false;
+    return *this;
+  }
+  SampleOptions& EnableDepthBufferFloat() {
+    enable_depth_buffer = true;
+    enable_depth_buffer_float = true;
     return *this;
   }
   SampleOptions& EnableVerbose() {
@@ -229,6 +237,9 @@ class Sample {
     num_color_samples_ =
         options.enable_mixed_multisampling ? VK_SAMPLE_COUNT_1_BIT
                                            : num_samples_;
+
+    depth_format_ = options.enable_depth_buffer_float ? kDepthFormatFloat
+                                                     : kDepthFormatFixed;
     num_depth_stencil_samples_ = options.enable_mixed_multisampling
                                     ? kVkMultiSampledSampleCount
                                     : num_samples_;
@@ -314,7 +325,10 @@ class Sample {
   // format if we are rendering multi-sampled.
   VkFormat render_format() const { return render_target_format_; }
 
-  VkFormat depth_format() const { return kDepthFormat; }
+  // The format that we are using for the depth buffer, based on whether the
+  // options were initialized with a float depth buffer or the default
+  // fixed-point depth buffer.
+  VkFormat depth_format() const { return depth_format_; }
 
   // The number of samples that we are rendering with.
   VkSampleCountFlagBits num_samples() const { return num_samples_; }
@@ -645,7 +659,7 @@ class Sample {
         /* pNext = */ nullptr,
         /* flags = */ 0,
         /* imageType = */ VK_IMAGE_TYPE_2D,
-        /* format = */ kDepthFormat,
+        /* format = */ depth_format_,
         /* extent = */
         {
             /* width = */ application_.swapchain().width(),
@@ -675,7 +689,7 @@ class Sample {
         0,                                         // flags
         VK_NULL_HANDLE,                            // image
         VK_IMAGE_VIEW_TYPE_2D,                     // viewType
-        kDepthFormat,                              // format
+        depth_format_,                            // format
         {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
          VK_COMPONENT_SWIZZLE_A},
         {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1}};
@@ -964,6 +978,8 @@ class Sample {
   VkSampleCountFlagBits num_depth_stencil_samples_;
   // The format of our render_target
   VkFormat render_target_format_;
+  // The format of our depth buffer
+  VkFormat depth_format_;
   // The viewport we use to render
   VkViewport default_viewport_;
   // The scissor we use to render
