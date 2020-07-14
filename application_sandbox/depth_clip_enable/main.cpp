@@ -49,7 +49,7 @@ struct DepthClipEnableFrameData {
 
 VkPhysicalDeviceDepthClipEnableFeaturesEXT kDepthClipEnableFeature = {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT, nullptr,
-    true};
+    VK_TRUE};
 
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
@@ -163,12 +163,12 @@ class DepthClipEnableSample
     red_pipeline_->SetScissor(scissor());
     red_pipeline_->SetSamples(num_samples());
     red_pipeline_->AddAttachment();
-    red_pipeline_->SetDepthClampEnable(false);
+    red_pipeline_->SetDepthClampEnable(VK_FALSE);
     red_pipeline_->EnableDepthBias(-2, -2, 0);
 
     VkPipelineRasterizationDepthClipStateCreateInfoEXT red_depth_clip_state{
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT,
-        nullptr, 0, true};
+        nullptr, 0, VK_TRUE};
     red_pipeline_->SetRasterizationExtension(&red_depth_clip_state);
 
     red_pipeline_->Commit();
@@ -190,11 +190,11 @@ class DepthClipEnableSample
     green_pipeline_->SetScissor(scissor());
     green_pipeline_->SetSamples(num_samples());
     green_pipeline_->AddAttachment();
-    green_pipeline_->SetDepthClampEnable(true);
+    green_pipeline_->SetDepthClampEnable(VK_TRUE);
 
     VkPipelineRasterizationDepthClipStateCreateInfoEXT green_depth_clip_state{
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT,
-        nullptr, 0, false};
+        nullptr, 0, VK_FALSE};
     green_pipeline_->SetRasterizationExtension(&green_depth_clip_state);
 
     green_pipeline_->Commit();
@@ -216,7 +216,7 @@ class DepthClipEnableSample
     blue_pipeline_->SetScissor(scissor());
     blue_pipeline_->SetSamples(num_samples());
     blue_pipeline_->AddAttachment();
-    blue_pipeline_->SetDepthClampEnable(false);
+    blue_pipeline_->SetDepthClampEnable(VK_FALSE);
     blue_pipeline_->EnableDepthBias(2, 2, 0);
 
     VkPipelineRasterizationDepthClipStateCreateInfoEXT blue_depth_clip_state;
@@ -224,7 +224,7 @@ class DepthClipEnableSample
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT;
     blue_depth_clip_state.pNext = nullptr;
     blue_depth_clip_state.flags = 0;
-    blue_depth_clip_state.depthClipEnable = false;
+    blue_depth_clip_state.depthClipEnable = VK_FALSE;
     blue_pipeline_->SetRasterizationExtension(&blue_depth_clip_state);
 
     blue_pipeline_->Commit();
@@ -549,7 +549,8 @@ class DepthClipEnableSample
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
   VkPhysicalDeviceFeatures requested_features = {0};
-  requested_features.depthClamp = true;
+  requested_features.depthClamp = VK_TRUE;
+  requested_features.depthBiasClamp = VK_TRUE;
   DepthClipEnableSample sample(data, requested_features);
   sample.Initialize();
 
