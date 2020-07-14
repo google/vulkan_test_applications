@@ -1537,7 +1537,7 @@ void VulkanGraphicsPipeline::SetDepthClampEnable(VkBool32 value) {
 }
 
 void VulkanGraphicsPipeline::EnableDepthBias(float constant, float slope, float clamp) {
-  rasterization_state_.depthBiasEnable = true;
+  rasterization_state_.depthBiasEnable = VK_TRUE;
   rasterization_state_.depthBiasConstantFactor = constant;
   rasterization_state_.depthBiasSlopeFactor = slope;
   rasterization_state_.depthBiasClamp = clamp;
