@@ -452,10 +452,10 @@ class DepthClipEnableSample
     cmdBuffer->vkCmdBindDescriptorSets(
         cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         ::VkPipelineLayout(*pipeline_layout_), 0, 1,
-        &frame_data->cube_red_descriptor_set_->raw_set(), 0, nullptr);
+        &frame_data->cube_blue_descriptor_set_->raw_set(), 0, nullptr);
 
     cmdBuffer->vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                 *red_pipeline_);
+                                 *blue_pipeline_);
     cube_.Draw(&cmdBuffer);
 
     cmdBuffer->vkCmdBindDescriptorSets(
@@ -470,10 +470,10 @@ class DepthClipEnableSample
     cmdBuffer->vkCmdBindDescriptorSets(
         cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         ::VkPipelineLayout(*pipeline_layout_), 0, 1,
-        &frame_data->cube_blue_descriptor_set_->raw_set(), 0, nullptr);
+        &frame_data->cube_red_descriptor_set_->raw_set(), 0, nullptr);
 
     cmdBuffer->vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                 *blue_pipeline_);
+                                 *red_pipeline_);
     cube_.Draw(&cmdBuffer);
 
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
