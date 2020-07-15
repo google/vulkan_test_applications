@@ -239,7 +239,7 @@ class Sample {
                                            : num_samples_;
 
     depth_format_ = options.enable_depth_buffer_float ? kDepthFormatFloat
-                                                     : kDepthFormatFixed;
+                                                      : kDepthFormatFixed;
     num_depth_stencil_samples_ = options.enable_mixed_multisampling
                                     ? kVkMultiSampledSampleCount
                                     : num_samples_;
