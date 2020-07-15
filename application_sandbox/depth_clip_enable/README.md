@@ -18,14 +18,18 @@ The three cubes are slightly offset from one another using the depth bias
 support to place the red cube in front, the green cube in the middle and
 the blue cube in the back.
 
-The near plane is placed at a distance of z=0.5 and the cube is placed
-at z=1.5 so that the front part of the cube will should be pass through
-the near plane. The resulting image should be a red cube at the back, a
-small ring of green and then the blue in front. The red cube shows up
-because it is in front except where it is clipped by the near plane. The
-green cube shows up only in the small range where it is front of the
-blue cube up to the point of being clamped to the near plane. The remainder
-of the cube is blue as its depth values are neither clipped or clamped.
+The near plane is placed at a distance of z=1.2 and the far plane at z~=3
+and the cube is placed at z=3 so that both the front part of the cube
+and the back part of the cube with pass through the near and far planes.
+The resulting image should be a red cube in the middle, the green cube
+in the back and the blue cube in the front.
 
-NOTE: This sample uses a floating point depth buffer and is required to
-get the desired behaviour noted above.
+The red cube is in the "front" but is being clipped by the near/far planes.
+
+The blue cube is in the "back" but isn't being clipped or clamped so
+shows in the front as its depth values are lower than those being
+clippined and clamped.
+
+The green cube is in the "middle" but only shows up in the back where
+is isn't being clipped and because its being clamped is showing up
+in front of the blue cube.
