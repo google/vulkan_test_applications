@@ -27,6 +27,11 @@ layout (binding = 1, set = 0) uniform model_data {
 layout (location = 1) out vec3 normal;
 
 void main() {
-    gl_Position =  projection * transform * get_position();
     normal = mat3x3(transform) * normalize(get_normal().xyz); //get_normal();
+    vec4 pos = get_position();
+    // turn the cube in a long rectangular prism
+    pos.x = pos.x / 2;
+    pos.y = pos.y / 2;
+    pos.z = 2 * pos.z;
+    gl_Position =  projection * transform * pos;
 }
