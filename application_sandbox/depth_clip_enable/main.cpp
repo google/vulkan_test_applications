@@ -62,7 +62,7 @@ class DepthClipEnableSample
         Sample<DepthClipEnableFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions()
-                .EnableDepthBufferFloat()
+                .EnableDepthBuffer()
                 .EnableMultisampling()
                 .AddDeviceExtensionStructure(&kDepthClipEnableFeature),
             requested_features, {}, {VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME}),
@@ -146,6 +146,14 @@ class DepthClipEnableSample
             {}                                    // SubpassDependencies
             ));
 
+    // The viewport for all pipeline is adjusted to make the viewport transform
+    // map to the depth range [0.2, 0.8]. This allows for depth values outside
+    // of this range to still be represented in the depth buffer when clamping
+    // is disabled.
+    auto adjustedViewport = viewport();
+    adjustedViewport.minDepth = 0.2;
+    adjustedViewport.maxDepth = 0.8;
+
     // The red_pipeline_ is for the red cube. This is rendering with depth
     // clipping enabled and depth clamping disabled -- This would be stock
     // Vulkan. Additionally, the geometry is rendered with a "-2" depth bias to
@@ -159,7 +167,7 @@ class DepthClipEnableSample
                              cube_fragment_shader);
     red_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     red_pipeline_->SetInputStreams(&cube_);
-    red_pipeline_->SetViewport(viewport());
+    red_pipeline_->SetViewport(adjustedViewport);
     red_pipeline_->SetScissor(scissor());
     red_pipeline_->SetSamples(num_samples());
     red_pipeline_->AddAttachment();
@@ -186,7 +194,7 @@ class DepthClipEnableSample
                                cube_fragment_shader);
     green_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     green_pipeline_->SetInputStreams(&cube_);
-    green_pipeline_->SetViewport(viewport());
+    green_pipeline_->SetViewport(adjustedViewport);
     green_pipeline_->SetScissor(scissor());
     green_pipeline_->SetSamples(num_samples());
     green_pipeline_->AddAttachment();
@@ -212,7 +220,7 @@ class DepthClipEnableSample
                               cube_fragment_shader);
     blue_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     blue_pipeline_->SetInputStreams(&cube_);
-    blue_pipeline_->SetViewport(viewport());
+    blue_pipeline_->SetViewport(adjustedViewport);
     blue_pipeline_->SetScissor(scissor());
     blue_pipeline_->SetSamples(num_samples());
     blue_pipeline_->AddAttachment();
