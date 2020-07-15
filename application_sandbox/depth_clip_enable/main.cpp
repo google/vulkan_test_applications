@@ -219,12 +219,9 @@ class DepthClipEnableSample
     blue_pipeline_->SetDepthClampEnable(VK_FALSE);
     blue_pipeline_->EnableDepthBias(2, 2, 0);
 
-    VkPipelineRasterizationDepthClipStateCreateInfoEXT blue_depth_clip_state;
-    blue_depth_clip_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT;
-    blue_depth_clip_state.pNext = nullptr;
-    blue_depth_clip_state.flags = 0;
-    blue_depth_clip_state.depthClipEnable = VK_FALSE;
+    VkPipelineRasterizationDepthClipStateCreateInfoEXT blue_depth_clip_state{
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT,
+        nullptr, 0, VK_FALSE};
     blue_pipeline_->SetRasterizationExtension(&blue_depth_clip_state);
 
     blue_pipeline_->Commit();
