@@ -24,9 +24,9 @@ layout (binding = 1, set = 0) uniform model_data {
     layout(column_major) mat4x4 transform;
 };
 
-layout (location = 1) out vec4 normal;
+layout (location = 1) out vec3 normal;
 
 void main() {
     gl_Position =  projection * transform * get_position();
-    normal = transform * get_normal();
+    normal = mat3x3(transform) * normalize(get_normal().xyz); //get_normal();
 }

@@ -19,11 +19,11 @@ layout (binding = 2, set = 0) uniform color_data {
     vec4 color;
 };
 
-layout (location = 1) in vec4 normal;
+layout (location = 1) in vec3 normal;
 
 layout (location = 0) out vec4 out_color;
 
 void main() {
-    float l = -normal.z;
-    out_color = l*color;
+    float lighting = abs(normal.z);
+    out_color = lighting*color;
 }
