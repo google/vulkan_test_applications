@@ -253,10 +253,12 @@ class DepthClipEnableSample
         (float)app()->swapchain().width() / (float)app()->swapchain().height();
     camera_data_->data().projection_matrix =
         Mat44::FromScaleVector(mathfu::Vector<float, 3>{1.0f, -1.0f, 1.0f}) *
-        Mat44::Perspective(1.5708f, aspect, 0.5f, 2.0f);
+        Mat44::Perspective(3.14f / 4, aspect, 1.2f, 1.5f);
 
-    model_data_->data().transform = Mat44::FromTranslationVector(
-        mathfu::Vector<float, 3>{0.0f, 0.0f, -1.5f});
+    model_data_->data().transform =
+        Mat44::FromTranslationVector(
+            mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f}) *
+        Mat44::FromRotationMatrix(Mat44::RotationX(3.14f / 8.0f));
 
     color_red_data_->data().color = Vector4(1.0, 0.0, 0.0, 0.0);
     color_green_data_->data().color = Vector4(0.0, 1.0, 0.0, 0.0);
@@ -484,7 +486,7 @@ class DepthClipEnableSample
     model_data_->data().transform =
         model_data_->data().transform *
         Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14f * time_since_last_render / 5.0f) *
+            // Mat44::RotationX(3.14f * time_since_last_render / 5.0f) *
             Mat44::RotationY(3.14f * time_since_last_render / 5.0f));
   }
 
