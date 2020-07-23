@@ -133,7 +133,7 @@ VulkanApplication::VulkanApplication(
           // Because we are in the callback swapchain, we know that the
           // image size is 100x100, and the format is rgba
           std::ofstream ppm;
-          ppm.open(d->file_name);
+          ppm.open(d->file_name, std::ofstream::out | std::ofstream::binary);
           ppm << "P6 " << d->dat->width() << " " << d->dat->height()
               << " 255\n";
 
