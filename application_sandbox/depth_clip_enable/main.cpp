@@ -557,7 +557,6 @@ int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
   VkPhysicalDeviceFeatures requested_features = {0};
   requested_features.depthClamp = VK_TRUE;
-  requested_features.depthBiasClamp = VK_TRUE;
   DepthClipEnableSample sample(data, requested_features);
   sample.Initialize();
 
