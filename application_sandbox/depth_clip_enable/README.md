@@ -1,14 +1,14 @@
-# Depth Clipe Enable
+# Depth Clip Enable
 
-This sample demonstrate the VK_EXT_depth_clip_enable features. This feature
-allows the depth clip and depth clamp functionality to be controlled
-independently. The sample renders 3 identical cubes with different
-clip/clamp settings. The three cubes are setup as follows:
+This sample demonstrates the VK_EXT_depth_clip_enable extension. This
+extensions allows the depth clip and depth clamp functionality to be
+controlled independently. The sample renders 3 identical cubes with
+different clip/clamp settings. The three cubes are setup as follows:
 
-Red Cube - This cube is render with the stock Vulkan options, clipping
+Red Cube - This cube is rendered with the stock Vulkan options, clipping
 enable and clamping disable.
 
-Green Cube - This cube is render with the alternative stock Vulkan option,
+Green Cube - This cube is rendered with the alternative stock Vulkan option,
 clipping disable and clamping enabled.
 
 Blue Cube - This cube is rendered with clipping disabled and clamping disabled,
@@ -28,7 +28,7 @@ The red cube is in the "front" but is being clipped by the near/far planes.
 
 The blue cube is in the "back" but isn't being clipped or clamped so
 shows in the front as its depth values are lower than those being
-clippined and clamped.
+clipped and clamped.
 
 The green cube is in the "middle" but only shows up in the back where
 is isn't being clipped and because its being clamped is showing up
