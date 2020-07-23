@@ -491,11 +491,9 @@ class DepthClipEnableSample
   }
 
   virtual void Update(float time_since_last_render) override {
-    model_data_->data().transform =
-        model_data_->data().transform *
-        Mat44::FromRotationMatrix(
-            // Mat44::RotationX(3.14f * time_since_last_render / 5.0f) *
-            Mat44::RotationY(3.14f * time_since_last_render / 5.0f));
+    model_data_->data().transform = model_data_->data().transform *
+                                    Mat44::FromRotationMatrix(Mat44::RotationY(
+                                        3.14f * time_since_last_render / 5.0f));
   }
 
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
