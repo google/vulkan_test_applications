@@ -27,7 +27,7 @@ layout (binding = 1, set = 0) uniform model_data {
 layout (location = 1) out vec3 normal;
 
 void main() {
-    normal = mat3x3(transform) * normalize(get_normal().xyz); //get_normal();
+    normal = mat3x3(transform) * normalize(get_normal().xyz);
     vec4 pos = get_position();
     // turn the cube in a long rectangular prism
     pos.x = pos.x / 2;
