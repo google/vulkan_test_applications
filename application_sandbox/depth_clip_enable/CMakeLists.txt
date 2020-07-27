@@ -14,8 +14,8 @@
 
 add_shader_library(depth_clip_enable_shaders
   SOURCES
-    cube.frag
-    cube.vert
+    prism.frag
+    prism.vert
   SHADER_DEPS
     shader_library
 )

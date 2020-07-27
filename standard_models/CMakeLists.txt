@@ -16,6 +16,7 @@ add_model_library(standard_models
   SOURCES
     fullscreen_quad.obj
     cube.obj
+    prism.obj
     torus_knot.obj
     floor.obj
 )

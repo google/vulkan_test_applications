@@ -26,25 +26,25 @@
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
 
-namespace cube_model {
-#include "cube.obj.h"
+namespace prism_model {
+#include "prism.obj.h"
 }
-const auto& cube_data = cube_model::model;
+const auto& prism_data = prism_model::model;
 
-uint32_t cube_vertex_shader[] =
-#include "cube.vert.spv"
+uint32_t prism_vertex_shader[] =
+#include "prism.vert.spv"
     ;
 
-uint32_t cube_fragment_shader[] =
-#include "cube.frag.spv"
+uint32_t prism_fragment_shader[] =
+#include "prism.frag.spv"
     ;
 
 struct DepthClipEnableFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
-  containers::unique_ptr<vulkan::DescriptorSet> cube_red_descriptor_set_;
-  containers::unique_ptr<vulkan::DescriptorSet> cube_green_descriptor_set_;
-  containers::unique_ptr<vulkan::DescriptorSet> cube_blue_descriptor_set_;
+  containers::unique_ptr<vulkan::DescriptorSet> prism_red_descriptor_set_;
+  containers::unique_ptr<vulkan::DescriptorSet> prism_green_descriptor_set_;
+  containers::unique_ptr<vulkan::DescriptorSet> prism_blue_descriptor_set_;
 };
 
 VkPhysicalDeviceDepthClipEnableFeaturesEXT kDepthClipEnableFeature = {
@@ -66,28 +66,28 @@ class DepthClipEnableSample
                 .EnableMultisampling()
                 .AddDeviceExtensionStructure(&kDepthClipEnableFeature),
             requested_features, {}, {VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME}),
-        cube_(data->allocator(), data->logger(), cube_data) {}
+        prism_(data->allocator(), data->logger(), prism_data) {}
 
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
-    cube_.InitializeData(app(), initialization_buffer);
+    prism_.InitializeData(app(), initialization_buffer);
 
-    cube_descriptor_set_layouts_[0] = {
+    prism_descriptor_set_layouts_[0] = {
         0,                                  // binding
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  // descriptorType
         1,                                  // descriptorCount
         VK_SHADER_STAGE_VERTEX_BIT,         // stageFlags
         nullptr                             // pImmutableSamplers
     };
-    cube_descriptor_set_layouts_[1] = {
+    prism_descriptor_set_layouts_[1] = {
         1,                                  // binding
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  // descriptorType
         1,                                  // descriptorCount
         VK_SHADER_STAGE_VERTEX_BIT,         // stageFlags
         nullptr                             // pImmutableSamplers
     };
-    cube_descriptor_set_layouts_[2] = {
+    prism_descriptor_set_layouts_[2] = {
         2,                                  // binding
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  // descriptorType
         1,                                  // descriptorCount
@@ -98,8 +98,8 @@ class DepthClipEnableSample
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
         data_->allocator(),
         app()->CreatePipelineLayout(
-            {{cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
-              cube_descriptor_set_layouts_[2]}}));
+            {{prism_descriptor_set_layouts_[0], prism_descriptor_set_layouts_[1],
+              prism_descriptor_set_layouts_[2]}}));
 
     VkAttachmentReference color_attachment = {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -151,10 +151,10 @@ class DepthClipEnableSample
     // of this range to still be represented in the depth buffer when clamping
     // is disabled.
     auto adjustedViewport = viewport();
-    adjustedViewport.minDepth = 0.2;
-    adjustedViewport.maxDepth = 0.8;
+    adjustedViewport.minDepth = 0.2f;
+    adjustedViewport.maxDepth = 0.8f;
 
-    // The red_pipeline_ is for the red cube. This is rendering with depth
+    // The red_pipeline_ is for the red prism. This is rendering with depth
     // clipping enabled and depth clamping disabled -- This would be stock
     // Vulkan. Additionally, the geometry is rendered with a "-2" depth bias to
     // effectively put it in front of everything
@@ -162,11 +162,11 @@ class DepthClipEnableSample
         data_->allocator(), app()->CreateGraphicsPipeline(
                                 pipeline_layout_.get(), render_pass_.get(), 0));
     red_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
-                             cube_vertex_shader);
+                             prism_vertex_shader);
     red_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
-                             cube_fragment_shader);
+                             prism_fragment_shader);
     red_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    red_pipeline_->SetInputStreams(&cube_);
+    red_pipeline_->SetInputStreams(&prism_);
     red_pipeline_->SetViewport(adjustedViewport);
     red_pipeline_->SetScissor(scissor());
     red_pipeline_->SetSamples(num_samples());
@@ -181,7 +181,7 @@ class DepthClipEnableSample
 
     red_pipeline_->Commit();
 
-    // The green_pipeline_ is for the green cube. This is rendering with depth
+    // The green_pipeline_ is for the green prism. This is rendering with depth
     // clipping disabled and depth clamping enabled -- This would be default
     // Vulkan with depthClamp enabled (i.e with clamping you disable clipping).
     // This is rendered with no bias putting it in the "middle"
@@ -189,11 +189,11 @@ class DepthClipEnableSample
         data_->allocator(), app()->CreateGraphicsPipeline(
                                 pipeline_layout_.get(), render_pass_.get(), 0));
     green_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
-                               cube_vertex_shader);
+                               prism_vertex_shader);
     green_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
-                               cube_fragment_shader);
+                               prism_fragment_shader);
     green_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    green_pipeline_->SetInputStreams(&cube_);
+    green_pipeline_->SetInputStreams(&prism_);
     green_pipeline_->SetViewport(adjustedViewport);
     green_pipeline_->SetScissor(scissor());
     green_pipeline_->SetSamples(num_samples());
@@ -207,7 +207,7 @@ class DepthClipEnableSample
 
     green_pipeline_->Commit();
 
-    // The blue_pipeline_ is for the blue cube. This is rendering with depth
+    // The blue_pipeline_ is for the blue prism. This is rendering with depth
     // clipping disabled and depth clamping dsiable -- This behaviour that
     // only comes with the VK_EXT_depth_clip_enable feature. This geometry
     // is rendered with a "+2" depth bias to put it in the "back".
@@ -215,11 +215,11 @@ class DepthClipEnableSample
         data_->allocator(), app()->CreateGraphicsPipeline(
                                 pipeline_layout_.get(), render_pass_.get(), 0));
     blue_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
-                              cube_vertex_shader);
+                              prism_vertex_shader);
     blue_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
-                              cube_fragment_shader);
+                              prism_fragment_shader);
     blue_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    blue_pipeline_->SetInputStreams(&cube_);
+    blue_pipeline_->SetInputStreams(&prism_);
     blue_pipeline_->SetViewport(adjustedViewport);
     blue_pipeline_->SetScissor(scissor());
     blue_pipeline_->SetSamples(num_samples());
@@ -281,24 +281,24 @@ class DepthClipEnableSample
         containers::make_unique<vulkan::VkCommandBuffer>(
             data_->allocator(), app()->GetCommandBuffer());
 
-    frame_data->cube_red_descriptor_set_ =
+    frame_data->prism_red_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
             data_->allocator(),
-            app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
-                                          cube_descriptor_set_layouts_[1],
-                                          cube_descriptor_set_layouts_[2]}));
-    frame_data->cube_green_descriptor_set_ =
+            app()->AllocateDescriptorSet({prism_descriptor_set_layouts_[0],
+                                          prism_descriptor_set_layouts_[1],
+                                          prism_descriptor_set_layouts_[2]}));
+    frame_data->prism_green_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
             data_->allocator(),
-            app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
-                                          cube_descriptor_set_layouts_[1],
-                                          cube_descriptor_set_layouts_[2]}));
-    frame_data->cube_blue_descriptor_set_ =
+            app()->AllocateDescriptorSet({prism_descriptor_set_layouts_[0],
+                                          prism_descriptor_set_layouts_[1],
+                                          prism_descriptor_set_layouts_[2]}));
+    frame_data->prism_blue_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
             data_->allocator(),
-            app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
-                                          cube_descriptor_set_layouts_[1],
-                                          cube_descriptor_set_layouts_[2]}));
+            app()->AllocateDescriptorSet({prism_descriptor_set_layouts_[0],
+                                          prism_descriptor_set_layouts_[1],
+                                          prism_descriptor_set_layouts_[2]}));
 
     VkDescriptorBufferInfo buffer_infos_common[2] = {
         {
@@ -331,7 +331,7 @@ class DepthClipEnableSample
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
             nullptr,                                 // pNext
-            *frame_data->cube_red_descriptor_set_,   // dstSet
+            *frame_data->prism_red_descriptor_set_,   // dstSet
             0,                                       // dstbinding
             0,                                       // dstArrayElement
             2,                                       // descriptorCount
@@ -343,7 +343,7 @@ class DepthClipEnableSample
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,   // sType
             nullptr,                                  // pNext
-            *frame_data->cube_green_descriptor_set_,  // dstSet
+            *frame_data->prism_green_descriptor_set_,  // dstSet
             0,                                        // dstbinding
             0,                                        // dstArrayElement
             2,                                        // descriptorCount
@@ -355,7 +355,7 @@ class DepthClipEnableSample
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
             nullptr,                                 // pNext
-            *frame_data->cube_blue_descriptor_set_,  // dstSet
+            *frame_data->prism_blue_descriptor_set_,  // dstSet
             0,                                       // dstbinding
             0,                                       // dstArrayElement
             2,                                       // descriptorCount
@@ -372,7 +372,7 @@ class DepthClipEnableSample
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
             nullptr,                                 // pNext
-            *frame_data->cube_red_descriptor_set_,   // dstSet
+            *frame_data->prism_red_descriptor_set_,   // dstSet
             2,                                       // dstbinding
             0,                                       // dstArrayElement
             1,                                       // descriptorCount
@@ -384,7 +384,7 @@ class DepthClipEnableSample
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,   // sType
             nullptr,                                  // pNext
-            *frame_data->cube_green_descriptor_set_,  // dstSet
+            *frame_data->prism_green_descriptor_set_,  // dstSet
             2,                                        // dstbinding
             0,                                        // dstArrayElement
             1,                                        // descriptorCount
@@ -396,7 +396,7 @@ class DepthClipEnableSample
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
             nullptr,                                 // pNext
-            *frame_data->cube_blue_descriptor_set_,  // dstSet
+            *frame_data->prism_blue_descriptor_set_,  // dstSet
             2,                                       // dstbinding
             0,                                       // dstArrayElement
             1,                                       // descriptorCount
@@ -460,29 +460,29 @@ class DepthClipEnableSample
     cmdBuffer->vkCmdBindDescriptorSets(
         cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         ::VkPipelineLayout(*pipeline_layout_), 0, 1,
-        &frame_data->cube_blue_descriptor_set_->raw_set(), 0, nullptr);
+        &frame_data->prism_blue_descriptor_set_->raw_set(), 0, nullptr);
 
     cmdBuffer->vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                  *blue_pipeline_);
-    cube_.Draw(&cmdBuffer);
+    prism_.Draw(&cmdBuffer);
 
     cmdBuffer->vkCmdBindDescriptorSets(
         cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         ::VkPipelineLayout(*pipeline_layout_), 0, 1,
-        &frame_data->cube_green_descriptor_set_->raw_set(), 0, nullptr);
+        &frame_data->prism_green_descriptor_set_->raw_set(), 0, nullptr);
 
     cmdBuffer->vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                  *green_pipeline_);
-    cube_.Draw(&cmdBuffer);
+    prism_.Draw(&cmdBuffer);
 
     cmdBuffer->vkCmdBindDescriptorSets(
         cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         ::VkPipelineLayout(*pipeline_layout_), 0, 1,
-        &frame_data->cube_red_descriptor_set_->raw_set(), 0, nullptr);
+        &frame_data->prism_red_descriptor_set_->raw_set(), 0, nullptr);
 
     cmdBuffer->vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                  *red_pipeline_);
-    cube_.Draw(&cmdBuffer);
+    prism_.Draw(&cmdBuffer);
 
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
 
@@ -541,8 +541,8 @@ class DepthClipEnableSample
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> green_pipeline_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> blue_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
-  VkDescriptorSetLayoutBinding cube_descriptor_set_layouts_[3];
-  vulkan::VulkanModel cube_;
+  VkDescriptorSetLayoutBinding prism_descriptor_set_layouts_[3];
+  vulkan::VulkanModel prism_;
 
   containers::unique_ptr<vulkan::BufferFrameData<CameraData>> camera_data_;
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
