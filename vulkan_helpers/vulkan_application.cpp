@@ -133,7 +133,7 @@ VulkanApplication::VulkanApplication(
           // Because we are in the callback swapchain, we know that the
           // image size is 100x100, and the format is rgba
           std::ofstream ppm;
-          ppm.open(d->file_name);
+          ppm.open(d->file_name, std::ofstream::out | std::ofstream::binary);
           ppm << "P6 " << d->dat->width() << " " << d->dat->height()
               << " 255\n";
 
@@ -1537,7 +1537,7 @@ void VulkanGraphicsPipeline::SetDepthClampEnable(VkBool32 value) {
 }
 
 void VulkanGraphicsPipeline::EnableDepthBias(float constant, float slope, float clamp) {
-  rasterization_state_.depthBiasEnable = true;
+  rasterization_state_.depthBiasEnable = VK_TRUE;
   rasterization_state_.depthBiasConstantFactor = constant;
   rasterization_state_.depthBiasSlopeFactor = slope;
   rasterization_state_.depthBiasClamp = clamp;

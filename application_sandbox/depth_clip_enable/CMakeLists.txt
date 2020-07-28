@@ -1,4 +1,4 @@
-# Copyright 2017 Google Inc.
+# Copyright 2020 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_model_library(standard_models
+add_shader_library(depth_clip_enable_shaders
   SOURCES
-    fullscreen_quad.obj
-    cube.obj
-    prism.obj
-    torus_knot.obj
-    floor.obj
+    prism.frag
+    prism.vert
+  SHADER_DEPS
+    shader_library
+)
+
+add_vulkan_sample_application(depth_clip_enable
+  SOURCES main.cpp
+  LIBS
+    vulkan_helpers
+  MODELS
+    standard_models
+  SHADERS
+    depth_clip_enable_shaders
 )
