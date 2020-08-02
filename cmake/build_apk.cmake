@@ -300,7 +300,7 @@ function(add_vulkan_executable target)
     set(APK_BUILD_ROOT "${VulkanTestApplications_BINARY_DIR}/${target}-apk/")
     string(REPLACE "\",\"" " " ANDROID_ABIS_SPACES "${ANDROID_ABIS}")
 
-    if (${CMAKE_BUILD_TYPE} STREQUAL Debug)
+    if (CMAKE_BUILD_TYPE STREQUAL Debug)
       set(ANDROID_ADDITIONAL_PARAMS "android:debuggable=\"true\"")
       list(APPEND CONFIGURABLE_ANDROID_SOURCES
         ${VulkanTestApplications_SOURCE_DIR}/cmake/android_project_template/app/src/main/jni/Android.mk
