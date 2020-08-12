@@ -247,7 +247,8 @@ class PipelineLayout {
  private:
   // TODO(awoloszyn): Handle push constants here too
   PipelineLayout(containers::Allocator* allocator, VkDevice* device,
-                 std::initializer_list<DescriptorSetLayoutBinding> layouts)
+                 std::initializer_list<DescriptorSetLayoutBinding> layouts,
+                 std::initializer_list<VkPushConstantRange> ranges = {})
       : pipeline_layout_(VK_NULL_HANDLE, nullptr, device),
         descriptor_set_layouts_(allocator) {
     containers::vector<::VkDescriptorSetLayout> raw_layouts(allocator);
@@ -259,14 +260,19 @@ class PipelineLayout {
           CreateDescriptorSetLayout(allocator, device, binding_list.bindings_, binding_list.flags_));
       raw_layouts.push_back(descriptor_set_layouts_.back());
     }
+
+    containers::vector<VkPushConstantRange> raw_push_ranges(ranges.begin(),
+                                                            ranges.end());
+
     VkPipelineLayoutCreateInfo create_info = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,  // sType
         nullptr,                                        // pNext
         0,                                              // flags
         static_cast<uint32_t>(raw_layouts.size()),      // setLayoutCount
         raw_layouts.data(),                             // pSetLayouts
-        0,        // pushConstantRangeCount
-        nullptr,  // pPushConstantRanges
+        static_cast<uint32_t>(
+            raw_push_ranges.size()),  // pushConstantRangeCount
+        raw_push_ranges.data(),       // pPushConstantRanges
     };
 
     ::VkPipelineLayout layout;
