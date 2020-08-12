@@ -245,7 +245,6 @@ class PipelineLayout {
   operator ::VkPipelineLayout() const { return pipeline_layout_; }
 
  private:
-  // TODO(awoloszyn): Handle push constants here too
   PipelineLayout(containers::Allocator* allocator, VkDevice* device,
                  std::initializer_list<DescriptorSetLayoutBinding> layouts,
                  std::initializer_list<VkPushConstantRange> ranges = {})
