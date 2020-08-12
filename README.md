@@ -33,7 +33,9 @@ valid inputs. See [gapid_tests](gapid_tests/README.md) for more information.
 
 ## Checking out / Building
 To clone:
+```
 git clone --recursive path/to/this/repository
+```
 
 This will ensure that you have all of the dependencies checked out.
 
