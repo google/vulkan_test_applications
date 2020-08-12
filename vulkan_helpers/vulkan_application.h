@@ -723,8 +723,9 @@ class VulkanApplication {
   // DescriptorSetLayoutBindings
   PipelineLayout CreatePipelineLayout(
       std::initializer_list<DescriptorSetLayoutBinding>
-          layouts) {
-    return PipelineLayout(allocator_, &device_, layouts);
+          layouts,
+      std::initializer_list<VkPushConstantRange> ranges = {}) {
+    return PipelineLayout(allocator_, &device_, layouts, ranges);
   }
 
   // Allocates a descriptor set with one descriptor according to the given
