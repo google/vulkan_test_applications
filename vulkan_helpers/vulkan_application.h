@@ -261,7 +261,7 @@ class PipelineLayout {
       raw_layouts.push_back(descriptor_set_layouts_.back());
     }
 
-    containers::vector<VkPushConstantRange> raw_push_ranges(ranges.begin(),
+    containers::vector<VkPushConstantRange> push_constant_ranges(ranges.begin(),
                                                             ranges.end());
 
     VkPipelineLayoutCreateInfo create_info = {
@@ -271,8 +271,8 @@ class PipelineLayout {
         static_cast<uint32_t>(raw_layouts.size()),      // setLayoutCount
         raw_layouts.data(),                             // pSetLayouts
         static_cast<uint32_t>(
-            raw_push_ranges.size()),  // pushConstantRangeCount
-        raw_push_ranges.data(),       // pPushConstantRanges
+            push_constant_ranges.size()),  // pushConstantRangeCount
+        push_constant_ranges.data(),       // pPushConstantRanges
     };
 
     ::VkPipelineLayout layout;
