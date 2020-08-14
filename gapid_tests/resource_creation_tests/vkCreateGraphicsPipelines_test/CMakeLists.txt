@@ -15,8 +15,8 @@
 
 # Intentionally empty, add all of the test executables here.
 
-add_gapid_test(SimpleVertexFragment_test
-  SOURCES simple_vertex_fragment.cpp
+add_gapid_test(vkCreateGraphicsPipelines_test
+  SOURCES main.cpp
   LIBS
     vulkan_helpers
   SHADERS
