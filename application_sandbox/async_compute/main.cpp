@@ -660,7 +660,7 @@ class ASyncThreadRunner {
 
   // Mutex to protect the mailbox and related buffers.
   std::mutex data_mutex_;
-  // This lock + cv + value becomes our sempahore
+  // This lock + cv + value becomes our semaphore
   std::mutex first_data_mutex_;
   std::condition_variable first_data_cv_;
   bool first_data_ready_ = false;
