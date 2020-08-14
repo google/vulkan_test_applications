@@ -206,7 +206,7 @@ DYNAMIC_STATE = [
     ("pDynamicStates", POINTER)
 ]
 
-@gapit_test("SimpleVertexFragment_test")
+@gapit_test("vkCreateGraphicsPipelines_test")
 class SimpleVertexFragment(GapitTest):
 
     def expect(self):
