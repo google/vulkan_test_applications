@@ -58,15 +58,25 @@ class InternalDynamicLibrary : public DynamicLibrary {
   // which is to say, absolute, if the path was absolute, followed
   // by LD_LIBRARY_PATH.
   InternalDynamicLibrary(const char* lib_name) {
-    std::string lib_with_extension = lib_name;
+    std::string nm = lib_name;
+    std::string lib_with_extension;
 #ifdef __APPLE__
-    lib_with_extension = "lib" + lib_with_extension + ".dylib";
+    lib_with_extension = "lib" + nm + ".dylib.1";
 #else
-    lib_with_extension = "lib" + lib_with_extension + ".so.1";
+    lib_with_extension = "lib" + nm + ".so.1";
 #endif
     // We choose RTLD_LAZY because we expect most of the functions
     // in this library to be resolved by other calls to dlsym.
     lib_ = dlopen(lib_with_extension.c_str(), RTLD_LAZY);
+
+    if (!lib_) { // If we dont have a versioned .so use the default.
+#ifdef __APPLE__
+      lib_with_extension = "lib" + nm + ".dylib";
+#else
+      lib_with_extension = "lib" + nm + ".so";
+#endif
+      lib_ = dlopen(lib_with_extension.c_str(), RTLD_LAZY);
+    }
   }
 
   ~InternalDynamicLibrary() override {
