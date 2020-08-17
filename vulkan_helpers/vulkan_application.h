@@ -43,6 +43,27 @@ const ::VkDeviceSize kMaxNonCoherentAtomSize = 256;
 struct VulkanModel;
 struct AllocationToken;
 
+struct VulkanApplicationOptions {
+  uint32_t host_buffer_size = 1024 * 1024;
+  uint32_t device_image_size = 1024 * 1024;
+  uint32_t device_buffer_size = 1024 * 1024;
+  uint32_t coherent_buffer_size = 1024 * 1024;
+  bool use_async_compute_queue = false;
+  bool use_sparse_binding = false;
+  bool use_device_groups = false;
+  uint32_t device_peer_memory_size = 0;
+  bool use_protected_memory = false;
+  bool use_host_query_reset = false;
+  VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+  bool use_shared_presentation = false;
+  bool use_mutable_swapchain_format = false;
+  const void* swapchain_extensions = nullptr;
+  bool use_vulkan_1_1 = false;
+  bool use_10bit_hdr = false;
+  void* device_next = nullptr;
+  uint32_t min_swapchain_image_count = 0;
+};
+
 // This class represents a location in GPU memory for storing data.
 // You can suballocate memory from this region, and return memory to the
 // arena for future use.
@@ -499,6 +520,14 @@ class VulkanApplication {
       const void* swapchain_extensions = nullptr, bool use_vulkan_1_1 = false,
       bool use_10bit_hdr = false, void* device_next = nullptr,
       uint32_t min_swapchain_image_count = 0);
+
+  VulkanApplication(
+      containers::Allocator* allocator, logging::Logger* log,
+      const entry::EntryData* entry_data,
+      const VulkanApplicationOptions& options,
+      const std::initializer_list<const char*> instance_extensions = {},
+      const std::initializer_list<const char*> device_extensions = {},
+      const VkPhysicalDeviceFeatures& features = {0});
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.
