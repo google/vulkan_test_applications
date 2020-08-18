@@ -67,7 +67,7 @@ VulkanApplication::VulkanApplication(
     bool use_host_query_reset, VkColorSpaceKHR swapchain_color_space,
     bool use_shared_presentation, bool use_mutable_swapchain_format,
     const void* swapchain_extensions, bool use_vulkan_1_1, bool use_10bit_hdr,
-    void* device_next)
+    void* device_next, uint32_t min_swapchain_image_count)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -99,7 +99,7 @@ VulkanApplication::VulkanApplication(
           use_mutable_swapchain_format
               ? VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR
               : 0,
-          use_10bit_hdr, swapchain_extensions)),
+          use_10bit_hdr, swapchain_extensions, min_swapchain_image_count)),
       command_pools_(allocator_),
       pipeline_cache_(CreateDefaultPipelineCache(&device_, entry_data)),
       host_accessible_heap_(allocator_),
