@@ -15,12 +15,12 @@
 #ifndef SAMPLE_APPLICATION_FRAMEWORK_SAMPLE_APPLICATION_H_
 #define SAMPLE_APPLICATION_FRAMEWORK_SAMPLE_APPLICATION_H_
 
+#include <chrono>
+#include <cstddef>
+
 #include "support/entry/entry.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
-
-#include <chrono>
-#include <cstddef>
 
 namespace sample_application {
 
@@ -39,6 +39,7 @@ struct SampleOptions {
   bool enable_depth_buffer = false;
   bool enable_stencil = false;
   bool verbose_output = false;
+
   bool async_compute = false;
   bool sparse_binding = false;
   bool protected_memory = false;
@@ -154,6 +155,39 @@ const VkSubmitInfo kEmptySubmitInfo{
     nullptr  // pSignalSemaphores
 };
 
+vulkan::VulkanApplicationOptions buildVulkanApplicationOptions(
+    uint32_t host_buffer_size_in_MB, uint32_t image_memory_size_in_MB,
+    uint32_t device_buffer_size_in_MB, uint32_t coherent_buffer_size_in_MB,
+    const SampleOptions& options) {
+  vulkan::VulkanApplicationOptions ret;
+
+  ret.SetHostBufferSize(host_buffer_size_in_MB * 1024 * 1024)
+      .SetDeviceImageSize(image_memory_size_in_MB * 1024 * 1024)
+      .SetDeviceBufferSize(device_buffer_size_in_MB * 1024 * 1024)
+      .SetCoherentBufferSize(coherent_buffer_size_in_MB * 1024 * 1024);
+
+  if (options.async_compute) ret.EnableAsyncComputeQueue();
+  if (options.sparse_binding) ret.EnableSparseBinding();
+  if (options.protected_memory) ret.EnableProtectedMemory();
+  if (options.host_query_reset) ret.EnableHostQueryReset();
+  if (options.shared_presentation) ret.EnableSharedPresentation();
+  if (options.enable_vulkan_1_1) ret.EnableVulkan11();
+  if (options.enable_10bit_hdr) ret.Enable10BitHDR();
+  if (options.mutable_swapchain_format) ret.EnableMutableSwapchainFormat();
+
+  if (options.extended_swapchain_color_space)
+    ret.SetSwapchainColorSpace(VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT);
+
+  if (options.mutable_swapchain_format)
+    ret.SetSwapchainExtensions(&kMutableSwapchainImageFormatList);
+
+  ret.SetMinSwapchainImageCount(options.min_swapchain_image_count);
+
+  ret.SetDeviceExtensions(options.device_extension_structures);
+
+  return ret;
+}
+
 template <typename FrameData>
 class Sample {
   // The per-frame data for an application.
@@ -195,8 +229,7 @@ class Sample {
  public:
   Sample(containers::Allocator* allocator, const entry::EntryData* entry_data,
          uint32_t host_buffer_size_in_MB, uint32_t image_memory_size_in_MB,
-         uint32_t device_buffer_size_in_MB,
-         uint32_t coherent_buffer_size_in_MB,
+         uint32_t device_buffer_size_in_MB, uint32_t coherent_buffer_size_in_MB,
          const SampleOptions& options,
          const VkPhysicalDeviceFeatures& physical_device_features = {0},
          const std::initializer_list<const char*> instance_extensions = {},
@@ -205,23 +238,11 @@ class Sample {
         data_(entry_data),
         allocator_(allocator),
         application_(
-            allocator, entry_data->logger(), entry_data, instance_extensions,
-            device_extensions, physical_device_features,
-            host_buffer_size_in_MB * 1024 * 1024,
-            image_memory_size_in_MB * 1024 * 1024,
-            device_buffer_size_in_MB * 1024 * 1024,
-            coherent_buffer_size_in_MB * 1024 * 1024, options.async_compute,
-            options.sparse_binding, false, 0, options.protected_memory,
-            options.host_query_reset,
-            options.extended_swapchain_color_space
-                ? VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT
-                : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-            options.shared_presentation, options.mutable_swapchain_format,
-            options.mutable_swapchain_format ? &kMutableSwapchainImageFormatList
-                                             : nullptr,
-            options.enable_vulkan_1_1, options.enable_10bit_hdr,
-            options.device_extension_structures,
-            options.min_swapchain_image_count),
+            allocator, entry_data->logger(), entry_data,
+            buildVulkanApplicationOptions(
+                host_buffer_size_in_MB, image_memory_size_in_MB,
+                device_buffer_size_in_MB, coherent_buffer_size_in_MB, options),
+            instance_extensions, device_extensions, physical_device_features),
         frame_data_(allocator),
         swapchain_images_(application_.swapchain_images()),
         last_frame_time_(std::chrono::high_resolution_clock::now()),
@@ -242,18 +263,19 @@ class Sample {
     if (options_.enable_stencil) {
       depth_stencil_format_ = GetSupportedDepthStencilFormat(
           &application_.instance(), &application_.device());
-      LOG_ASSERT(!=, data_->logger(), VK_FORMAT_UNDEFINED, depth_stencil_format_);
+      LOG_ASSERT(!=, data_->logger(), VK_FORMAT_UNDEFINED,
+                 depth_stencil_format_);
     }
 
     num_samples_ = options.enable_multisampling ? kVkMultiSampledSampleCount
                                                 : VK_SAMPLE_COUNT_1_BIT;
 
-    num_color_samples_ =
-        options.enable_mixed_multisampling ? VK_SAMPLE_COUNT_1_BIT
-                                           : num_samples_;
+    num_color_samples_ = options.enable_mixed_multisampling
+                             ? VK_SAMPLE_COUNT_1_BIT
+                             : num_samples_;
     num_depth_stencil_samples_ = options.enable_mixed_multisampling
-                                    ? kVkMultiSampledSampleCount
-                                    : num_samples_;
+                                     ? kVkMultiSampledSampleCount
+                                     : num_samples_;
     default_viewport_ = {0.0f,
                          0.0f,
                          static_cast<float>(application_.swapchain().width()),
@@ -276,7 +298,7 @@ class Sample {
 
     InitializeApplicationData(&initialization_command_buffer_,
                               swapchain_images_.size());
-	
+
     if (options_.enable_10bit_hdr) {
       VkHdrMetadataEXT hdr10_metadata{
           VK_STRUCTURE_TYPE_HDR_METADATA_EXT,
@@ -329,7 +351,9 @@ class Sample {
     data_->NotifyReady();
   }
 
-  virtual void WaitIdle() { app()->device()->vkDeviceWaitIdle(app()->device()); }
+  virtual void WaitIdle() {
+    app()->device()->vkDeviceWaitIdle(app()->device());
+  }
 
   // The format that we are using to render. This will be either the swapchain
   // format if we are not rendering multi-sampled, or the multisampled image
@@ -343,7 +367,9 @@ class Sample {
   // The number of color samples that will be used with mixed sampling
   VkSampleCountFlagBits num_color_samples() const { return num_color_samples_; }
   // The number of depth/stencil samples that will be used with mixed sampling
-  VkSampleCountFlagBits num_depth_stencil_samples() const { return num_depth_stencil_samples_; }
+  VkSampleCountFlagBits num_depth_stencil_samples() const {
+    return num_depth_stencil_samples_;
+  }
 
   vulkan::VulkanApplication* app() { return &application_; }
   const vulkan::VulkanApplication* app() const { return &application_; }
@@ -365,7 +391,7 @@ class Sample {
     average_frame_time_ =
         elapsed_time.count() * 0.05f + average_frame_time_ * 0.95f;
 
-	// Display Timing
+    // Display Timing
     VkRefreshCycleDurationGOOGLE rc_dur = {};
     static unsigned refresh_multiplier = 1;
     static uint32_t present_id = 0;
@@ -573,7 +599,7 @@ class Sample {
         &ptime,                       // pTimes
     };
 
-	if (options_.enable_display_timing) {
+    if (options_.enable_display_timing) {
       present_info.pNext = &present_time;
     }
 
@@ -740,9 +766,9 @@ class Sample {
     }
 
     view_create_info.image =
-		(options_.enable_multisampling && !options_.enable_mixed_multisampling)
-                                 ? *data->multisampled_target_
-                                 : data->swapchain_image_;
+        (options_.enable_multisampling && !options_.enable_mixed_multisampling)
+            ? *data->multisampled_target_
+            : data->swapchain_image_;
     view_create_info.format = options_.mutable_swapchain_format
                                   ? VK_FORMAT_B8G8R8A8_SRGB
                                   : render_target_format_;
@@ -857,7 +883,7 @@ class Sample {
         dstQueueFamilyIndex,                       // dstQueueFamilyIndex
         (options_.enable_multisampling && !options_.enable_mixed_multisampling)
             ? *data->multisampled_target_
-		    : data->swapchain_image_,  // image
+            : data->swapchain_image_,  // image
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
 
     data->setup_command_buffer_ =
