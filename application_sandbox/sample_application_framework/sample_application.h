@@ -38,6 +38,7 @@ struct SampleOptions {
   bool enable_mixed_multisampling = false;
   bool enable_depth_buffer = false;
   bool verbose_output = false;
+
   bool async_compute = false;
   bool sparse_binding = false;
   bool protected_memory = false;
@@ -141,6 +142,37 @@ const VkSubmitInfo kEmptySubmitInfo{
     nullptr  // pSignalSemaphores
 };
 
+vulkan::VulkanApplicationOptions buildVulkanApplicationOptions(
+    uint32_t host_buffer_size_in_MB, uint32_t image_memory_size_in_MB,
+    uint32_t device_buffer_size_in_MB, uint32_t coherent_buffer_size_in_MB,
+    const SampleOptions& options) {
+  vulkan::VulkanApplicationOptions ret;
+
+  ret.SetHostBufferSize(host_buffer_size_in_MB * 1024 * 1024)
+      .SetDeviceImageSize(image_memory_size_in_MB * 1024 * 1024)
+      .SetDeviceBufferSize(device_buffer_size_in_MB * 1024 * 1024)
+      .SetCoherentBufferSize(coherent_buffer_size_in_MB * 1024 * 1024);
+
+  if (options.async_compute) ret.EnableAsyncComputeQueue();
+  if (options.sparse_binding) ret.EnableSparseBinding();
+  if (options.protected_memory) ret.EnableProtectedMemory();
+  if (options.host_query_reset) ret.EnableHostQueryReset();
+  if (options.shared_presentation) ret.EnableSharedPresentation();
+  if (options.enable_vulkan_1_1) ret.EnableVulkan11();
+  if (options.enable_10bit_hdr) ret.Enable10BitHDR();
+  if (options.mutable_swapchain_format) ret.EnableMutableSwapchainFormat();
+
+  if (options.extended_swapchain_color_space)
+    ret.SetSwapchainColorSpace(VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT);
+
+  if (options.mutable_swapchain_format)
+    ret.SetSwapchainExtensions(&kMutableSwapchainImageFormatList);
+
+  ret.SetDeviceExtensions(options.device_extension_structures);
+
+  return ret;
+}
+
 template <typename FrameData>
 class Sample {
   // The per-frame data for an application.
@@ -191,22 +223,11 @@ class Sample {
         data_(entry_data),
         allocator_(allocator),
         application_(
-            allocator, entry_data->logger(), entry_data, instance_extensions,
-            device_extensions, physical_device_features,
-            host_buffer_size_in_MB * 1024 * 1024,
-            image_memory_size_in_MB * 1024 * 1024,
-            device_buffer_size_in_MB * 1024 * 1024,
-            coherent_buffer_size_in_MB * 1024 * 1024, options.async_compute,
-            options.sparse_binding, false, 0, options.protected_memory,
-            options.host_query_reset,
-            options.extended_swapchain_color_space
-                ? VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT
-                : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-            options.shared_presentation, options.mutable_swapchain_format,
-            options.mutable_swapchain_format ? &kMutableSwapchainImageFormatList
-                                             : nullptr,
-            options.enable_vulkan_1_1, options.enable_10bit_hdr,
-            options.device_extension_structures),
+            allocator, entry_data->logger(), entry_data,
+            buildVulkanApplicationOptions(
+                host_buffer_size_in_MB, image_memory_size_in_MB,
+                device_buffer_size_in_MB, coherent_buffer_size_in_MB, options),
+            instance_extensions, device_extensions, physical_device_features),
         frame_data_(allocator),
         swapchain_images_(application_.swapchain_images()),
         last_frame_time_(std::chrono::high_resolution_clock::now()),
