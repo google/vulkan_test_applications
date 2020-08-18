@@ -65,11 +65,15 @@ int main_entry(const entry::EntryData* data) {
 
   vulkan::VulkanApplication app(
       data->allocator(), data->logger(), data,
+      vulkan::VulkanApplicationOptions()
+          .SetHostBufferSize(131072)
+          .SetDeviceImageSize(131072)
+          .SetDeviceBufferSize(131072)
+          .SetCoherentBufferSize(131072)
+          .EnableVulkan11()
+          .SetDeviceExtensions(&timeline_semaphore_features),
       {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
-      {VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME}, {}, 131072, 131072, 131072,
-      131072, false, false, false, 0, false, false,
-      VK_COLORSPACE_SRGB_NONLINEAR_KHR, false, false, nullptr, true, false,
-      &timeline_semaphore_features);
+      {VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME});
 
   vulkan::VkDevice& device = app.device();
 
