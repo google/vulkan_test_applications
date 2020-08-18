@@ -260,8 +260,8 @@ class PipelineLayout {
       raw_layouts.push_back(descriptor_set_layouts_.back());
     }
 
-    containers::vector<VkPushConstantRange> push_constant_ranges(ranges.begin(),
-                                                            ranges.end());
+    containers::vector<VkPushConstantRange> push_constant_ranges(
+        ranges.begin(), ranges.end(), allocator);
 
     VkPipelineLayoutCreateInfo create_info = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,  // sType
