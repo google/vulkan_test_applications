@@ -44,24 +44,105 @@ struct VulkanModel;
 struct AllocationToken;
 
 struct VulkanApplicationOptions {
-  uint32_t host_buffer_size = 1024 * 1024;
-  uint32_t device_image_size = 1024 * 1024;
-  uint32_t device_buffer_size = 1024 * 1024;
-  uint32_t coherent_buffer_size = 1024 * 1024;
+  uint32_t host_buffer_size = 1024 * 1024;      // 1 MiB
+  uint32_t device_image_size = 1024 * 1024;     // 1 MiB
+  uint32_t device_buffer_size = 1024 * 1024;    // 1 MiB
+  uint32_t coherent_buffer_size = 1024 * 1024;  // 1 MiB
+  uint32_t device_peer_memory_size = 0;
+
   bool use_async_compute_queue = false;
   bool use_sparse_binding = false;
   bool use_device_groups = false;
-  uint32_t device_peer_memory_size = 0;
   bool use_protected_memory = false;
   bool use_host_query_reset = false;
-  VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
   bool use_shared_presentation = false;
   bool use_mutable_swapchain_format = false;
-  const void* swapchain_extensions = nullptr;
   bool use_vulkan_1_1 = false;
   bool use_10bit_hdr = false;
-  void* device_next = nullptr;
+
+  VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+  const void* swapchain_extensions = nullptr;
   uint32_t min_swapchain_image_count = 0;
+  void* device_next = nullptr;
+
+  VulkanApplicationOptions& SetHostBufferSize(uint32_t size_in_bytes) {
+    host_buffer_size = size_in_bytes;
+    return *this;
+  }
+  VulkanApplicationOptions& SetDeviceImageSize(uint32_t size_in_bytes) {
+    device_image_size = size_in_bytes;
+    return *this;
+  }
+  VulkanApplicationOptions& SetDeviceBufferSize(uint32_t size_in_bytes) {
+    device_buffer_size = size_in_bytes;
+    return *this;
+  }
+  VulkanApplicationOptions& SetCoherentBufferSize(uint32_t size_in_bytes) {
+    coherent_buffer_size = size_in_bytes;
+    return *this;
+  }
+  VulkanApplicationOptions& SetDevicePeerMemorySize(uint32_t size_in_bytes) {
+    device_peer_memory_size = size_in_bytes;
+    return *this;
+  }
+
+  VulkanApplicationOptions& EnableAsyncComputeQueue() {
+    use_async_compute_queue = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableSparseBinding() {
+    use_sparse_binding = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableDeviceGroups() {
+    use_device_groups = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableProtectedMemory() {
+    use_protected_memory = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableHostQueryReset() {
+    use_host_query_reset = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableSharedPresentation() {
+    use_shared_presentation = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableMutableSwapchainFormat() {
+    use_mutable_swapchain_format = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableVulkan11() {
+    use_vulkan_1_1 = true;
+    return *this;
+  }
+  VulkanApplicationOptions& Enable10BitHDR() {
+    use_10bit_hdr = true;
+    return *this;
+  }
+
+  VulkanApplicationOptions& SetSwapchainColorSpace(
+      VkColorSpaceKHR color_space) {
+    swapchain_color_space = color_space;
+    return *this;
+  }
+
+  VulkanApplicationOptions& SetSwapchainExtensions(const void* pnext) {
+    swapchain_extensions = pnext;
+    return *this;
+  }
+
+  VulkanApplicationOptions& SetMinSwapchainImageCount(uint32_t image_count) {
+    min_swapchain_image_count = image_count;
+    return *this;
+  }
+
+  VulkanApplicationOptions& SetDeviceExtensions(void* pnext) {
+    device_next = pnext;
+    return *this;
+  }
 };
 
 // This class represents a location in GPU memory for storing data.
@@ -77,11 +158,11 @@ class VulkanArena {
               VkMemoryAllocateFlags allocate_flags = 0);
   ~VulkanArena();
 
-  // Returns an AllocationToken for the memory of a given size and alignment.
-  // Fills *memory, and *offset with the ::VkDeviceMemory and ::VkDeviceSize
-  // representing the allocation location. If base_address is not nullptr,
-  // sets *base_address to the host-visible address of the returned memory, or
-  // nullptr if the memory was not mappable.
+  // Returns an AllocationToken for the memory of a given size and
+  // alignment. Fills *memory, and *offset with the ::VkDeviceMemory and
+  // ::VkDeviceSize representing the allocation location. If base_address is
+  // not nullptr, sets *base_address to the host-visible address of the
+  // returned memory, or nullptr if the memory was not mappable.
   AllocationToken* AllocateMemory(::VkDeviceSize size, ::VkDeviceSize alignment,
                                   ::VkDeviceMemory* memory,
                                   ::VkDeviceSize* offset, char** base_address);
@@ -317,8 +398,8 @@ class PipelineLayout {
   VkPipelineLayout pipeline_layout_;
 };
 
-// DescriptorSet holds a VkDescriptorSet object and the pool and layout used for
-// allocating it.
+// DescriptorSet holds a VkDescriptorSet object and the pool and layout used
+// for allocating it.
 class DescriptorSet {
  public:
   operator ::VkDescriptorSet() const { return set_; }
@@ -347,8 +428,8 @@ class DescriptorSet {
   VkDescriptorSet set_;
 };
 
-// VulkanApplication holds all of the data needed for a typical single-threaded
-// Vulkan application.
+// VulkanApplication holds all of the data needed for a typical
+// single-threaded Vulkan application.
 class VulkanApplication {
  private:
   class ImageCore {
@@ -365,9 +446,9 @@ class VulkanApplication {
   };
 
  public:
-  // The Image class holds onto a VkImage as well as memory that is bound to it.
-  // When it is destroyed, it will return the memory to the heap from which
-  // it was created.
+  // The Image class holds onto a VkImage as well as memory that is bound to
+  // it. When it is destroyed, it will return the memory to the heap from
+  // which it was created.
   class Image : public ImageCore {
    public:
     ~Image() { heap_->FreeMemory(token_); }
@@ -534,15 +615,15 @@ class VulkanApplication {
   containers::unique_ptr<Image> CreateAndBindImage(
       const VkImageCreateInfo* create_info,
       const uint32_t* device_indices = nullptr);
-  // Creates an sparse bound image from the given create_info, and binds memory
-  // from the device-only image arena. The size of the binding block is the
-  // given |slice_size| roundup to the image's memory alignment.
+  // Creates an sparse bound image from the given create_info, and binds
+  // memory from the device-only image arena. The size of the binding block
+  // is the given |slice_size| roundup to the image's memory alignment.
   containers::unique_ptr<SparseImage> CreateAndBindSparseImage(
       const VkImageCreateInfo* create_info, size_t slice_size,
       const uint32_t* device_indices = nullptr);
-  // Creates a multi-planar image from the given create_info, and binds memory
-  // from the device-only image arena. Memory is allocated for each plane of the
-  // image if it is disjoint.
+  // Creates a multi-planar image from the given create_info, and binds
+  // memory from the device-only image arena. Memory is allocated for each
+  // plane of the image if it is disjoint.
   containers::unique_ptr<Image> CreateAndBindMultiPlanarImage(
       const VkImageCreateInfo* create_info,
       const uint32_t* device_indices = nullptr);
@@ -567,9 +648,10 @@ class VulkanApplication {
   containers::unique_ptr<Buffer> CreateAndBindDefaultExclusiveHostBuffer(
       VkDeviceSize size, VkBufferUsageFlags usages,
       const uint32_t* device_indices = nullptr);
-  // Creates a buffer with the given size, usage flags from the host-coherent
-  // buffer Arena. The buffer is create with VkBufferCreateFlags set to 0,
-  // VkSharingMode set to VK_SHARING_MODE_EXCLUSIVE.
+  // Creates a buffer with the given size, usage flags from the
+  // host-coherent buffer Arena. The buffer is create with
+  // VkBufferCreateFlags set to 0, VkSharingMode set to
+  // VK_SHARING_MODE_EXCLUSIVE.
   containers::unique_ptr<Buffer> CreateAndBindDefaultExclusiveCoherentBuffer(
       VkDeviceSize size, VkBufferUsageFlags usages,
       const uint32_t* device_indices = nullptr);
@@ -597,15 +679,16 @@ class VulkanApplication {
                                                         VkDeviceSize offset,
                                                         VkDeviceSize range);
 
-  // Creates a command buffer, appends commands to fill the given |data| to the
-  // specified |image| and submit the command buffer to application's render
-  // queue. If succeed, returns true and the command buffer. The operations
-  // recorded in the command buffer will wait until |wait_semaphores| signals.
-  // Once the operation is done, |signal_semaphores| and |fence| will be
-  // signaled. The target image layout will be changed to
-  // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL. If the operation can not be done
-  // successfully, this method returns false and a command buffer wrapping
-  // VK_NULL_HANDLE, the layout of the image will not be changed.
+  // Creates a command buffer, appends commands to fill the given |data| to
+  // the specified |image| and submit the command buffer to application's
+  // render queue. If succeed, returns true and the command buffer. The
+  // operations recorded in the command buffer will wait until
+  // |wait_semaphores| signals. Once the operation is done,
+  // |signal_semaphores| and |fence| will be signaled. The target image
+  // layout will be changed to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL. If the
+  // operation can not be done successfully, this method returns false and a
+  // command buffer wrapping VK_NULL_HANDLE, the layout of the image will
+  // not be changed.
   std::tuple<bool, VkCommandBuffer,
              containers::unique_ptr<VulkanApplication::Buffer>>
   FillImageLayersData(
@@ -619,7 +702,8 @@ class VulkanApplication {
   // This inserts a series of calls to vkCmdUpdateBuffer into the given
   // command_buffer, so it is
   // expected that this be used for buffers that are usually < 65536 bytes.
-  // buffer must have been created with the VK_BUFFER_USAGE_TRANSFER_DST_BIT.
+  // buffer must have been created with the
+  // VK_BUFFER_USAGE_TRANSFER_DST_BIT.
   void FillSmallBuffer(Buffer* buffer, const void* data, size_t data_size,
                        size_t buffer_offset, VkCommandBuffer* command_buffer,
                        VkAccessFlags target_usage, uint32_t device_mask = 0);
@@ -636,8 +720,8 @@ class VulkanApplication {
 
   // Dump the data in the specific layers of the given image to the provided
   // vector. The operation will wait for the |wait_semaphores| to begin and
-  // will wait until all the commands are executed then returns. This function
-  // returns true and changes the source image layout to
+  // will wait until all the commands are executed then returns. This
+  // function returns true and changes the source image layout to
   // VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL if the operation is done
   // successfully, otherwise returns false and keeps the layout unchanged.
   bool DumpImageLayersData(
@@ -661,8 +745,8 @@ class VulkanApplication {
                                &device_);
   }
 
-  // Begins the given command buffer with the given command buffer usage flags
-  // and inheritance info. The default command buffer usage flag is
+  // Begins the given command buffer with the given command buffer usage
+  // flags and inheritance info. The default command buffer usage flag is
   // VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, and by default there is no
   // inheritance info.
   void BeginCommandBuffer(
@@ -679,9 +763,9 @@ class VulkanApplication {
     (*cmd_buf)->vkBeginCommandBuffer(*cmd_buf, &begin_info);
   }
 
-  // Ends the given command buffer and submits the command buffer to the given
-  // queue with the given wait semaphores, signal semaphores and fences. Returns
-  // the VkResult of the queue submit operation.
+  // Ends the given command buffer and submits the command buffer to the
+  // given queue with the given wait semaphores, signal semaphores and
+  // fences. Returns the VkResult of the queue submit operation.
   VkResult EndAndSubmitCommandBuffer(
       VkCommandBuffer* cmd_buf, VkQueue* queue,
       std::initializer_list<::VkSemaphore> wait_semaphores,
@@ -712,8 +796,8 @@ class VulkanApplication {
     return r;
   }
 
-  // Ends the given command buffer and submits the command buffer to the given
-  // queue and then wait for the queue idle.
+  // Ends the given command buffer and submits the command buffer to the
+  // given queue and then wait for the queue idle.
   VkResult EndAndSubmitCommandBufferAndWaitForQueueIdle(
       VkCommandBuffer* cmd_buf, VkQueue* queue) {
     VkResult r = EndAndSubmitCommandBuffer(cmd_buf, queue, {}, {}, {},
@@ -727,8 +811,8 @@ class VulkanApplication {
   // Returns the Graphics and Compute queue for this application.
   VkQueue& render_queue() { return *render_queue_; }
 
-  // Returns the Present queue for this application. Note: It may be the same
-  // as the render queue.
+  // Returns the Present queue for this application. Note: It may be the
+  // same as the render queue.
   VkQueue& present_queue() { return *present_queue_; }
 
   // Returns the async compute queue for this application.
@@ -736,8 +820,8 @@ class VulkanApplication {
   // or the async compute queue could not be created, returns nullptr.
   VkQueue* async_compute_queue() { return async_compute_queue_concrete_.get(); }
 
-  // Returns the Sparse binding queue. Note: It may be the same as the render
-  // queue, present queue or, if applicable, the compute queue.
+  // Returns the Sparse binding queue. Note: It may be the same as the
+  // render queue, present queue or, if applicable, the compute queue.
   VkQueue& sparse_binding_queue() { return *sparse_binding_queue_; }
 
   // Returns the device that was created for this application.
@@ -875,8 +959,8 @@ class VulkanApplication {
   }
 
   // Creates and returns a compute pipeline a shader module created from the
-  // given shader module create info and shader stage created with the shader
-  // model and the given shader entry point.
+  // given shader module create info and shader stage created with the
+  // shader model and the given shader entry point.
   VulkanComputePipeline CreateComputePipeline(
       PipelineLayout* layout,
       const VkShaderModuleCreateInfo& shader_module_create_info,
