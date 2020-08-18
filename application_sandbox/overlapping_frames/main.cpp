@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
 #include <memory>
 #include <utility>
 
@@ -20,8 +21,8 @@
 #include "support/containers/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_core.h"
-#include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/helper_functions.h"
+#include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
 #include "vulkan_wrapper/command_buffer_wrapper.h"
 #include "vulkan_wrapper/descriptor_set_wrapper.h"
@@ -78,6 +79,10 @@ struct FrameData {
 
     // Descriptor Sets
     containers::unique_ptr<vulkan::DescriptorSet> descriptorSet;
+};
+
+struct GeometryPushConstantData {
+  float time;
 };
 
 namespace gBuffer {
@@ -152,33 +157,33 @@ vulkan::VkRenderPass buildRenderPass(
 }
 
 vulkan::VulkanGraphicsPipeline buildTrianglePipeline(
-    vulkan::VulkanApplication *app,
-    vulkan::VkRenderPass* render_pass) {
-    // Build Triangle Pipeline
-    vulkan::PipelineLayout pipeline_layout(app->CreatePipelineLayout({{}}));
-    vulkan::VulkanGraphicsPipeline pipeline = app->CreateGraphicsPipeline(&pipeline_layout, render_pass, 0);
+    vulkan::VulkanApplication* app, vulkan::VkRenderPass* render_pass,
+    vulkan::PipelineLayout* pipeline_layout) {
+  // Build Triangle Pipeline
+  vulkan::VulkanGraphicsPipeline pipeline =
+      app->CreateGraphicsPipeline(pipeline_layout, render_pass, 0);
 
-    pipeline.AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main", gBuffer::vert);
-    pipeline.AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main", gBuffer::frag);
+  pipeline.AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main", gBuffer::vert);
+  pipeline.AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main", gBuffer::frag);
 
-    pipeline.SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    pipeline.SetScissor({
-        {0, 0},                                                 // offset
-        {app->swapchain().width(), app->swapchain().height()}   // extent
-    });
-    pipeline.SetViewport({
-        0.0f,                                           // x
-        0.0f,                                           // y
-        static_cast<float>(app->swapchain().width()),   // width
-        static_cast<float>(app->swapchain().height()),  // height
-        0.0f,                                           // minDepth
-        1.0f                                            // maxDepth
-    });
-    pipeline.SetSamples(VK_SAMPLE_COUNT_1_BIT);
-    pipeline.AddAttachment();
-    pipeline.Commit();
+  pipeline.SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+  pipeline.SetScissor({
+      {0, 0},                                                // offset
+      {app->swapchain().width(), app->swapchain().height()}  // extent
+  });
+  pipeline.SetViewport({
+      0.0f,                                           // x
+      0.0f,                                           // y
+      static_cast<float>(app->swapchain().width()),   // width
+      static_cast<float>(app->swapchain().height()),  // height
+      0.0f,                                           // minDepth
+      1.0f                                            // maxDepth
+  });
+  pipeline.SetSamples(VK_SAMPLE_COUNT_1_BIT);
+  pipeline.AddAttachment();
+  pipeline.Commit();
 
-    return pipeline;
+  return pipeline;
 }
 
 vulkan::VulkanGraphicsPipeline buildPostPipeline(
@@ -409,7 +414,15 @@ int main_entry(const entry::EntryData* data) {
         VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     );
-    auto g_pipeline = buildTrianglePipeline(&app, &g_render_pass);
+
+    VkPushConstantRange range;
+    range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    range.offset = 0;
+    range.size = (uint32_t)sizeof(GeometryPushConstantData);
+
+    auto g_pipeline_layout = app.CreatePipelineLayout({{{}}}, {range});
+    auto g_pipeline =
+        buildTrianglePipeline(&app, &g_render_pass, &g_pipeline_layout);
     auto g_image_views = buildSamplerImageViews(&app, sampler_images, data);
     auto g_framebuffers = buildFramebuffers(
         &app,
@@ -480,6 +493,10 @@ int main_entry(const entry::EntryData* data) {
     uint32_t current_frame = 0;
     uint32_t next_frame = 1;
     uint32_t image_index;
+    std::chrono::steady_clock::time_point start_time_point =
+        std::chrono::steady_clock::now();
+    float triangle_speed = 0.008333333f;
+    GeometryPushConstantData g_push_constant_data{0.0f};
 
     // First Geometry RP
     app.device()->vkResetFences(
@@ -505,6 +522,9 @@ int main_entry(const entry::EntryData* data) {
 
     ref_buf->vkCmdBeginRenderPass(ref_buf, &g_pass_begin, VK_SUBPASS_CONTENTS_INLINE);
     ref_buf->vkCmdBindPipeline(ref_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, g_pipeline);
+    ref_buf->vkCmdPushConstants(
+        ref_buf, g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+        sizeof(GeometryPushConstantData), &g_push_constant_data);
     ref_buf->vkCmdDraw(ref_buf, 3, 1, 0, 0);
     ref_buf->vkCmdEndRenderPass(ref_buf);
     LOG_ASSERT(==, data->logger(), VK_SUCCESS,
@@ -555,6 +575,16 @@ int main_entry(const entry::EntryData* data) {
             &clear_color
         };
 
+        // Update Push Constants
+        std::chrono::steady_clock::time_point current_time_point =
+            std::chrono::steady_clock::now();
+        float time_lapse =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                current_time_point - start_time_point)
+                .count() /
+            1000.0;
+        g_push_constant_data.time = triangle_speed * time_lapse;
+
         auto& geometry_buf = frameData[next_frame].gCommandBuffer;
         auto& geo_ref = *geometry_buf;
 
@@ -562,6 +592,9 @@ int main_entry(const entry::EntryData* data) {
 
         geo_ref->vkCmdBeginRenderPass(geo_ref, &g_pass_begin, VK_SUBPASS_CONTENTS_INLINE);
         geo_ref->vkCmdBindPipeline(geo_ref, VK_PIPELINE_BIND_POINT_GRAPHICS, g_pipeline);
+        geo_ref->vkCmdPushConstants(
+            geo_ref, g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+            sizeof(GeometryPushConstantData), &g_push_constant_data);
         geo_ref->vkCmdDraw(geo_ref, 3, 1, 0, 0);
         geo_ref->vkCmdEndRenderPass(geo_ref);
         LOG_ASSERT(==, data->logger(), VK_SUCCESS,
