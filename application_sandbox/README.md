@@ -15,6 +15,7 @@ output that demonstrates the feature.
 [clear_attachments](clear_attachments/README.md)
 [clear_colorimage](clear_colorimage/README.md)
 [clear_depthimage](clear_depthimage/README.md)
+[conditional_rendering](conditional_rendering/README.md)
 [conservative_rasterization](conservative_rasterization/README.md)
 [copy_image_2d3d](copy_image_2d3d/README.md)
 [copy_image_buffer](copy_image_buffer/README.md)
