@@ -184,6 +184,8 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginRenderPass),
         CONSTRUCT_LAZY_FUNCTION(vkCmdEndRenderPass),
         CONSTRUCT_LAZY_FUNCTION(vkCmdNextSubpass),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdBeginConditionalRenderingEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdEndConditionalRenderingEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginTransformFeedbackEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdEndTransformFeedbackEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBindPipeline),
@@ -246,6 +248,8 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdBeginRenderPass);
   LAZY_FUNCTION(vkCmdEndRenderPass);
   LAZY_FUNCTION(vkCmdNextSubpass);
+  LAZY_FUNCTION(vkCmdBeginConditionalRenderingEXT);
+  LAZY_FUNCTION(vkCmdEndConditionalRenderingEXT);
   LAZY_FUNCTION(vkCmdBeginTransformFeedbackEXT);
   LAZY_FUNCTION(vkCmdEndTransformFeedbackEXT);
   LAZY_FUNCTION(vkCmdBindPipeline);
