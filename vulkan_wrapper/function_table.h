@@ -371,6 +371,7 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkGetImageSparseMemoryRequirements),
         CONSTRUCT_LAZY_FUNCTION(vkGetImageMemoryRequirements2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetImageSubresourceLayout),
+        CONSTRUCT_LAZY_FUNCTION(vkGetMemoryHostPointerPropertiesEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCreateImageView),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyImageView),
         CONSTRUCT_LAZY_FUNCTION(vkCreateRenderPass),
@@ -505,6 +506,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkGetImageSparseMemoryRequirements);
   LAZY_FUNCTION(vkGetImageMemoryRequirements2KHR);
   LAZY_FUNCTION(vkGetImageSubresourceLayout);
+  LAZY_FUNCTION(vkGetMemoryHostPointerPropertiesEXT);
   LAZY_FUNCTION(vkCreateImageView);
   LAZY_FUNCTION(vkDestroyImageView);
   LAZY_FUNCTION(vkCreateRenderPass);
