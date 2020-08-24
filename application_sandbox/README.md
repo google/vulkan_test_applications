@@ -30,6 +30,7 @@ output that demonstrates the feature.
 [draw_indexed_indirect_count](draw_indexed_indirect_count/README.md)
 [dummy](dummy/README.md)
 [execute_commands](execute_commands/README.md)
+[external_memory_host](external_memory_host/README.md)
 [fence_test](fence_test/README.md)
 [fill_buffer](fill_buffer/README.md)
 [khr_image_format_list](khr_image_format_list/README.md)
