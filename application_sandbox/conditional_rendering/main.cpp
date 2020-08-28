@@ -344,11 +344,11 @@ class ConditionalRenderingSample
 
     // Two colorful cubes with a blue background
     VkConditionalRenderingBeginInfoEXT conditional_begin1 = {
-        VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT,
-        nullptr,
-        conditional_data_->get_buffer(),
-        conditional_data_->get_offset_for_frame(frame_index),
-        0,
+        VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT,  // sType
+        nullptr,                                                 // pNext
+        conditional_data_->get_buffer(),                         // buffer
+        conditional_data_->get_offset_for_frame(frame_index),    // offset
+        0,                                                       // flags
     };
 
     // Single black cube with a pink background
@@ -451,15 +451,20 @@ class ConditionalRenderingSample
 
     conditional_data_->data().condition =
         (frames_since_last_notify_ % 120) < 60;
-    dispatch_data_->data().value += 1.0;
+    // Reset alpha value to 0.
+    dispatch_data_->data().value = 0;
   }
+
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       ConditionalRenderingFrameData* frame_data) override {
     // Update our uniform buffers.
     camera_data_->UpdateBuffer(queue, frame_index);
     model_data_->UpdateBuffer(queue, frame_index);
     conditional_data_->UpdateBuffer(queue, frame_index);
-    dispatch_data_->UpdateBuffer(queue, frame_index);
+    // Force update for the compute shader buffer, since it is
+    // updated by the GPU.
+    bool forceUpdate = true;
+    dispatch_data_->UpdateBuffer(queue, frame_index, 0, forceUpdate);
 
     VkSubmitInfo init_submit_info{
         VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
