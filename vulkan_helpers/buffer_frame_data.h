@@ -126,6 +126,10 @@ class BufferFrameData {
 
       barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
       barrier.dstAccessMask = VK_ACCESS_UNIFORM_READ_BIT;
+      if ((usage & VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT) != 0) {
+        barrier.dstAccessMask |= VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT;
+      }
+      barrier.buffer = *buffer_;
       update_commands_.back()->vkCmdPipelineBarrier(
           update_commands_.back(), VK_PIPELINE_STAGE_TRANSFER_BIT,
           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 1, &barrier, 0,
