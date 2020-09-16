@@ -48,6 +48,7 @@ class InstanceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCreateDevice),
         CONSTRUCT_LAZY_FUNCTION(vkEnumerateDeviceExtensionProperties),
         CONSTRUCT_LAZY_FUNCTION(vkEnumerateDeviceLayerProperties),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceFeatures),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceMemoryProperties),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceMemoryProperties2),
@@ -117,6 +118,7 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkCreateDevice);
   LAZY_FUNCTION(vkEnumerateDeviceExtensionProperties);
   LAZY_FUNCTION(vkEnumerateDeviceLayerProperties);
+  LAZY_FUNCTION(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT);
   LAZY_FUNCTION(vkGetPhysicalDeviceFeatures);
   LAZY_FUNCTION(vkGetPhysicalDeviceMemoryProperties);
   LAZY_FUNCTION(vkGetPhysicalDeviceMemoryProperties2);
@@ -364,6 +366,7 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCreateSwapchainKHR),
         CONSTRUCT_LAZY_FUNCTION(vkDestroySwapchainKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetSwapchainImagesKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetCalibratedTimestampsEXT),
         CONSTRUCT_LAZY_FUNCTION(vkGetImageMemoryRequirements),
         CONSTRUCT_LAZY_FUNCTION(vkGetImageSparseMemoryRequirements),
         CONSTRUCT_LAZY_FUNCTION(vkGetImageMemoryRequirements2KHR),
@@ -439,7 +442,8 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkResetQueryPoolEXT),
         CONSTRUCT_LAZY_FUNCTION(vkGetPipelineExecutablePropertiesKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPipelineExecutableStatisticsKHR),
-        CONSTRUCT_LAZY_FUNCTION(vkGetPipelineExecutableInternalRepresentationsKHR),
+        CONSTRUCT_LAZY_FUNCTION(
+            vkGetPipelineExecutableInternalRepresentationsKHR),
         CONSTRUCT_LAZY_FUNCTION(vkSetHdrMetadataEXT),
         CONSTRUCT_LAZY_FUNCTION(vkWaitSemaphoresKHR),
         CONSTRUCT_LAZY_FUNCTION(vkSignalSemaphoreKHR)
@@ -496,6 +500,7 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkCreateSwapchainKHR);
   LAZY_FUNCTION(vkDestroySwapchainKHR);
   LAZY_FUNCTION(vkGetSwapchainImagesKHR);
+  LAZY_FUNCTION(vkGetCalibratedTimestampsEXT);
   LAZY_FUNCTION(vkGetImageMemoryRequirements);
   LAZY_FUNCTION(vkGetImageSparseMemoryRequirements);
   LAZY_FUNCTION(vkGetImageMemoryRequirements2KHR);
