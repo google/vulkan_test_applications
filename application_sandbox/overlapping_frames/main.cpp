@@ -495,7 +495,7 @@ int main_entry(const entry::EntryData* data) {
     uint32_t image_index;
     std::chrono::steady_clock::time_point start_time_point =
         std::chrono::steady_clock::now();
-    float triangle_speed = 0.008333333f;
+    const float triangle_speed = 0.01f;
     GeometryPushConstantData g_push_constant_data{0.0f};
 
     // First Geometry RP
