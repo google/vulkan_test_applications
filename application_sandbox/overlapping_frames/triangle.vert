@@ -22,7 +22,7 @@ layout(push_constant) uniform PushConstant {
 
 layout(location = 0) out vec3 fragColor;
 
-float theta[3] = float[](2.4981, 0.6435, 4.71238898038);
+float theta[3] = float[](2.5, 0.6, 4.7);
 
 vec3 colors[3] = vec3[](
     vec3(1.0, 0.0, 0.0),
