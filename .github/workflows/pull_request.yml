@@ -1,0 +1,29 @@
+name: on_pr
+on: [pull_request]
+env:  
+  BUILD_TYPE: Release
+jobs:
+ build:
+  runs-on: ubuntu-18.04
+  steps:
+    - uses: actions/checkout@v2
+      with: 
+        submodules: 'recursive'
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+    - name: Setup External Tools
+      run: >
+        wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add - && 
+        sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.154-bionic.list https://packages.lunarg.com/vulkan/1.2.154/lunarg-vulkan-1.2.154-bionic.list &&
+        sudo apt update &&
+        sudo apt install vulkan-sdk &&
+        sudo apt install ninja-build &&
+        pip3 install pillow
+    - name: Configure
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake -GNinja $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DPYTHON_EXECUTABLE=/usr/bin/python3
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE
