@@ -266,11 +266,11 @@ VkQueue inline GetQueue(VkDevice* device, uint32_t queue_family_index,
 
 // Creates a default pipeline cache, it does not load anything from disk.
 VkPipelineCache CreateDefaultPipelineCache(VkDevice* device,
-    const entry::EntryData* entry_data);
+                                           const entry::EntryData* entry_data);
 
 // Writes the given pipeline cache to the given file.
 void WritePipelineCache(VkDevice* device, VkPipelineCache* cache,
-    const char* location);
+                        const char* location);
 
 // Creates a query pool with the given query pool create info from the given
 // device if the given device is valid. Otherwise returns a query pool with
@@ -303,8 +303,13 @@ uint32_t inline GetMemoryIndex(VkDevice* device, logging::Logger* log,
   }
   // If we couldn't find a device-local memory type, fall back to a non-device
   // local one
-  if (memory_index == properties.memoryTypeCount && (required_property_flags & VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
-      return GetMemoryIndex(device, log, required_index_bits, required_property_flags & ~VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  if (memory_index == properties.memoryTypeCount &&
+      (required_property_flags &
+       VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+    return GetMemoryIndex(
+        device, log, required_index_bits,
+        required_property_flags &
+            ~VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
   }
   LOG_ASSERT(!=, log, memory_index, properties.memoryTypeCount);
   return memory_index;
@@ -352,14 +357,15 @@ inline VkSemaphore CreateSemaphore(VkDevice* device) {
   return VkSemaphore(raw_semaphore, nullptr, device);
 }
 
-inline VkSemaphore CreateTimelineSemaphore(VkDevice* device, uint64_t initial_value) {
+inline VkSemaphore CreateTimelineSemaphore(VkDevice* device,
+                                           uint64_t initial_value) {
   ::VkSemaphore raw_semaphore = VK_NULL_HANDLE;
-  
+
   VkSemaphoreTypeCreateInfoKHR type_create_info = {
-      VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR, // sType
-      nullptr,                                          // pNext
-      VK_SEMAPHORE_TYPE_TIMELINE_KHR,                   // semaphoreType
-      initial_value,                                    // initialValue
+      VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,  // sType
+      nullptr,                                           // pNext
+      VK_SEMAPHORE_TYPE_TIMELINE_KHR,                    // semaphoreType
+      initial_value,                                     // initialValue
   };
 
   VkSemaphoreCreateInfo create_info = {

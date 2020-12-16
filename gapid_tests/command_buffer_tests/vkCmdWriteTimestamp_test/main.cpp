@@ -114,7 +114,7 @@ int main_entry(const entry::EntryData* data) {
             nullptr                           // pPreserveAttachments
         }},                                   // SubpassDescriptions
         {}                                    // SubpassDependencies
-        );
+    );
 
     // Create pipeline
     vulkan::PipelineLayout pipeline_layout(app.CreatePipelineLayout({{}}));
@@ -170,10 +170,11 @@ int main_entry(const entry::EntryData* data) {
         },
     };
     ::VkImageView raw_image_view;
-    LOG_ASSERT(==, data->logger(), app.device()->vkCreateImageView(
-                                  app.device(), &image_view_create_info,
-                                  nullptr, &raw_image_view),
-               VK_SUCCESS);
+    LOG_ASSERT(
+        ==, data->logger(),
+        app.device()->vkCreateImageView(app.device(), &image_view_create_info,
+                                        nullptr, &raw_image_view),
+        VK_SUCCESS);
     vulkan::VkImageView image_view(raw_image_view, nullptr, &app.device());
 
     // Create framebuffer
@@ -251,10 +252,10 @@ int main_entry(const entry::EntryData* data) {
           reinterpret_cast<void*>(time_stamps), sizeof(uint64_t),
           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
       data->logger()->LogInfo("    Vertex shader timestamp for vkCmdDraw: ",
-                         time_stamps[0]);
+                              time_stamps[0]);
       LOG_ASSERT(!=, data->logger(), 0, time_stamps[0]);
       data->logger()->LogInfo("    Fragment shader timestamp for vkCmdDraw: ",
-                         time_stamps[1]);
+                              time_stamps[1]);
       LOG_ASSERT(!=, data->logger(), 0, time_stamps[1]);
     }
 
@@ -304,11 +305,12 @@ int main_entry(const entry::EntryData* data) {
           device, query_pool, 0, 2, sizeof(time_stamps),
           reinterpret_cast<void*>(time_stamps), sizeof(uint64_t),
           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-      data->logger()->LogInfo("    Vertex shader timestamp for vkCmdDrawIndexed: ",
-                         time_stamps[0]);
+      data->logger()->LogInfo(
+          "    Vertex shader timestamp for vkCmdDrawIndexed: ", time_stamps[0]);
       LOG_ASSERT(!=, data->logger(), 0, time_stamps[0]);
-      data->logger()->LogInfo("    Fragment shader timestamp for vkCmdDrawIndexed: ",
-                         time_stamps[1]);
+      data->logger()->LogInfo(
+          "    Fragment shader timestamp for vkCmdDrawIndexed: ",
+          time_stamps[1]);
       LOG_ASSERT(!=, data->logger(), 0, time_stamps[1]);
     }
   }

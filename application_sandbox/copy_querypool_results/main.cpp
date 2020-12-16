@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -166,11 +166,11 @@ class CopyQueryPoolResultSample
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->allocator(),
-        app()->CreatePipelineLayout({{
-            torus_descriptor_set_layouts_[0], torus_descriptor_set_layouts_[1],
-            torus_descriptor_set_layouts_[2],
-        }}));
+        data_->allocator(), app()->CreatePipelineLayout({{
+                                torus_descriptor_set_layouts_[0],
+                                torus_descriptor_set_layouts_[1],
+                                torus_descriptor_set_layouts_[2],
+                            }}));
 
     VkAttachmentReference depth_attachment = {
         0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
@@ -218,9 +218,8 @@ class CopyQueryPoolResultSample
             ));
 
     torus_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     torus_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                torus_vertex_shader);
     torus_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -311,12 +310,11 @@ class CopyQueryPoolResultSample
 
     frame_data->torus_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->allocator(),
-            app()->AllocateDescriptorSet({
-                torus_descriptor_set_layouts_[0],
-                torus_descriptor_set_layouts_[1],
-                torus_descriptor_set_layouts_[2],
-            }));
+            data_->allocator(), app()->AllocateDescriptorSet({
+                                    torus_descriptor_set_layouts_[0],
+                                    torus_descriptor_set_layouts_[1],
+                                    torus_descriptor_set_layouts_[2],
+                                }));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -406,7 +404,8 @@ class CopyQueryPoolResultSample
     };
 
     // Reset the query for this frame in the query pool and then begin query.
-    LOG_ASSERT(<, data_->logger(), frame_index, query_pool_results_buf_->size());
+    LOG_ASSERT(<, data_->logger(), frame_index,
+               query_pool_results_buf_->size());
     cmdBuffer->vkCmdCopyQueryPoolResults(
         cmdBuffer, *query_pool_, static_cast<uint32_t>(frame_index),
         static_cast<uint32_t>(1), *query_pool_results_buf_,

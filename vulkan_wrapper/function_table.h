@@ -143,9 +143,9 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkDestroyDebugUtilsMessengerEXT);
   LAZY_FUNCTION(vkSubmitDebugUtilsMessageEXT);
   LAZY_FUNCTION(vkGetPhysicalDeviceDisplayProperties2KHR);
-	LAZY_FUNCTION(vkGetPhysicalDeviceDisplayPlaneProperties2KHR);
-	LAZY_FUNCTION(vkGetDisplayModeProperties2KHR);
-	LAZY_FUNCTION(vkGetDisplayPlaneCapabilities2KHR);
+  LAZY_FUNCTION(vkGetPhysicalDeviceDisplayPlaneProperties2KHR);
+  LAZY_FUNCTION(vkGetDisplayModeProperties2KHR);
+  LAZY_FUNCTION(vkGetDisplayPlaneCapabilities2KHR);
 #if defined __ANDROID__
   LAZY_FUNCTION(vkCreateAndroidSurfaceKHR);
 #elif defined __ggp__

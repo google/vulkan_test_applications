@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+#include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <thread>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "particle_data_shared.h"
 #include "support/containers/deque.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
@@ -20,15 +27,6 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
 #include "vulkan_helpers/vulkan_texture.h"
-
-#include "particle_data_shared.h"
-
-#include <chrono>
-
-#include <condition_variable>
-#include <functional>
-#include <mutex>
-#include <thread>
 
 const VkCommandBufferBeginInfo kBeginCommandBuffer = {
     VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // sType

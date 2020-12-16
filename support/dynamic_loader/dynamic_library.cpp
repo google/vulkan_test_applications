@@ -14,9 +14,10 @@
  */
 
 #include "support/dynamic_loader/dynamic_library.h"
-#include "support/containers/allocator.h"
 
 #include <string>
+
+#include "support/containers/allocator.h"
 #if defined _WIN32
 #include <windows.h>
 namespace dynamic_loader {
@@ -47,7 +48,7 @@ class InternalDynamicLibrary : public DynamicLibrary {
  private:
   HMODULE lib_;
 };
-}
+}  // namespace dynamic_loader
 #else
 #include <dlfcn.h>
 
@@ -69,7 +70,7 @@ class InternalDynamicLibrary : public DynamicLibrary {
     // in this library to be resolved by other calls to dlsym.
     lib_ = dlopen(lib_with_extension.c_str(), RTLD_LAZY);
 
-    if (!lib_) { // If we dont have a versioned .so use the default.
+    if (!lib_) {  // If we dont have a versioned .so use the default.
 #ifdef __APPLE__
       lib_with_extension = "lib" + nm + ".dylib";
 #else
@@ -93,7 +94,7 @@ class InternalDynamicLibrary : public DynamicLibrary {
  private:
   void* lib_;
 };
-}
+}  // namespace dynamic_loader
 #endif
 namespace dynamic_loader {
 containers::unique_ptr<DynamicLibrary> OpenLibrary(

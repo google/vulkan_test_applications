@@ -13,12 +13,11 @@
 // limitations under the License.
 
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "particle_data_shared.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
-
-#include "particle_data_shared.h"
 
 uint32_t simulation_shader[] =
 #include "particle_update.vert.spv"
@@ -41,7 +40,8 @@ VkPhysicalDeviceTransformFeedbackFeaturesEXT transform_feedback_feature{
 
 struct TransformFeedbackFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> draw_command_buffer_;
-  containers::unique_ptr<vulkan::VkCommandBuffer> transform_feedback_command_buffer_;
+  containers::unique_ptr<vulkan::VkCommandBuffer>
+      transform_feedback_command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> transform_feedback_framebuffer_;
   containers::unique_ptr<vulkan::DescriptorSet> particle_descriptor_set_;
@@ -57,8 +57,7 @@ class TransformFeedbackSample
             data->allocator(), data, 1, 512, 32, 1,
             sample_application::SampleOptions().AddDeviceExtensionStructure(
                 &transform_feedback_feature),
-            {0},
-            {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
+            {0}, {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
             {VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME}) {}
 
   void prepareTransformFeedbackPipeline() {
@@ -204,7 +203,7 @@ class TransformFeedbackSample
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
     // All of this is the fairly standard setup for rendering.
-	VkBufferCreateInfo transform_feedback_buffer_create_info = {
+    VkBufferCreateInfo transform_feedback_buffer_create_info = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // sType
         nullptr,                               // pNext
         0,                                     // flags
@@ -215,14 +214,14 @@ class TransformFeedbackSample
         VK_SHARING_MODE_EXCLUSIVE,
         0,
         nullptr};
-    transform_feedback_buffer_ = app()->CreateAndBindHostBuffer(
-        &transform_feedback_buffer_create_info);
+    transform_feedback_buffer_ =
+        app()->CreateAndBindHostBuffer(&transform_feedback_buffer_create_info);
 
     vertex_buffer_ = containers::make_unique<
         vulkan::BufferFrameData<float[3 * TOTAL_PARTICLES]>>(
         data_->allocator(), app(), 1, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-	float init_data[3 * TOTAL_PARTICLES];
+    float init_data[3 * TOTAL_PARTICLES];
 
     srand(static_cast<unsigned int>(time(0)));
     for (int i = 0; i < 3 * TOTAL_PARTICLES; ++i) {
@@ -267,7 +266,7 @@ class TransformFeedbackSample
         nullptr,                        // pWaitDstStageMask,
         0,                              // commandBufferCount
         nullptr,
-        0,                              // signalSemaphoreCount
+        0,  // signalSemaphoreCount
         &frame_data->render_semaphore_->get_raw_object()  // pSignalSemaphores
     };
 
@@ -308,17 +307,17 @@ class TransformFeedbackSample
     };
 
     ::VkFramebuffer raw_transform_feedback_framebuffer;
-    app()->device()->vkCreateFramebuffer(app()->device(), &transform_feedback_framebuffer_create_info, nullptr,
-                                         &raw_transform_feedback_framebuffer);
+    app()->device()->vkCreateFramebuffer(
+        app()->device(), &transform_feedback_framebuffer_create_info, nullptr,
+        &raw_transform_feedback_framebuffer);
     frame_data->transform_feedback_framebuffer_ =
         containers::make_unique<vulkan::VkFramebuffer>(
-        data_->allocator(),
-        vulkan::VkFramebuffer(raw_transform_feedback_framebuffer, nullptr,
-                              &app()->device()));
+            data_->allocator(),
+            vulkan::VkFramebuffer(raw_transform_feedback_framebuffer, nullptr,
+                                  &app()->device()));
   }
 
-  virtual void InitializationComplete() override {
-  }
+  virtual void InitializationComplete() override {}
 
   virtual void Update(float delta_time) override {
     aspect_buffer_->data().x =
@@ -329,32 +328,28 @@ class TransformFeedbackSample
 
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       TransformFeedbackFrameData* data) override {
-
     aspect_buffer_->UpdateBuffer(&app()->render_queue(), frame_index);
     vertex_buffer_->UpdateBuffer(&app()->render_queue(), 0);
 
     // Write that buffer into the descriptor sets.
-    VkDescriptorBufferInfo buffer_infos[1] = {
-        {
-            aspect_buffer_->get_buffer(),                       // buffer
-            aspect_buffer_->get_offset_for_frame(frame_index),  // offset
-            aspect_buffer_->size(),                             // range
-        }};
+    VkDescriptorBufferInfo buffer_infos[1] = {{
+        aspect_buffer_->get_buffer(),                       // buffer
+        aspect_buffer_->get_offset_for_frame(frame_index),  // offset
+        aspect_buffer_->size(),                             // range
+    }};
 
-    VkWriteDescriptorSet writes[1]{
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
-            nullptr,                                 // pNext
-            *data->particle_descriptor_set_,         // dstSet
-            0,                                       // dstbinding
-            0,                                       // dstArrayElement
-            1,                                       // descriptorCount
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       // descriptorType
-            nullptr,                                 // pImageInfo
-            &buffer_infos[0],                        // pBufferInfo
-            nullptr,                                 // pTexelBufferView
-        }
-    };
+    VkWriteDescriptorSet writes[1]{{
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
+        nullptr,                                 // pNext
+        *data->particle_descriptor_set_,         // dstSet
+        0,                                       // dstbinding
+        0,                                       // dstArrayElement
+        1,                                       // descriptorCount
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       // descriptorType
+        nullptr,                                 // pImageInfo
+        &buffer_infos[0],                        // pBufferInfo
+        nullptr,                                 // pTexelBufferView
+    }};
 
     app()->device()->vkUpdateDescriptorSets(app()->device(), 1, writes, 0,
                                             nullptr);
@@ -386,9 +381,9 @@ class TransformFeedbackSample
 
     transform_feedback_cmd_buffer->vkCmdBeginRenderPass(
         transform_feedback_cmd_buffer, &transform_feedback_pass_begin,
-                                    VK_SUBPASS_CONTENTS_INLINE);
+        VK_SUBPASS_CONTENTS_INLINE);
 
-	VkBuffer tf_buffer = (*transform_feedback_buffer_.get());
+    VkBuffer tf_buffer = (*transform_feedback_buffer_.get());
     VkDeviceSize offsets[1] = {0};
     transform_feedback_cmd_buffer->vkCmdBindTransformFeedbackBuffersEXT(
         transform_feedback_cmd_buffer, 0, 1, &tf_buffer, offsets, nullptr);
@@ -398,7 +393,7 @@ class TransformFeedbackSample
 
     transform_feedback_cmd_buffer->vkCmdBindPipeline(
         transform_feedback_cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                 *transform_feedback_pipeline_);
+        *transform_feedback_pipeline_);
 
     transform_feedback_cmd_buffer->vkCmdBindDescriptorSets(
         transform_feedback_cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,

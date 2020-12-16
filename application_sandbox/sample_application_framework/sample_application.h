@@ -15,12 +15,12 @@
 #ifndef SAMPLE_APPLICATION_FRAMEWORK_SAMPLE_APPLICATION_H_
 #define SAMPLE_APPLICATION_FRAMEWORK_SAMPLE_APPLICATION_H_
 
+#include <chrono>
+#include <cstddef>
+
 #include "support/entry/entry.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
-
-#include <chrono>
-#include <cstddef>
 
 namespace sample_application {
 
@@ -182,8 +182,7 @@ class Sample {
  public:
   Sample(containers::Allocator* allocator, const entry::EntryData* entry_data,
          uint32_t host_buffer_size_in_MB, uint32_t image_memory_size_in_MB,
-         uint32_t device_buffer_size_in_MB,
-         uint32_t coherent_buffer_size_in_MB,
+         uint32_t device_buffer_size_in_MB, uint32_t coherent_buffer_size_in_MB,
          const SampleOptions& options,
          const VkPhysicalDeviceFeatures& physical_device_features = {0},
          const std::initializer_list<const char*> instance_extensions = {},
@@ -226,12 +225,12 @@ class Sample {
     num_samples_ = options.enable_multisampling ? kVkMultiSampledSampleCount
                                                 : VK_SAMPLE_COUNT_1_BIT;
 
-    num_color_samples_ =
-        options.enable_mixed_multisampling ? VK_SAMPLE_COUNT_1_BIT
-                                           : num_samples_;
+    num_color_samples_ = options.enable_mixed_multisampling
+                             ? VK_SAMPLE_COUNT_1_BIT
+                             : num_samples_;
     num_depth_stencil_samples_ = options.enable_mixed_multisampling
-                                    ? kVkMultiSampledSampleCount
-                                    : num_samples_;
+                                     ? kVkMultiSampledSampleCount
+                                     : num_samples_;
     default_viewport_ = {0.0f,
                          0.0f,
                          static_cast<float>(application_.swapchain().width()),
@@ -254,7 +253,7 @@ class Sample {
 
     InitializeApplicationData(&initialization_command_buffer_,
                               swapchain_images_.size());
-	
+
     if (options_.enable_10bit_hdr) {
       VkHdrMetadataEXT hdr10_metadata{
           VK_STRUCTURE_TYPE_HDR_METADATA_EXT,
@@ -321,7 +320,9 @@ class Sample {
   // The number of color samples that will be used with mixed sampling
   VkSampleCountFlagBits num_color_samples() const { return num_color_samples_; }
   // The number of depth/stencil samples that will be used with mixed sampling
-  VkSampleCountFlagBits num_depth_stencil_samples() const { return num_depth_stencil_samples_; }
+  VkSampleCountFlagBits num_depth_stencil_samples() const {
+    return num_depth_stencil_samples_;
+  }
 
   vulkan::VulkanApplication* app() { return &application_; }
   const vulkan::VulkanApplication* app() const { return &application_; }
@@ -343,7 +344,7 @@ class Sample {
     average_frame_time_ =
         elapsed_time.count() * 0.05f + average_frame_time_ * 0.95f;
 
-	// Display Timing
+    // Display Timing
     VkRefreshCycleDurationGOOGLE rc_dur = {};
     static unsigned refresh_multiplier = 1;
     static uint32_t present_id = 0;
@@ -551,7 +552,7 @@ class Sample {
         &ptime,                       // pTimes
     };
 
-	if (options_.enable_display_timing) {
+    if (options_.enable_display_timing) {
       present_info.pNext = &present_time;
     }
 
@@ -714,9 +715,9 @@ class Sample {
     }
 
     view_create_info.image =
-		(options_.enable_multisampling && !options_.enable_mixed_multisampling)
-                                 ? *data->multisampled_target_
-                                 : data->swapchain_image_;
+        (options_.enable_multisampling && !options_.enable_mixed_multisampling)
+            ? *data->multisampled_target_
+            : data->swapchain_image_;
     view_create_info.format = options_.mutable_swapchain_format
                                   ? VK_FORMAT_B8G8R8A8_SRGB
                                   : render_target_format_;
@@ -753,7 +754,7 @@ class Sample {
          VK_QUEUE_FAMILY_IGNORED,                   // dstQueueFamilyIndex
          (options_.enable_multisampling && !options_.enable_mixed_multisampling)
              ? *data->multisampled_target_
-		     : data->swapchain_image_,  // image
+             : data->swapchain_image_,  // image
          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}}};
 
     (*initialization_buffer)
@@ -831,7 +832,7 @@ class Sample {
         dstQueueFamilyIndex,                       // dstQueueFamilyIndex
         (options_.enable_multisampling && !options_.enable_mixed_multisampling)
             ? *data->multisampled_target_
-		    : data->swapchain_image_,  // image
+            : data->swapchain_image_,  // image
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
 
     data->setup_command_buffer_ =

@@ -21,7 +21,6 @@
 
 #include "support/containers/unique_ptr.h"
 #include "support/log/log.h"
-
 #include "vulkan_helpers/vulkan_header_wrapper.h"
 #include "vulkan_wrapper/function_table.h"
 #include "vulkan_wrapper/instance_wrapper.h"

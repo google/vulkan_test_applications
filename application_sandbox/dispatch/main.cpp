@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -88,12 +88,11 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
     };
 
     render_pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->allocator(),
-        app()->CreatePipelineLayout({{
-            render_descriptor_set_layouts_[0],
-            render_descriptor_set_layouts_[1],
-            render_descriptor_set_layouts_[2],
-        }}));
+        data_->allocator(), app()->CreatePipelineLayout({{
+                                render_descriptor_set_layouts_[0],
+                                render_descriptor_set_layouts_[1],
+                                render_descriptor_set_layouts_[2],
+                            }}));
 
     VkAttachmentReference color_attachment = {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -219,12 +218,11 @@ class DispatchSample : public sample_application::Sample<CubeFrameData> {
 
     frame_data->render_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->allocator(),
-            app()->AllocateDescriptorSet({
-                render_descriptor_set_layouts_[0],
-                render_descriptor_set_layouts_[1],
-                render_descriptor_set_layouts_[2],
-            }));
+            data_->allocator(), app()->AllocateDescriptorSet({
+                                    render_descriptor_set_layouts_[0],
+                                    render_descriptor_set_layouts_[1],
+                                    render_descriptor_set_layouts_[2],
+                                }));
 
     // Allocate the descriptors for the compute pipeline
     frame_data->compute_descriptor_set_ =

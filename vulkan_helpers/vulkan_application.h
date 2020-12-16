@@ -170,7 +170,7 @@ class VulkanGraphicsPipeline {
     return depth_stencil_state_;
   }
 
-	VkPipelineCreateFlags& flags() { return flags_; }
+  VkPipelineCreateFlags& flags() { return flags_; }
 
   void Commit();
   operator ::VkPipeline() const { return pipeline_; }
@@ -255,8 +255,8 @@ class PipelineLayout {
 
     descriptor_set_layouts_.reserve(layouts.size());
     for (auto binding_list : layouts) {
-      descriptor_set_layouts_.emplace_back(
-          CreateDescriptorSetLayout(allocator, device, binding_list.bindings_, binding_list.flags_));
+      descriptor_set_layouts_.emplace_back(CreateDescriptorSetLayout(
+          allocator, device, binding_list.bindings_, binding_list.flags_));
       raw_layouts.push_back(descriptor_set_layouts_.back());
     }
 
@@ -722,8 +722,7 @@ class VulkanApplication {
   // Creates and returns a PipelineLayout from the given
   // DescriptorSetLayoutBindings
   PipelineLayout CreatePipelineLayout(
-      std::initializer_list<DescriptorSetLayoutBinding>
-          layouts,
+      std::initializer_list<DescriptorSetLayoutBinding> layouts,
       std::initializer_list<VkPushConstantRange> ranges = {}) {
     return PipelineLayout(allocator_, &device_, layouts, ranges);
   }

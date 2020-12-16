@@ -13,6 +13,11 @@
  * limitations under the License.
  */
 
+#include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <thread>
+
 #include "support/entry/entry.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/known_device_infos.h"
@@ -21,11 +26,6 @@
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
-
-#include <condition_variable>
-#include <functional>
-#include <mutex>
-#include <thread>
 
 namespace {
 // Records a vkCmdWaitEvents command without any memory barrier in the command

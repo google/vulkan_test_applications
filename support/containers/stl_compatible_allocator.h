@@ -16,9 +16,9 @@
 #ifndef SUPPORT_CONTAINERS_STL_COMPATIBLE_ALLOCATOR_H_
 #define SUPPORT_CONTAINERS_STL_COMPATIBLE_ALLOCATOR_H_
 
-#include "support/containers/allocator.h"
-
 #include <limits>
+
+#include "support/containers/allocator.h"
 
 namespace containers {
 

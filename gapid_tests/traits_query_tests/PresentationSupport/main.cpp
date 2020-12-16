@@ -51,11 +51,13 @@ int main_entry(const entry::EntryData* data) {
 #elif defined __ggp__
       break;
 #elif defined __linux__
-      data->logger()->LogInfo("API: vkGetPhysicalDeviceXcbPresentationSupportKHR");
+      data->logger()->LogInfo(
+          "API: vkGetPhysicalDeviceXcbPresentationSupportKHR");
       result = instance->vkGetPhysicalDeviceXcbPresentationSupportKHR(
           device, 0, data->native_connection(), data->native_window_handle());
 #elif defined _WIN32
-      data->logger()->LogInfo("API: vkGetPhysicalDeviceWin32PresentationSupportKHR");
+      data->logger()->LogInfo(
+          "API: vkGetPhysicalDeviceWin32PresentationSupportKHR");
       result =
           instance->vkGetPhysicalDeviceWin32PresentationSupportKHR(device, 0);
 #else

@@ -46,7 +46,7 @@ int main_entry(const entry::EntryData* data) {
     device->vkDestroyPipelineCache(device, cache, nullptr);
   }
 
-  { // Merge pipeline caches
+  {  // Merge pipeline caches
     VkPipelineCacheCreateInfo create_info{
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,  // sType
         nullptr,                                       // pNext
@@ -55,22 +55,21 @@ int main_entry(const entry::EntryData* data) {
         nullptr                                        // pInitialData
     };
     VkPipelineCache caches[3];
-    LOG_ASSERT(
-        ==, data->logger(),
-        device->vkCreatePipelineCache(device, &create_info, nullptr, &caches[0]),
-        VK_SUCCESS);
-    LOG_ASSERT(
-        ==, data->logger(),
-        device->vkCreatePipelineCache(device, &create_info, nullptr, &caches[1]),
-        VK_SUCCESS);
-    LOG_ASSERT(
-        ==, data->logger(),
-        device->vkCreatePipelineCache(device, &create_info, nullptr, &caches[2]),
-        VK_SUCCESS);
-    LOG_ASSERT(
-        ==, data->logger(),
-        device->vkMergePipelineCaches(device, caches[0], 2, &caches[1]),
-        VK_SUCCESS);
+    LOG_ASSERT(==, data->logger(),
+               device->vkCreatePipelineCache(device, &create_info, nullptr,
+                                             &caches[0]),
+               VK_SUCCESS);
+    LOG_ASSERT(==, data->logger(),
+               device->vkCreatePipelineCache(device, &create_info, nullptr,
+                                             &caches[1]),
+               VK_SUCCESS);
+    LOG_ASSERT(==, data->logger(),
+               device->vkCreatePipelineCache(device, &create_info, nullptr,
+                                             &caches[2]),
+               VK_SUCCESS);
+    LOG_ASSERT(==, data->logger(),
+               device->vkMergePipelineCaches(device, caches[0], 2, &caches[1]),
+               VK_SUCCESS);
     device->vkDestroyPipelineCache(device, caches[0], nullptr);
     device->vkDestroyPipelineCache(device, caches[1], nullptr);
     device->vkDestroyPipelineCache(device, caches[2], nullptr);

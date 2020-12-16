@@ -95,7 +95,7 @@ int main_entry(const entry::EntryData* data) {
             nullptr                           // pPreserveAttachments
         }},                                   // SubpassDescriptions
         {}                                    // SubpassDependencies
-        );
+    );
 
     vulkan::VkShaderModule vertex_shader_module =
         app.CreateShaderModule(vertex_shader);

@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -218,9 +218,8 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
 
     depth_read_pipeline_layout_ =
         containers::make_unique<vulkan::PipelineLayout>(
-            data_->allocator(),
-            app()->CreatePipelineLayout(
-                {{depth_read_pipeline_layout_bindings_}}));
+            data_->allocator(), app()->CreatePipelineLayout(
+                                    {{depth_read_pipeline_layout_bindings_}}));
 
     depth_read_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
@@ -303,9 +302,8 @@ class DepthReadbackSample : public sample_application::Sample<DepthFrameData> {
 
     frame_data->read_depth_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->allocator(),
-            app()->AllocateDescriptorSet(
-                {depth_read_pipeline_layout_bindings_}));
+            data_->allocator(), app()->AllocateDescriptorSet(
+                                    {depth_read_pipeline_layout_bindings_}));
     VkDescriptorImageInfo image_info = {
         VK_NULL_HANDLE,                                  // sampler
         depth_view(frame_data),                          // imageView

@@ -66,7 +66,7 @@ int main_entry(const entry::EntryData* data) {
             nullptr                           // pPreserveAttachments
         }},                                   // SubpassDescriptions
         {}                                    // SubpassDependencies
-        );
+    );
 
     // Create shader modules.
 
@@ -223,10 +223,11 @@ int main_entry(const entry::EntryData* data) {
     };
 
     VkPipeline raw_pipeline;
-    LOG_EXPECT(==, data->logger(), device->vkCreateGraphicsPipelines(
-                                  device, app.pipeline_cache(), 1, &create_info,
-                                  nullptr, &raw_pipeline),
-               VK_SUCCESS);
+    LOG_EXPECT(
+        ==, data->logger(),
+        device->vkCreateGraphicsPipelines(device, app.pipeline_cache(), 1,
+                                          &create_info, nullptr, &raw_pipeline),
+        VK_SUCCESS);
     vulkan::VkPipeline pipeline(raw_pipeline, nullptr, &device);
 
     // Create image view.
@@ -253,10 +254,11 @@ int main_entry(const entry::EntryData* data) {
         },
     };
     ::VkImageView raw_image_view;
-    LOG_EXPECT(==, data->logger(), app.device()->vkCreateImageView(
-                                  app.device(), &image_view_create_info,
-                                  nullptr, &raw_image_view),
-               VK_SUCCESS);
+    LOG_EXPECT(
+        ==, data->logger(),
+        app.device()->vkCreateImageView(app.device(), &image_view_create_info,
+                                        nullptr, &raw_image_view),
+        VK_SUCCESS);
     vulkan::VkImageView image_view(raw_image_view, nullptr, &app.device());
 
     // Create framebuffer

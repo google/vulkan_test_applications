@@ -155,17 +155,39 @@ struct CommandLineArgs {
 void print_usage(const char** argv) {
   std::cerr << "Usage: " << argv[0] << " [OPTIONS]" << std::endl;
   std::cerr << "Arguments: " << std::endl;
-  std::cerr << "  -w=<width>                    Set the integer width of the application in pixels" << std::endl;
-  std::cerr << "  -h=<height>                   Set the integer height of the application in pixels" << std::endl;
-  std::cerr << "  -fixed                        Simulates the application with a fixed timestep" << std::endl;
-  std::cerr << "  -separate-present             Prefers a separate present queue" << std::endl;
-  std::cerr << "  -output-frame=<frame>         Dumps the given frame to a file an exits" << std::endl;
-  std::cerr << "  -load-pipeline-cache=<file>   Loads and uses a pipeline cache from the given location" << std::endl;
-  std::cerr << "  -write-pipeline-cache=<file>  Writes the applicaitons pipeline cache to the given location" << std::endl;
-  std::cerr << "  -shader-compiler=<string>     Sets the shader compiler to the given one, if the sample could use multiple" << std::endl;
-  std::cerr << "  -validation                   Turns on the validation layers if available" << std::endl;
-  std::cerr << "  -output-file                  Sets the output file for the output-frame argument" << std::endl;
-  std::cerr << "  -wait-for-debugger            Forces the application to pause on starup until a debugger is attached" << std::endl;
+  std::cerr << "  -w=<width>                    Set the integer width of the "
+               "application in pixels"
+            << std::endl;
+  std::cerr << "  -h=<height>                   Set the integer height of the "
+               "application in pixels"
+            << std::endl;
+  std::cerr << "  -fixed                        Simulates the application with "
+               "a fixed timestep"
+            << std::endl;
+  std::cerr
+      << "  -separate-present             Prefers a separate present queue"
+      << std::endl;
+  std::cerr << "  -output-frame=<frame>         Dumps the given frame to a "
+               "file an exits"
+            << std::endl;
+  std::cerr << "  -load-pipeline-cache=<file>   Loads and uses a pipeline "
+               "cache from the given location"
+            << std::endl;
+  std::cerr << "  -write-pipeline-cache=<file>  Writes the applicaitons "
+               "pipeline cache to the given location"
+            << std::endl;
+  std::cerr << "  -shader-compiler=<string>     Sets the shader compiler to "
+               "the given one, if the sample could use multiple"
+            << std::endl;
+  std::cerr << "  -validation                   Turns on the validation layers "
+               "if available"
+            << std::endl;
+  std::cerr << "  -output-file                  Sets the output file for the "
+               "output-frame argument"
+            << std::endl;
+  std::cerr << "  -wait-for-debugger            Forces the application to "
+               "pause on starup until a debugger is attached"
+            << std::endl;
   std::cerr << "  -help                         Print this help" << std::endl;
 }
 

@@ -59,6 +59,6 @@ containers::vector<::VkCommandBufferLevel> AllVkCommandBufferLevels(
 // vector allocated from the given allocator.
 containers::vector<::VkCommandBufferResetFlags>
 AllVkCommandBufferResetFlagCombinations(containers::Allocator* allocator);
-}
+}  // namespace vulkan
 
 #endif  //  VULKAN_HELPERS_STRUCTS_H_

@@ -97,9 +97,9 @@ class DepthClipEnableSample
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
         data_->allocator(),
-        app()->CreatePipelineLayout(
-            {{prism_descriptor_set_layouts_[0], prism_descriptor_set_layouts_[1],
-              prism_descriptor_set_layouts_[2]}}));
+        app()->CreatePipelineLayout({{prism_descriptor_set_layouts_[0],
+                                      prism_descriptor_set_layouts_[1],
+                                      prism_descriptor_set_layouts_[2]}}));
 
     VkAttachmentReference color_attachment = {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -331,7 +331,7 @@ class DepthClipEnableSample
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
             nullptr,                                 // pNext
-            *frame_data->prism_red_descriptor_set_,   // dstSet
+            *frame_data->prism_red_descriptor_set_,  // dstSet
             0,                                       // dstbinding
             0,                                       // dstArrayElement
             2,                                       // descriptorCount
@@ -341,9 +341,21 @@ class DepthClipEnableSample
             nullptr,                                 // pTexelBufferView
         },
         {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    // sType
+            nullptr,                                   // pNext
+            *frame_data->prism_green_descriptor_set_,  // dstSet
+            0,                                         // dstbinding
+            0,                                         // dstArrayElement
+            2,                                         // descriptorCount
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         // descriptorType
+            nullptr,                                   // pImageInfo
+            buffer_infos_common,                       // pBufferInfo
+            nullptr,                                   // pTexelBufferView
+        },
+        {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,   // sType
             nullptr,                                  // pNext
-            *frame_data->prism_green_descriptor_set_,  // dstSet
+            *frame_data->prism_blue_descriptor_set_,  // dstSet
             0,                                        // dstbinding
             0,                                        // dstArrayElement
             2,                                        // descriptorCount
@@ -351,18 +363,6 @@ class DepthClipEnableSample
             nullptr,                                  // pImageInfo
             buffer_infos_common,                      // pBufferInfo
             nullptr,                                  // pTexelBufferView
-        },
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
-            nullptr,                                 // pNext
-            *frame_data->prism_blue_descriptor_set_,  // dstSet
-            0,                                       // dstbinding
-            0,                                       // dstArrayElement
-            2,                                       // descriptorCount
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       // descriptorType
-            nullptr,                                 // pImageInfo
-            buffer_infos_common,                     // pBufferInfo
-            nullptr,                                 // pTexelBufferView
         }};
 
     app()->device()->vkUpdateDescriptorSets(app()->device(), 3, writes_vertex,
@@ -372,7 +372,7 @@ class DepthClipEnableSample
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
             nullptr,                                 // pNext
-            *frame_data->prism_red_descriptor_set_,   // dstSet
+            *frame_data->prism_red_descriptor_set_,  // dstSet
             2,                                       // dstbinding
             0,                                       // dstArrayElement
             1,                                       // descriptorCount
@@ -382,28 +382,28 @@ class DepthClipEnableSample
             nullptr,                                 // pTexelBufferView
         },
         {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    // sType
+            nullptr,                                   // pNext
+            *frame_data->prism_green_descriptor_set_,  // dstSet
+            2,                                         // dstbinding
+            0,                                         // dstArrayElement
+            1,                                         // descriptorCount
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         // descriptorType
+            nullptr,                                   // pImageInfo
+            buffer_infos_green,                        // pBufferInfo
+            nullptr,                                   // pTexelBufferView
+        },
+        {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,   // sType
             nullptr,                                  // pNext
-            *frame_data->prism_green_descriptor_set_,  // dstSet
+            *frame_data->prism_blue_descriptor_set_,  // dstSet
             2,                                        // dstbinding
             0,                                        // dstArrayElement
             1,                                        // descriptorCount
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,        // descriptorType
             nullptr,                                  // pImageInfo
-            buffer_infos_green,                       // pBufferInfo
+            buffer_infos_blue,                        // pBufferInfo
             nullptr,                                  // pTexelBufferView
-        },
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
-            nullptr,                                 // pNext
-            *frame_data->prism_blue_descriptor_set_,  // dstSet
-            2,                                       // dstbinding
-            0,                                       // dstArrayElement
-            1,                                       // descriptorCount
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       // descriptorType
-            nullptr,                                 // pImageInfo
-            buffer_infos_blue,                       // pBufferInfo
-            nullptr,                                 // pTexelBufferView
         }};
 
     app()->device()->vkUpdateDescriptorSets(app()->device(), 3, writes_fragment,

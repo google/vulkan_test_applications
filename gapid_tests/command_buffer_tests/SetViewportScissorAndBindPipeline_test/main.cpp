@@ -94,7 +94,7 @@ int main_entry(const entry::EntryData* data) {
             nullptr                           // pPreserveAttachments
         }},                                   // SubpassDescriptions
         {}                                    // SubpassDependencies
-        );
+    );
 
     vulkan::VulkanGraphicsPipeline pipeline =
         app.CreateGraphicsPipeline(&pipeline_layout, &render_pass, 0);

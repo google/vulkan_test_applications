@@ -59,6 +59,6 @@ class VkSwapchainKHR : public VkSubObject<SwapchainTraits, DeviceTraits> {
   uint32_t height_;
   uint32_t depth_;
 };
-}
+}  // namespace vulkan
 
 #endif  //  VULKAN_WRAPPER_SWAPCHAIN_H

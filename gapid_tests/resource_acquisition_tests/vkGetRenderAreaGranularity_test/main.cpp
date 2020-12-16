@@ -90,7 +90,7 @@ vulkan::VkRenderPass CreateRenderpass(const entry::EntryData* data,
           nullptr                           // pPreserveAttachments
       }},                                   // SubpassDescriptions
       {}                                    // SubpassDependencies
-      );
+  );
   return render_pass;
 }
 

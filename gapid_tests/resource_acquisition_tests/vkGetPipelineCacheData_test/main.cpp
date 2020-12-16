@@ -139,7 +139,7 @@ int main_entry(const entry::EntryData* data) {
             nullptr                           // pPreserveAttachments
         }},                                   // SubpassDescriptions
         {}                                    // SubpassDependencies
-        );
+    );
 
     // Create shader modules
     vulkan::VkShaderModule vertex_shader_module =

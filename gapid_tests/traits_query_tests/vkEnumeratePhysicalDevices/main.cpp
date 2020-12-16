@@ -44,7 +44,8 @@ int main_entry(const entry::EntryData* data) {
              VK_SUCCESS);
 
   for (size_t i = 0; i < device_count; ++i) {
-    LOG_ASSERT(!=, data->logger(), physical_devices[i], VkPhysicalDevice(nullptr));
+    LOG_ASSERT(!=, data->logger(), physical_devices[i],
+               VkPhysicalDevice(nullptr));
   }
 
   device_count -= 1;

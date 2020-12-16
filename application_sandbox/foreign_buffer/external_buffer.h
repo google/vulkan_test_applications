@@ -54,8 +54,7 @@ class VkBufferExported {
 
     VkExportMemoryAllocateInfo export_allocate_info{
         VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO, nullptr,
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT
-    };
+        VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT};
 
     VkMemoryAllocateInfo allocate_info{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,  // sType
@@ -106,9 +105,7 @@ template <typename T>
 class VkBufferImported {
  public:
   VkBufferImported(vulkan::VkDevice& device, logging::Logger* log,
-                   size_t num_images,
-                   int fd
-                   )
+                   size_t num_images, int fd)
       : device_(device),
         log_(log),
         buffer_(VK_NULL_HANDLE, nullptr, &device),
@@ -119,8 +116,7 @@ class VkBufferImported {
 
     VkExternalMemoryBufferCreateInfo external_create_info{
         VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, nullptr,
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT
-    };
+        VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT};
 
     VkBufferCreateInfo create_info = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // sType

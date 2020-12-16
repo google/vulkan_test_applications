@@ -180,8 +180,7 @@ int main_entry(const entry::EntryData* data) {
     ::VkImageView raw_image_view;
     device->vkCreateImageView(device, &image_view_create_info, nullptr,
                               &raw_image_view);
-    vulkan::VkImageView image_view(raw_image_view, nullptr,
-                                         &device);
+    vulkan::VkImageView image_view(raw_image_view, nullptr, &device);
 
     const VkDescriptorImageInfo imginfo[3] = {
         // One image info for the first descriptor set

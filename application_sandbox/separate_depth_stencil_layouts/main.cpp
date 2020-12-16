@@ -140,11 +140,11 @@ class MixedSamplesSample
         nullptr                             // pImmutableSamplers
     };
     cube_descriptor_set_layout_bindings_[2] = {
-        2,														    // binding
-        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,					    // descriptorType
-        1,															// descriptorCount
+        2,                                    // binding
+        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,  // descriptorType
+        1,                                    // descriptorCount
         VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,  // stage
-        nullptr														// pImmutableSamplers
+        nullptr  // pImmutableSamplers
     };
 
     cube_pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
@@ -168,11 +168,11 @@ class MixedSamplesSample
         VK_IMAGE_ASPECT_COLOR_BIT                      // aspectMask
     };
     VkAttachmentReference2KHR stencil_attachment = {
-        VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR,      // sType
-        nullptr,                                           // pNext
-        1,                                                 // attachment
-        VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR,    // layout
-        VK_IMAGE_ASPECT_STENCIL_BIT                        // aspectMask
+        VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR,    // sType
+        nullptr,                                         // pNext
+        1,                                               // attachment
+        VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR,  // layout
+        VK_IMAGE_ASPECT_STENCIL_BIT                      // aspectMask
     };
     VkAttachmentReference2KHR depth_read_attachment = {
         VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR,  // sType
@@ -182,7 +182,7 @@ class MixedSamplesSample
         VK_IMAGE_ASPECT_DEPTH_BIT                      // aspectMask
     };
 
-	VkAttachmentDescription2KHR depth_stencil_attachment_description{
+    VkAttachmentDescription2KHR depth_stencil_attachment_description{
         VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR,    // sType
         nullptr,                                           // pNext
         0,                                                 // flags
@@ -203,29 +203,29 @@ class MixedSamplesSample
         num_color_samples(),                             // samples
         VK_ATTACHMENT_LOAD_OP_CLEAR,                     // loadOp
         VK_ATTACHMENT_STORE_OP_STORE,                    // storeOp
-        VK_ATTACHMENT_LOAD_OP_LOAD,						 // stencilLoadOp
+        VK_ATTACHMENT_LOAD_OP_LOAD,                      // stencilLoadOp
         VK_ATTACHMENT_STORE_OP_DONT_CARE,                // stencilStoreOp
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // initialLayout
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL         // finalLayout
     };
     VkAttachmentDescription2KHR stencil_attachment_description{
-        VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR,   // sType
-        nullptr,                                          // pNext
-        0,                                                // flags
-        kDepthStencilFormat,                              // format
-        num_depth_stencil_samples(),                      // samples
-        VK_ATTACHMENT_LOAD_OP_LOAD,                       // loadOp
-        VK_ATTACHMENT_STORE_OP_DONT_CARE,                 // storeOp
-        VK_ATTACHMENT_LOAD_OP_LOAD,                       // stencilLoadOp
-        VK_ATTACHMENT_STORE_OP_STORE,	                  // stencilStoreOp
-        VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR,   // initialLayout
-        VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR    // finalLayout
+        VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR,  // sType
+        nullptr,                                         // pNext
+        0,                                               // flags
+        kDepthStencilFormat,                             // format
+        num_depth_stencil_samples(),                     // samples
+        VK_ATTACHMENT_LOAD_OP_LOAD,                      // loadOp
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,                // storeOp
+        VK_ATTACHMENT_LOAD_OP_LOAD,                      // stencilLoadOp
+        VK_ATTACHMENT_STORE_OP_STORE,                    // stencilStoreOp
+        VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR,  // initialLayout
+        VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR   // finalLayout
     };
     VkAttachmentDescriptionStencilLayoutKHR stencil_layout{
         VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR,  // sType
         nullptr,                                                      // pNext
-        VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR,				  // stencilInitialLayout
-        VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR				  // stencilFinalLayout
+        VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR,  // stencilInitialLayout
+        VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR   // stencilFinalLayout
     };
     VkAttachmentDescription2KHR depth_read_attachment_description{
         VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR,  // sType
@@ -244,46 +244,46 @@ class MixedSamplesSample
     torus_render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
         data_->allocator(),
         app()->CreateRenderPass2(
-            {depth_stencil_attachment_description},			  // AttachmentDescriptions
+            {depth_stencil_attachment_description},  // AttachmentDescriptions
             {{
                 VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR,  // sType
                 nullptr,                                      // pNext
                 0,                                            // flags
-                VK_PIPELINE_BIND_POINT_GRAPHICS,			  // pipelineBindPoint
-                0,											  // viewMask
-                0,											  // inputAttachmentCount
-                nullptr,									  // pInputAttachments
-                0,											  // colorAttachmentCount
-                nullptr,									  // colorAttachment
-                nullptr,									  // pResolveAttachments
-                &depth_stencil_attachment,					  // pDepthStencilAttachment
-                0,                                			  // preserveAttachmentCount
-                nullptr                         			  // pPreserveAttachments
-            }},                                 			  // SubpassDescriptions
-            {}                                  			  // SubpassDependencies
+                VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
+                0,                                // viewMask
+                0,                                // inputAttachmentCount
+                nullptr,                          // pInputAttachments
+                0,                                // colorAttachmentCount
+                nullptr,                          // colorAttachment
+                nullptr,                          // pResolveAttachments
+                &depth_stencil_attachment,        // pDepthStencilAttachment
+                0,                                // preserveAttachmentCount
+                nullptr                           // pPreserveAttachments
+            }},                                   // SubpassDescriptions
+            {}                                    // SubpassDependencies
             ));
 
     cube_render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
         data_->allocator(),
         app()->CreateRenderPass2(
             {cube_color_attachment_description, stencil_attachment_description,
-             depth_read_attachment_description},			  // AttachmentDescriptions
+             depth_read_attachment_description},  // AttachmentDescriptions
             {{
                 VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR,  // sType
                 nullptr,                                      // pNext
                 0,                                            // flags
-                VK_PIPELINE_BIND_POINT_GRAPHICS,			  // pipelineBindPoint
-                0,											  // viewMask
-                1,											  // inputAttachmentCount
-                &depth_read_attachment,						  // pInputAttachments
-                1,											  // colorAttachmentCount
-                &color_attachment,							  // colorAttachment
-                nullptr,									  // pResolveAttachments
-                &stencil_attachment,						  // pDepthStencilAttachment
-                0,											  // preserveAttachmentCount
-                nullptr										  // pPreserveAttachments
-            }},												  // SubpassDescriptions
-            {}												  // SubpassDependencies
+                VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
+                0,                                // viewMask
+                1,                                // inputAttachmentCount
+                &depth_read_attachment,           // pInputAttachments
+                1,                                // colorAttachmentCount
+                &color_attachment,                // colorAttachment
+                nullptr,                          // pResolveAttachments
+                &stencil_attachment,              // pDepthStencilAttachment
+                0,                                // preserveAttachmentCount
+                nullptr                           // pPreserveAttachments
+            }},                                   // SubpassDescriptions
+            {}                                    // SubpassDependencies
             ));
 
     // Initialize torus shaders
@@ -369,20 +369,20 @@ class MixedSamplesSample
       size_t frame_index) override {
     // Initalize the depth stencil image and the image view.
     VkImageCreateInfo depth_stencil_image_create_info = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,      // sType
-        nullptr,								  // pNext
-        0,										  // flags
-        VK_IMAGE_TYPE_2D,						  // imageType
-        kDepthStencilFormat,					  // format
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  // sType
+        nullptr,                              // pNext
+        0,                                    // flags
+        VK_IMAGE_TYPE_2D,                     // imageType
+        kDepthStencilFormat,                  // format
         {
             app()->swapchain().width(),
             app()->swapchain().height(),
             app()->swapchain().depth(),
-        },										  // extent
-        1,										  // mipLevels
-        1,										  // arrayLayers
-        num_depth_stencil_samples(),			  // samples
-        VK_IMAGE_TILING_OPTIMAL,				  // tiling
+        },                            // extent
+        1,                            // mipLevels
+        1,                            // arrayLayers
+        num_depth_stencil_samples(),  // samples
+        VK_IMAGE_TILING_OPTIMAL,      // tiling
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
             VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,  // usage
         VK_SHARING_MODE_EXCLUSIVE,                // sharingMode
@@ -552,24 +552,24 @@ class MixedSamplesSample
         *frame_data->torus_framebuffer_,           // framebuffer
         {{0, 0},
          {app()->swapchain().width(),
-          app()->swapchain().height()}},		   // renderArea
-        2,										   // clearValueCount
-        clears									   // clears
+          app()->swapchain().height()}},  // renderArea
+        2,                                // clearValueCount
+        clears                            // clears
     };
 
     // Barrier before write to depth/stencil image
     VkImageMemoryBarrier barrier{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// sType
-        nullptr,											// pNext
-        0,													// srcAccessMask
-        0,													// dstAccessMask
-        VK_IMAGE_LAYOUT_UNDEFINED,							// oldLayout
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// newLayout
-        VK_QUEUE_FAMILY_IGNORED,							// srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,							// dstQueueFamilyIndex
-        *frame_data->depth_stencil_image_,					// image
-        {VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
-		 0, 1, 0, 1}};										// subresourceRange
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,            // sType
+        nullptr,                                           // pNext
+        0,                                                 // srcAccessMask
+        0,                                                 // dstAccessMask
+        VK_IMAGE_LAYOUT_UNDEFINED,                         // oldLayout
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,  // newLayout
+        VK_QUEUE_FAMILY_IGNORED,            // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,            // dstQueueFamilyIndex
+        *frame_data->depth_stencil_image_,  // image
+        {VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0,
+         1}};  // subresourceRange
 
     cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
                                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -600,10 +600,10 @@ class MixedSamplesSample
     barrier.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
     cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
                                     VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-									VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
+                                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
                                     nullptr, 0, nullptr, 1, &barrier);
 
-	barrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
     barrier.subresourceRange = {VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1};
     cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
@@ -648,15 +648,16 @@ class MixedSamplesSample
     model_data_->UpdateBuffer(queue, frame_index);
 
     VkSubmitInfo init_submit_info{
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,						   // sType
-        nullptr,											   // pNext
-        0,													   // waitSemaphoreCount
-        nullptr,											   // pWaitSemaphores
-        nullptr,											   // pWaitDstStageMask,
-        1,													   // commandBufferCount
-        &(frame_data->command_buffer_->get_command_buffer()),  // pCommandBuffers
-        0,													   // signalSemaphoreCount
-        nullptr												   // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
+        nullptr,                        // pNext
+        0,                              // waitSemaphoreCount
+        nullptr,                        // pWaitSemaphores
+        nullptr,                        // pWaitDstStageMask,
+        1,                              // commandBufferCount
+        &(frame_data->command_buffer_
+              ->get_command_buffer()),  // pCommandBuffers
+        0,                              // signalSemaphoreCount
+        nullptr                         // pSignalSemaphores
     };
 
     app()->render_queue()->vkQueueSubmit(app()->render_queue(), 1,

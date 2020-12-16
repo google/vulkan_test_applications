@@ -114,10 +114,11 @@ int main_entry(const entry::EntryData* data) {
     VkSubmitInfo submit{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0,      nullptr, nullptr, 1,
         &raw_primary_cmd_buf,          0,       nullptr};
-    LOG_ASSERT(==, data->logger(), app.render_queue()->vkQueueSubmit(
-                                  app.render_queue(), 1, &submit,
-                                  static_cast<VkFence>(VK_NULL_HANDLE)),
-               VK_SUCCESS);
+    LOG_ASSERT(
+        ==, data->logger(),
+        app.render_queue()->vkQueueSubmit(app.render_queue(), 1, &submit,
+                                          static_cast<VkFence>(VK_NULL_HANDLE)),
+        VK_SUCCESS);
     LOG_ASSERT(==, data->logger(),
                app.render_queue()->vkQueueWaitIdle(app.render_queue()),
                VK_SUCCESS);

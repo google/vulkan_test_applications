@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+
 #include "support/entry/entry.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/helper_functions.h"
@@ -21,8 +23,6 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
-
-#include <algorithm>
 
 uint32_t compute_shader[] =
 #include "double_numbers.comp.spv"
@@ -62,8 +62,7 @@ int main_entry(const entry::EntryData* data) {
       nullptr,                            // pImmutableSamplers
   };
   auto compute_descriptor_set = containers::make_unique<vulkan::DescriptorSet>(
-      data->allocator(),
-      app.AllocateDescriptorSet({in_binding, out_binding}));
+      data->allocator(), app.AllocateDescriptorSet({in_binding, out_binding}));
 
   const VkDescriptorBufferInfo buffer_infos[2] = {
       {*in_buffer, 0, VK_WHOLE_SIZE}, {*out_buffer, 0, VK_WHOLE_SIZE}};

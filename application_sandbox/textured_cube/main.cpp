@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
 #include "vulkan_helpers/vulkan_texture.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -143,9 +143,8 @@ class TexturedCubeSample
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               textured_cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -188,13 +187,14 @@ class TexturedCubeSample
         containers::make_unique<vulkan::VkCommandBuffer>(
             data_->allocator(), app()->GetCommandBuffer());
 
-    frame_data
-        ->cube_descriptor_set_ = containers::make_unique<vulkan::DescriptorSet>(
-        data_->allocator(),
-        app()->AllocateDescriptorSet({
-            cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
-            cube_descriptor_set_layouts_[2], cube_descriptor_set_layouts_[3],
-        }));
+    frame_data->cube_descriptor_set_ =
+        containers::make_unique<vulkan::DescriptorSet>(
+            data_->allocator(), app()->AllocateDescriptorSet({
+                                    cube_descriptor_set_layouts_[0],
+                                    cube_descriptor_set_layouts_[1],
+                                    cube_descriptor_set_layouts_[2],
+                                    cube_descriptor_set_layouts_[3],
+                                }));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {

@@ -56,7 +56,8 @@ int main_entry(const entry::EntryData* data) {
         VK_IMAGE_LAYOUT_UNDEFINED, static_cast<VkAccessFlags>(0u),
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
         &cmd_buf);
-    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf, &app.present_queue());
+    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf,
+                                                     &app.present_queue());
 
     VkCommandBufferBeginInfo info{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // sType
@@ -106,8 +107,8 @@ int main_entry(const entry::EntryData* data) {
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT,
         VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, static_cast<VkAccessFlags>(0u),
         &cmd_buf);
-    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf, &app.present_queue());
-
+    app.EndAndSubmitCommandBufferAndWaitForQueueIdle(&cmd_buf,
+                                                     &app.present_queue());
 
     // Call vkQueuePresentKHR()
     ::VkSwapchainKHR raw_swapchain = app.swapchain().get_raw_object();
@@ -121,8 +122,9 @@ int main_entry(const entry::EntryData* data) {
         &image_index,                        // pImageIndices
         nullptr,                             // pResults
     };
-    LOG_ASSERT(==, data->logger(), app.present_queue()->vkQueuePresentKHR(
-                                  app.present_queue(), &present_info),
+    LOG_ASSERT(==, data->logger(),
+               app.present_queue()->vkQueuePresentKHR(app.present_queue(),
+                                                      &present_info),
                VK_SUCCESS);
   }
 

@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <utility>
+
 #include "support/entry/entry.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/helper_functions.h"
@@ -21,9 +24,6 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_wrapper/instance_wrapper.h"
 #include "vulkan_wrapper/library_wrapper.h"
-
-#include <algorithm>
-#include <utility>
 
 uint32_t fragment_shader[] =
 #include "hardcode_pos_triangle.frag.spv"
@@ -69,7 +69,7 @@ void QueryWithoutDrawingAnythingAndCopyResults(
           nullptr                           // pPreserveAttachments
       }},                                   // SubpassDescriptions
       {}                                    // SubpassDependencies
-      );
+  );
 
   // Create shader modules.
   vulkan::VkShaderModule vertex_shader_module =
@@ -221,10 +221,11 @@ void QueryWithoutDrawingAnythingAndCopyResults(
   };
 
   VkPipeline raw_pipeline;
-  LOG_EXPECT(==, data->logger(), device->vkCreateGraphicsPipelines(
-                                device, app->pipeline_cache(), 1, &create_info,
-                                nullptr, &raw_pipeline),
-             VK_SUCCESS);
+  LOG_EXPECT(
+      ==, data->logger(),
+      device->vkCreateGraphicsPipelines(device, app->pipeline_cache(), 1,
+                                        &create_info, nullptr, &raw_pipeline),
+      VK_SUCCESS);
   vulkan::VkPipeline pipeline(raw_pipeline, nullptr, &device);
 
   // Create image view.
@@ -250,10 +251,11 @@ void QueryWithoutDrawingAnythingAndCopyResults(
       },
   };
   ::VkImageView raw_image_view;
-  LOG_EXPECT(==, data->logger(), app->device()->vkCreateImageView(
-                                app->device(), &image_view_create_info, nullptr,
-                                &raw_image_view),
-             VK_SUCCESS);
+  LOG_EXPECT(
+      ==, data->logger(),
+      app->device()->vkCreateImageView(app->device(), &image_view_create_info,
+                                       nullptr, &raw_image_view),
+      VK_SUCCESS);
   vulkan::VkImageView image_view(raw_image_view, nullptr, &app->device());
 
   // Create framebuffer
@@ -344,7 +346,7 @@ void QueryWithoutDrawingAnythingAndCopyResults(
       &to_dst_barrier,                 // pBufferMemoryBarriers
       0,                               // imageMemoryBarrierCount
       nullptr                          // pImageMemoryBarriers
-      );
+  );
 
   // Call vkCmdCopyQueryPoolResults
   command_buffer->vkCmdCopyQueryPoolResults(
@@ -387,7 +389,7 @@ vulkan::BufferPointer CreateBufferAndFlush(vulkan::VulkanApplication* app,
   buffer->flush();
   return std::move(buffer);
 }
-}
+}  // namespace
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
@@ -408,19 +410,20 @@ int main_entry(const entry::EntryData* data) {
         CreateBufferAndFlush(&app, buffer_size, 0xff);
 
     QueryWithoutDrawingAnythingAndCopyResults(
-        data, &app, {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, 0,
-                     VK_QUERY_TYPE_OCCLUSION, num_queries, 0},
+        data, &app,
+        {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, 0,
+         VK_QUERY_TYPE_OCCLUSION, num_queries, 0},
         first_query, num_queries, *result_buffer, offset, stride, flags);
 
     result_buffer->invalidate();
 
     for (uint32_t i = 0; i < buffer_size; i++) {
       if (i < offset) {
-        LOG_ASSERT(==, data->logger(), uint8_t(result_buffer->base_address()[i]),
-                   0xFFU);
+        LOG_ASSERT(==, data->logger(),
+                   uint8_t(result_buffer->base_address()[i]), 0xFFU);
       } else {
-        LOG_ASSERT(==, data->logger(), uint8_t(result_buffer->base_address()[i]),
-                   0x0U);
+        LOG_ASSERT(==, data->logger(),
+                   uint8_t(result_buffer->base_address()[i]), 0x0U);
       }
     }
   }
@@ -442,8 +445,9 @@ int main_entry(const entry::EntryData* data) {
         CreateBufferAndFlush(&app, buffer_size, 0xff);
 
     QueryWithoutDrawingAnythingAndCopyResults(
-        data, &app, {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, 0,
-                     VK_QUERY_TYPE_OCCLUSION, total_num_queries, 0},
+        data, &app,
+        {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, 0,
+         VK_QUERY_TYPE_OCCLUSION, total_num_queries, 0},
         first_query, num_queries, *result_buffer, offset, stride, flags);
 
     result_buffer->invalidate();
@@ -471,8 +475,9 @@ int main_entry(const entry::EntryData* data) {
         CreateBufferAndFlush(&app, buffer_size, 0xff);
 
     QueryWithoutDrawingAnythingAndCopyResults(
-        data, &app, {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, 0,
-                     VK_QUERY_TYPE_OCCLUSION, num_queries, 0},
+        data, &app,
+        {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, 0,
+         VK_QUERY_TYPE_OCCLUSION, num_queries, 0},
         first_query, num_queries, *result_buffer, offset, stride, flags);
 
     result_buffer->invalidate();

@@ -45,9 +45,10 @@ int main_entry(const entry::EntryData* data) {
 
     VkBuffer raw_buffer;
 
-    LOG_ASSERT(==, data->logger(), device->vkCreateBuffer(device, &create_info,
-                                                     nullptr, &raw_buffer),
-               VK_SUCCESS);
+    LOG_ASSERT(
+        ==, data->logger(),
+        device->vkCreateBuffer(device, &create_info, nullptr, &raw_buffer),
+        VK_SUCCESS);
     vulkan::VkBuffer buffer(raw_buffer, nullptr, &device);
     VkMemoryRequirements requirements;
     device->vkGetBufferMemoryRequirements(device, buffer, &requirements);

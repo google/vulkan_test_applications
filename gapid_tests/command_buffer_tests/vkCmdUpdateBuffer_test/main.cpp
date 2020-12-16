@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+
 #include "support/entry/entry.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/vulkan_application.h"
-
-#include <algorithm>
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");

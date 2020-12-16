@@ -104,7 +104,7 @@ int main_entry(const entry::EntryData* data) {
           nullptr                           // pPreserveAttachments
       }},                                   // SubpassDescriptions
       {}                                    // SubpassDependencies
-      );
+  );
 
   // Create pipeline
   vulkan::PipelineLayout pipeline_layout(app.CreatePipelineLayout({{}}));
@@ -160,10 +160,11 @@ int main_entry(const entry::EntryData* data) {
       },
   };
   ::VkImageView raw_image_view;
-  LOG_ASSERT(==, data->logger(), app.device()->vkCreateImageView(
-                                app.device(), &image_view_create_info, nullptr,
-                                &raw_image_view),
-             VK_SUCCESS);
+  LOG_ASSERT(
+      ==, data->logger(),
+      app.device()->vkCreateImageView(app.device(), &image_view_create_info,
+                                      nullptr, &raw_image_view),
+      VK_SUCCESS);
   vulkan::VkImageView image_view(raw_image_view, nullptr, &app.device());
 
   // Create framebuffer

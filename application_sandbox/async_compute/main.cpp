@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+#include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <thread>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "particle_data_shared.h"
 #include "support/containers/deque.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
@@ -20,15 +27,6 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
 #include "vulkan_helpers/vulkan_texture.h"
-
-#include "particle_data_shared.h"
-
-#include <chrono>
-
-#include <condition_variable>
-#include <functional>
-#include <mutex>
-#include <thread>
 
 namespace quad_model {
 #include "fullscreen_quad.obj.h"
@@ -106,7 +104,8 @@ class ASyncThreadRunner {
 
     update_time_data_ = containers::make_unique<vulkan::BufferFrameData<Mat44>>(
         allocator_, app_, num_async_compute_buffers,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 0, app_->async_compute_queue()->index());
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 0,
+        app_->async_compute_queue()->index());
 
     // Both compute passes use the same set of descriptors for simplicity.
     // Technically we don't have to pass the draw_data SSBO to the velocity
@@ -164,7 +163,8 @@ class ASyncThreadRunner {
             "main"));
 
     auto initial_data_buffer = containers::make_unique<vulkan::VkCommandBuffer>(
-        allocator_, app_->GetCommandBuffer(app_->async_compute_queue()->index()));
+        allocator_,
+        app_->GetCommandBuffer(app_->async_compute_queue()->index()));
 
     (*initial_data_buffer)
         ->vkBeginCommandBuffer(*initial_data_buffer,
@@ -232,16 +232,16 @@ class ASyncThreadRunner {
           queue_family_indices                     // pQueueFamilyIndices
       };
 
-      data_.push_back(
-          PrivateAsyncData{vulkan::CreateFence(&app_->device()),
-                           app_->CreateAndBindDeviceBuffer(&create_info),
-                           app_->GetCommandBuffer(app_->async_compute_queue()->index()), app_->GetCommandBuffer(),
-                           containers::make_unique<vulkan::DescriptorSet>(
-                               allocator_,
-                               app_->AllocateDescriptorSet(
-                                   {compute_descriptor_set_layouts_[0],
-                                    compute_descriptor_set_layouts_[1],
-                                    compute_descriptor_set_layouts_[2]}))});
+      data_.push_back(PrivateAsyncData{
+          vulkan::CreateFence(&app_->device()),
+          app_->CreateAndBindDeviceBuffer(&create_info),
+          app_->GetCommandBuffer(app_->async_compute_queue()->index()),
+          app_->GetCommandBuffer(),
+          containers::make_unique<vulkan::DescriptorSet>(
+              allocator_, app_->AllocateDescriptorSet(
+                              {compute_descriptor_set_layouts_[0],
+                               compute_descriptor_set_layouts_[1],
+                               compute_descriptor_set_layouts_[2]}))});
       auto& dat = data_.back();
       VkDescriptorBufferInfo buffer_infos[3] = {
           {
@@ -476,11 +476,10 @@ class ASyncThreadRunner {
     while (!exit_.load()) {
       // 1)
       if (!first) {
-        LOG_ASSERT(
-            ==, app_->GetLogger(), VK_SUCCESS,
-            app_->device()->vkWaitForFences(app_->device(), 1,
-                                        &computation_fence.get_raw_object(),
-                                        false, 0xFFFFFFFFFFFFFFFF));
+        LOG_ASSERT(==, app_->GetLogger(), VK_SUCCESS,
+                   app_->device()->vkWaitForFences(
+                       app_->device(), 1, &computation_fence.get_raw_object(),
+                       false, 0xFFFFFFFFFFFFFFFF));
         app_->device()->vkResetFences(app_->device(), 1,
                                       &computation_fence.get_raw_object());
         // 2)
@@ -579,9 +578,8 @@ class ASyncThreadRunner {
     while (!returned_buffers_.empty()) {
       if (VK_SUCCESS !=
           app_->device()->vkGetFenceStatus(
-              app_->device(),
-              data_[returned_buffers_.front()]
-                  .return_fence_.get_raw_object())) {
+              app_->device(), data_[returned_buffers_.front()]
+                                  .return_fence_.get_raw_object())) {
         break;
       }
       app_->device()->vkResetFences(
@@ -816,12 +814,11 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
 
     frame_data->particle_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->allocator(),
-            app()->AllocateDescriptorSet(
-                {particle_descriptor_set_layouts_[0],
-                 particle_descriptor_set_layouts_[1],
-                 particle_descriptor_set_layouts_[2],
-                 particle_descriptor_set_layouts_[3]}));
+            data_->allocator(), app()->AllocateDescriptorSet(
+                                    {particle_descriptor_set_layouts_[0],
+                                     particle_descriptor_set_layouts_[1],
+                                     particle_descriptor_set_layouts_[2],
+                                     particle_descriptor_set_layouts_[3]}));
 
     ::VkImageView raw_view = color_view(frame_data);
 

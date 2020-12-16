@@ -17,6 +17,7 @@
 #define SUPPORT_CONTAINERS_ORDERED_MULTI_MAP_H
 
 #include <map>
+
 #include "support/containers/stl_compatible_allocator.h"
 
 namespace containers {
@@ -41,5 +42,5 @@ class ordered_multimap
   ordered_multimap(ordered_multimap&& other)
       : underlying_type(std::move(other)) {}
 };
-}
+}  // namespace containers
 #endif  // SUPPORT_CONTAINERS_ORDERED_MULTI_MAP_H

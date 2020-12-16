@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -91,8 +91,7 @@ class MixedSamplesSample
             data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions().AddDeviceExtensionStructure(
                 (void*)&kMultiviewFeatures),
-            {0},
-            {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
+            {0}, {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
             {VK_KHR_MULTIVIEW_EXTENSION_NAME,
              VK_KHR_MAINTENANCE2_EXTENSION_NAME,
              VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME}),

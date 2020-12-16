@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -54,19 +54,19 @@ class WriteTimestampSample
   WriteTimestampSample(const entry::EntryData* data,
                        const VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
-        Sample<WriteTimestampFrameData>(data->allocator(), data, 1, 512, 1,
-                                        1, sample_application::SampleOptions()
-                                               .EnableDepthBuffer()
-                                               .EnableMultisampling(),
+        Sample<WriteTimestampFrameData>(data->allocator(), data, 1, 512, 1, 1,
+                                        sample_application::SampleOptions()
+                                            .EnableDepthBuffer()
+                                            .EnableMultisampling(),
                                         requested_features),
         torus_(data->allocator(), data->logger(), torus_data),
         grey_scale_(0u),
         num_frames_(0u) {
     // Check the timestamp valid bits for the render queue
     uint32_t queue_family_index = app()->render_queue().index();
-    auto queue_family_properties = vulkan::GetQueueFamilyProperties(
-        data->allocator(), app()->instance(),
-        app()->device().physical_device());
+    auto queue_family_properties =
+        vulkan::GetQueueFamilyProperties(data->allocator(), app()->instance(),
+                                         app()->device().physical_device());
     timestamp_valid_bits_ =
         queue_family_properties[queue_family_index].timestampValidBits;
   }
@@ -111,11 +111,11 @@ class WriteTimestampSample
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->allocator(),
-        app()->CreatePipelineLayout({{
-            torus_descriptor_set_layouts_[0], torus_descriptor_set_layouts_[1],
-            torus_descriptor_set_layouts_[2],
-        }}));
+        data_->allocator(), app()->CreatePipelineLayout({{
+                                torus_descriptor_set_layouts_[0],
+                                torus_descriptor_set_layouts_[1],
+                                torus_descriptor_set_layouts_[2],
+                            }}));
 
     VkAttachmentReference depth_attachment = {
         0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
@@ -163,9 +163,8 @@ class WriteTimestampSample
             ));
 
     torus_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     torus_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                torus_vertex_shader);
     torus_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -239,10 +238,10 @@ class WriteTimestampSample
     frame_data->torus_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
             data_->allocator(), app()->AllocateDescriptorSet({
-                                       torus_descriptor_set_layouts_[0],
-                                       torus_descriptor_set_layouts_[1],
-                                       torus_descriptor_set_layouts_[2],
-                                   }));
+                                    torus_descriptor_set_layouts_[0],
+                                    torus_descriptor_set_layouts_[1],
+                                    torus_descriptor_set_layouts_[2],
+                                }));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
