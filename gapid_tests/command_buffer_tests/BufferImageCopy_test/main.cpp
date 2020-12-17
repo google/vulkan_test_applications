@@ -20,8 +20,10 @@ int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
   vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
-                                        {}, {}, {0}, 1024 * 100, 1024 * 100,
-                                        1024 * 100);
+                                        vulkan::VulkanApplicationOptions()
+                                            .SetHostBufferSize(1024 * 100)
+                                            .SetDeviceImageSize(1024 * 100)
+                                            .SetDeviceBufferSize(1024 * 100));
   VkImageCreateInfo image_create_info{
       /* sType = */ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
       /* pNext = */ nullptr,
