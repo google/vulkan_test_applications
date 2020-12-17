@@ -21,8 +21,8 @@
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
-  vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                        data);
+  vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
+                                        vulkan::VulkanApplicationOptions());
 
   {
     // 1. A query pool with queryCount of value 1, queryType of value

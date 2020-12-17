@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -35,7 +35,7 @@ uint32_t cube_vertex_shader[] =
 #include "spirv_1_4.vert.spvasm.spv"
     ;
 
-uint32_t cube_fragment_shader[] = 
+uint32_t cube_fragment_shader[] =
 #include "spirv_1_4.frag.spvasm.spv"
     ;
 
@@ -56,8 +56,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             sample_application::SampleOptions()
                 .EnableMultisampling()
                 .EnableVulkan11(),
-            {0},
-            {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
+            {0}, {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
             {VK_KHR_SPIRV_1_4_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data) {
     VkPhysicalDeviceFloatControlsPropertiesKHR float_control_properties{
@@ -71,7 +70,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     app()->instance()->vkGetPhysicalDeviceProperties2KHR(
         app()->device().physical_device(), &physical_device_properties2);
 
-	app()->GetLogger()->LogInfo("Physical Device Float Controls Properties:");
+    app()->GetLogger()->LogInfo("Physical Device Float Controls Properties:");
     app()->GetLogger()->LogInfo(
         "denormBehaviorIndependence             ",
         float_control_properties.denormBehaviorIndependence);
@@ -182,9 +181,8 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",

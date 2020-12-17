@@ -25,8 +25,10 @@ int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
   vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
-                                        {}, {}, {0}, 1024 * 100, 1024 * 100,
-                                        1024 * 100);
+                                        vulkan::VulkanApplicationOptions()
+                                            .SetHostBufferSize(1024 * 100)
+                                            .SetDeviceImageSize(1024 * 100)
+                                            .SetDeviceBufferSize(1024 * 100));
 
   VkExtent3D src_image_extent{32, 32, 1};
   VkImageCreateInfo image_create_info{

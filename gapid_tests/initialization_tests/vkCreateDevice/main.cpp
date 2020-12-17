@@ -57,12 +57,12 @@ int main_entry(const entry::EntryData* data) {
     info.queueCreateInfoCount = 1;
     info.pQueueCreateInfos = &queue_info;
     ::VkDevice raw_device;
-    LOG_EXPECT(==, data->logger(), instance->vkCreateDevice(devices[0], &info,
-                                                       nullptr, &raw_device),
-               VK_SUCCESS);
+    LOG_EXPECT(
+        ==, data->logger(),
+        instance->vkCreateDevice(devices[0], &info, nullptr, &raw_device),
+        VK_SUCCESS);
 
-    vulkan::VkDevice device(data->allocator(), raw_device, nullptr,
-                            &instance);
+    vulkan::VkDevice device(data->allocator(), raw_device, nullptr, &instance);
   }
   data->logger()->LogInfo("Application Shutdown");
   return 0;

@@ -36,6 +36,102 @@ namespace vulkan {
 struct VulkanModel;
 struct AllocationToken;
 
+struct VulkanApplicationOptions {
+  uint32_t host_buffer_size = 1024 * 1024;      // 1 MiB
+  uint32_t device_image_size = 1024 * 1024;     // 1 MiB
+  uint32_t device_buffer_size = 1024 * 1024;    // 1 MiB
+  uint32_t coherent_buffer_size = 1024 * 1024;  // 1 MiB
+  uint32_t device_peer_memory_size = 0;
+
+  bool use_async_compute_queue = false;
+  bool use_sparse_binding = false;
+  bool use_device_groups = false;
+  bool use_protected_memory = false;
+  bool use_host_query_reset = false;
+  bool use_shared_presentation = false;
+  bool use_mutable_swapchain_format = false;
+  bool use_vulkan_1_1 = false;
+  bool use_10bit_hdr = false;
+
+  VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+  const void* swapchain_extensions = nullptr;
+  void* device_next = nullptr;
+
+  VulkanApplicationOptions& SetHostBufferSize(uint32_t size_in_bytes) {
+    host_buffer_size = size_in_bytes;
+    return *this;
+  }
+  VulkanApplicationOptions& SetDeviceImageSize(uint32_t size_in_bytes) {
+    device_image_size = size_in_bytes;
+    return *this;
+  }
+  VulkanApplicationOptions& SetDeviceBufferSize(uint32_t size_in_bytes) {
+    device_buffer_size = size_in_bytes;
+    return *this;
+  }
+  VulkanApplicationOptions& SetCoherentBufferSize(uint32_t size_in_bytes) {
+    coherent_buffer_size = size_in_bytes;
+    return *this;
+  }
+  VulkanApplicationOptions& SetDevicePeerMemorySize(uint32_t size_in_bytes) {
+    device_peer_memory_size = size_in_bytes;
+    return *this;
+  }
+
+  VulkanApplicationOptions& EnableAsyncComputeQueue() {
+    use_async_compute_queue = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableSparseBinding() {
+    use_sparse_binding = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableDeviceGroups() {
+    use_device_groups = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableProtectedMemory() {
+    use_protected_memory = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableHostQueryReset() {
+    use_host_query_reset = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableSharedPresentation() {
+    use_shared_presentation = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableMutableSwapchainFormat() {
+    use_mutable_swapchain_format = true;
+    return *this;
+  }
+  VulkanApplicationOptions& EnableVulkan11() {
+    use_vulkan_1_1 = true;
+    return *this;
+  }
+  VulkanApplicationOptions& Enable10BitHDR() {
+    use_10bit_hdr = true;
+    return *this;
+  }
+
+  VulkanApplicationOptions& SetSwapchainColorSpace(
+      VkColorSpaceKHR color_space) {
+    swapchain_color_space = color_space;
+    return *this;
+  }
+
+  VulkanApplicationOptions& SetSwapchainExtensions(const void* pnext) {
+    swapchain_extensions = pnext;
+    return *this;
+  }
+
+  VulkanApplicationOptions& SetDeviceExtensions(void* pnext) {
+    device_next = pnext;
+    return *this;
+  }
+};
+
 // This class represents a location in GPU memory for storing data.
 // You can suballocate memory from this region, and return memory to the
 // arena for future use.
@@ -170,7 +266,7 @@ class VulkanGraphicsPipeline {
     return depth_stencil_state_;
   }
 
-	VkPipelineCreateFlags& flags() { return flags_; }
+  VkPipelineCreateFlags& flags() { return flags_; }
 
   void Commit();
   operator ::VkPipeline() const { return pipeline_; }
@@ -255,8 +351,8 @@ class PipelineLayout {
 
     descriptor_set_layouts_.reserve(layouts.size());
     for (auto binding_list : layouts) {
-      descriptor_set_layouts_.emplace_back(
-          CreateDescriptorSetLayout(allocator, device, binding_list.bindings_, binding_list.flags_));
+      descriptor_set_layouts_.emplace_back(CreateDescriptorSetLayout(
+          allocator, device, binding_list.bindings_, binding_list.flags_));
       raw_layouts.push_back(descriptor_set_layouts_.back());
     }
 
@@ -459,21 +555,10 @@ class VulkanApplication {
   VulkanApplication(
       containers::Allocator* allocator, logging::Logger* log,
       const entry::EntryData* entry_data,
+      const VulkanApplicationOptions& options,
       const std::initializer_list<const char*> instance_extensions = {},
       const std::initializer_list<const char*> device_extensions = {},
-      const VkPhysicalDeviceFeatures& features = {0},
-      uint32_t host_buffer_size = 1024 * 1024,
-      uint32_t device_image_size = 1024 * 1024,
-      uint32_t device_buffer_size = 1024 * 1024,
-      uint32_t coherent_buffer_size = 1024 * 1024,
-      bool use_async_compute_queue = false, bool use_sparse_binding = false,
-      bool use_device_groups = false, uint32_t device_peer_memory_size = 0,
-      bool use_protected_memory = false, bool use_host_query_reset = false,
-      VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-      bool use_shared_presentation = false,
-      bool use_mutable_swapchain_format = false,
-      const void* swapchain_extensions = nullptr, bool use_vulkan_1_1 = false,
-      bool use_10bit_hdr = false, void* device_next = nullptr);
+      const VkPhysicalDeviceFeatures& features = {0});
 
   // Creates an image from the given create_info, and binds memory from the
   // device-only image Arena.
@@ -722,8 +807,7 @@ class VulkanApplication {
   // Creates and returns a PipelineLayout from the given
   // DescriptorSetLayoutBindings
   PipelineLayout CreatePipelineLayout(
-      std::initializer_list<DescriptorSetLayoutBinding>
-          layouts,
+      std::initializer_list<DescriptorSetLayoutBinding> layouts,
       std::initializer_list<VkPushConstantRange> ranges = {}) {
     return PipelineLayout(allocator_, &device_, layouts, ranges);
   }

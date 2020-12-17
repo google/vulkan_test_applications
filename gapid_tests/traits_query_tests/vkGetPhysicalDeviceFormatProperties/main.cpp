@@ -33,10 +33,11 @@ int main_entry(const entry::EntryData* data) {
 
   auto output_properties = [data](const VkFormatProperties& properties) {
     data->logger()->LogInfo("      linearTilingFeatures: ",
-                       properties.linearTilingFeatures);
+                            properties.linearTilingFeatures);
     data->logger()->LogInfo("      optimalTilingFeatures: ",
-                       properties.optimalTilingFeatures);
-    data->logger()->LogInfo("      bufferFeatures: ", properties.bufferFeatures);
+                            properties.optimalTilingFeatures);
+    data->logger()->LogInfo("      bufferFeatures: ",
+                            properties.bufferFeatures);
   };
 
   {

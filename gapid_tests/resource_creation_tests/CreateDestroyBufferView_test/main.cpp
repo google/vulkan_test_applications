@@ -22,8 +22,8 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                        data);
+  vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
+                                        vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = application.device();
 
   VkPhysicalDeviceProperties properties;

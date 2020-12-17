@@ -102,13 +102,14 @@ int main_entry(const entry::EntryData* data) {
 
   // Create descriptor set and pipeline layout.
 
-  vulkan::VkDescriptorSetLayout dset_layout(CreateDescriptorSetLayout(
-      alloc, &device, {
-                          {0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-                           VK_SHADER_STAGE_COMPUTE_BIT, nullptr},
-                          {1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-                           VK_SHADER_STAGE_COMPUTE_BIT, nullptr},
-                      }));
+  vulkan::VkDescriptorSetLayout dset_layout(
+      CreateDescriptorSetLayout(alloc, &device,
+                                {
+                                    {0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
+                                     VK_SHADER_STAGE_COMPUTE_BIT, nullptr},
+                                    {1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
+                                     VK_SHADER_STAGE_COMPUTE_BIT, nullptr},
+                                }));
   ::VkDescriptorSetLayout raw_dset_layout = dset_layout.get_raw_object();
 
   const ::VkPipelineLayoutCreateInfo pipeline_layout_create_info = {
@@ -137,7 +138,8 @@ int main_entry(const entry::EntryData* data) {
       /* sType = */ VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
       /* pNext = */ nullptr,
       /* flags = */ 0,
-      /* stage = */ {
+      /* stage = */
+      {
           /* sType = */ VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
           /* pNext = */ nullptr,
           /* flags = */ 0,

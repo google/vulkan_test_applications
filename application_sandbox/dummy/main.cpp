@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "support/entry/entry.h"
-
 #include <chrono>
+
+#include "support/entry/entry.h"
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");

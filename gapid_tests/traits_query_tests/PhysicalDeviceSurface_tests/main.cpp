@@ -35,15 +35,16 @@ int main_entry(const entry::EntryData* data) {
     instance->vkGetPhysicalDeviceProperties(device, &device_properties);
 
     data->logger()->LogInfo("Physical Device Surfaces for ",
-                       ::VkPhysicalDevice(device));
+                            ::VkPhysicalDevice(device));
     auto properties =
         GetQueueFamilyProperties(data->allocator(), instance, device);
     bool device_supports = false;
 
     for (size_t i = 0; i < properties.size(); ++i) {
       VkBool32 supported = false;
-      LOG_EXPECT(==, data->logger(), instance->vkGetPhysicalDeviceSurfaceSupportKHR(
-                                    device, i, surface, &supported),
+      LOG_EXPECT(==, data->logger(),
+                 instance->vkGetPhysicalDeviceSurfaceSupportKHR(
+                     device, i, surface, &supported),
                  VK_SUCCESS);
       if (supported) {
         data->logger()->LogInfo("  Supports surfaces on queue ", i);
@@ -59,21 +60,23 @@ int main_entry(const entry::EntryData* data) {
                      device, surface, &surface_caps),
                  VK_SUCCESS);
       data->logger()->LogInfo("  Capabilities: ");
-      data->logger()->LogInfo("    minImageCount: ", surface_caps.minImageCount);
-      data->logger()->LogInfo("    maxImageCount: ", surface_caps.maxImageCount);
+      data->logger()->LogInfo("    minImageCount: ",
+                              surface_caps.minImageCount);
+      data->logger()->LogInfo("    maxImageCount: ",
+                              surface_caps.maxImageCount);
       data->logger()->LogInfo("    currentExtent: [",
-                         surface_caps.currentExtent.width, ",",
-                         surface_caps.currentExtent.height, "]");
+                              surface_caps.currentExtent.width, ",",
+                              surface_caps.currentExtent.height, "]");
 
       uint32_t num_formats = 0;
-      LOG_EXPECT(==, data->logger(), instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
-                                    device, surface, &num_formats, nullptr),
+      LOG_EXPECT(==, data->logger(),
+                 instance->vkGetPhysicalDeviceSurfaceFormatsKHR(
+                     device, surface, &num_formats, nullptr),
                  VK_SUCCESS);
 
       LOG_EXPECT(>, data->logger(), num_formats, 0u);
 
-      containers::vector<VkSurfaceFormatKHR> surface_formats(
-          data->allocator());
+      containers::vector<VkSurfaceFormatKHR> surface_formats(data->allocator());
       surface_formats.resize(num_formats);
 
       LOG_EXPECT(==, data->logger(),
@@ -82,7 +85,8 @@ int main_entry(const entry::EntryData* data) {
                  VK_SUCCESS);
       data->logger()->LogInfo("    Formats[", num_formats, "]:");
       for (auto format : surface_formats) {
-        data->logger()->LogInfo("      ", format.format, ":", format.colorSpace);
+        data->logger()->LogInfo("      ", format.format, ":",
+                                format.colorSpace);
       }
       if (num_formats > 1) {
         num_formats -= 1;

@@ -44,7 +44,8 @@ class BufferFrameData {
   // along with |usage| to guarantee data can be copied to the underlying
   // VkBuffer(s).
   BufferFrameData(VulkanApplication* application, size_t buffered_data_count,
-                  VkBufferUsageFlags usage, uint32_t device_mask = 0, uint32_t queue_family_index = 0)
+                  VkBufferUsageFlags usage, uint32_t device_mask = 0,
+                  uint32_t queue_family_index = 0)
       : application_(application),
         uninitialized_(application->GetAllocator()),
         update_commands_(application->GetAllocator()),
@@ -97,12 +98,13 @@ class BufferFrameData {
     };
 
     for (size_t i = 0; i < buffered_data_count; ++i) {
-      update_commands_.push_back(application_->GetCommandBuffer(queue_family_index_));
+      update_commands_.push_back(
+          application_->GetCommandBuffer(queue_family_index_));
       update_commands_.back()->vkBeginCommandBuffer(update_commands_.back(),
                                                     &begin_info);
       if (device_mask_ != 0) {
         update_commands_.back()->vkCmdSetDeviceMask(update_commands_.back(),
-                                                      device_mask_); 
+                                                    device_mask_);
       }
       VkBufferMemoryBarrier barrier = {
           VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType

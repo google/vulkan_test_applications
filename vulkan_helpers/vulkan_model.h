@@ -16,12 +16,12 @@
 #ifndef VULKAN_HELPERS_VULKAN_MODEL_H_
 #define VULKAN_HELPERS_VULKAN_MODEL_H_
 
+#include <initializer_list>
+
 #include "support/containers/allocator.h"
 #include "support/containers/vector.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/vulkan_application.h"
-
-#include <initializer_list>
 
 namespace vulkan {
 const size_t POSITION_SIZE = sizeof(float) * 3;

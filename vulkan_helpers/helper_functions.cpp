@@ -17,16 +17,15 @@
 
 #include <algorithm>
 #include <cstring>
-#include <tuple>
 #include <fstream>
+#include <tuple>
 
 #include "support/containers/vector.h"
 #include "support/log/log.h"
 
 namespace vulkan {
 VkInstance CreateEmptyInstance(containers::Allocator* allocator,
-                               LibraryWrapper* wrapper,
-                               uint32_t version) {
+                               LibraryWrapper* wrapper, uint32_t version) {
   // Test a non-nullptr pApplicationInfo
   VkApplicationInfo app_info{VK_STRUCTURE_TYPE_APPLICATION_INFO,
                              nullptr,
@@ -143,7 +142,7 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
   if (data->output_frame_index() >= 0) {
     layer = callback_layer;
   } else if (data->validation()) {
-		layer = validation_layer;
+    layer = validation_layer;
   }
 
   std::vector<const char*> extensions;
@@ -656,10 +655,11 @@ VkDevice CreateDeviceForSwapchain(
         0,                                              // enabledLayerCount
         nullptr,                                        // ppEnabledLayerNames
         static_cast<uint32_t>(
-            enabled_extensions.size()),                 // enabledExtensionCount
-        enabled_extensions.data(),                      // ppEnabledExtensionNames
-        memcmp(&features, &empty_features, sizeof(features)) == 0 ?
-            nullptr : &features                         // ppEnabledFeatures
+            enabled_extensions.size()),  // enabledExtensionCount
+        enabled_extensions.data(),       // ppEnabledExtensionNames
+        memcmp(&features, &empty_features, sizeof(features)) == 0
+            ? nullptr
+            : &features  // ppEnabledFeatures
     };
 
     ::VkDevice raw_device;
@@ -987,12 +987,11 @@ VkSurfaceKHR CreateDefaultSurface(VkInstance* instance,
   (*instance)->vkCreateAndroidSurfaceKHR(*instance, &create_info, nullptr,
                                          &surface);
 #elif defined __ggp__
-  VkStreamDescriptorSurfaceCreateInfoGGP create_info {
-    VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP,
-    nullptr, 0, 1
-  } ;
-  (*instance)->vkCreateStreamDescriptorSurfaceGGP(*instance, &create_info, nullptr,
-                                         &surface);
+  VkStreamDescriptorSurfaceCreateInfoGGP create_info{
+      VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP, nullptr, 0,
+      1};
+  (*instance)->vkCreateStreamDescriptorSurfaceGGP(*instance, &create_info,
+                                                  nullptr, &surface);
 #elif defined __linux__
   VkXcbSurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR, 0, 0,
@@ -1076,11 +1075,10 @@ VkSwapchainKHR CreateDefaultSwapchain(
                    surface_formats.data()),
                VK_SUCCESS);
 
-	VkSurfaceFormatKHR surface_format = surface_formats[0];
+    VkSurfaceFormatKHR surface_format = surface_formats[0];
 
-	if (swapchain_color_space != 0) {
-      containers::vector<VkSurfaceFormat2KHR> surface_formats2(
-          allocator);
+    if (swapchain_color_space != 0) {
+      containers::vector<VkSurfaceFormat2KHR> surface_formats2(allocator);
       surface_formats.resize(1);
 
       VkPhysicalDeviceSurfaceInfo2KHR surface_info{
@@ -1110,7 +1108,7 @@ VkSwapchainKHR CreateDefaultSwapchain(
           surface_format = surface_formats2[i].surfaceFormat;
         }
       }
-	}
+    }
 
     uint32_t num_present_modes = 0;
     LOG_ASSERT(
@@ -1301,13 +1299,15 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(
 }
 
 // Creates a default pipeline cache, it does not load anything from disk.
-VkPipelineCache CreateDefaultPipelineCache(VkDevice* device, const entry::EntryData* entry_data) {
+VkPipelineCache CreateDefaultPipelineCache(VkDevice* device,
+                                           const entry::EntryData* entry_data) {
   ::VkPipelineCache cache = VK_NULL_HANDLE;
   void* initial_data = nullptr;
   size_t initial_size = 0;
   std::vector<char> buffer;
   if (entry_data->load_pipeline_cache()) {
-    std::ifstream in_file(entry_data->load_pipeline_cache(), std::ios::binary | std::ios::ate);
+    std::ifstream in_file(entry_data->load_pipeline_cache(),
+                          std::ios::binary | std::ios::ate);
     initial_size = in_file.tellg();
     in_file.seekg(0, std::ios::beg);
     buffer.resize(initial_size);
@@ -1316,7 +1316,8 @@ VkPipelineCache CreateDefaultPipelineCache(VkDevice* device, const entry::EntryD
     initial_data = buffer.data();
 
     entry_data->logger()->LogInfo("Loaded pipeline cache from \"",
-      entry_data->load_pipeline_cache(), "\" [", initial_size, "] bytes");
+                                  entry_data->load_pipeline_cache(), "\" [",
+                                  initial_size, "] bytes");
   }
 
   VkPipelineCacheCreateInfo create_info{
@@ -1335,15 +1336,18 @@ VkPipelineCache CreateDefaultPipelineCache(VkDevice* device, const entry::EntryD
 }
 
 // Writes the given pipeline cache to the given location on disk.
-void WritePipelineCache(VkDevice* device, VkPipelineCache* cache, const char* location) {
-   device->GetLogger()->LogInfo("Wrote pipeline cache to \"", location, "\"");
+void WritePipelineCache(VkDevice* device, VkPipelineCache* cache,
+                        const char* location) {
+  device->GetLogger()->LogInfo("Wrote pipeline cache to \"", location, "\"");
   std::vector<char> buffer;
   size_t size = 0;
-  LOG_ASSERT(==, device->GetLogger(), VK_SUCCESS,
-    (*device)->vkGetPipelineCacheData(*device, *cache, &size, nullptr));
+  LOG_ASSERT(
+      ==, device->GetLogger(), VK_SUCCESS,
+      (*device)->vkGetPipelineCacheData(*device, *cache, &size, nullptr));
   buffer.resize(size);
-  LOG_ASSERT(==, device->GetLogger(), VK_SUCCESS,
-    (*device)->vkGetPipelineCacheData(*device, *cache, &size, buffer.data()));
+  LOG_ASSERT(
+      ==, device->GetLogger(), VK_SUCCESS,
+      (*device)->vkGetPipelineCacheData(*device, *cache, &size, buffer.data()));
   std::ofstream out_file(location, std::ios::binary);
   out_file.write(buffer.data(), size);
   LOG_ASSERT(==, device->GetLogger(), false, out_file.bad());

@@ -57,17 +57,10 @@ DescriptorSet::DescriptorSet(
 VulkanApplication::VulkanApplication(
     containers::Allocator* allocator, logging::Logger* log,
     const entry::EntryData* entry_data,
+    const VulkanApplicationOptions& options,
     const std::initializer_list<const char*> instance_extensions,
     const std::initializer_list<const char*> device_extensions,
-    const VkPhysicalDeviceFeatures& features, uint32_t host_buffer_size,
-    uint32_t device_image_size, uint32_t device_buffer_size,
-    uint32_t coherent_buffer_size, bool use_async_compute_queue,
-    bool use_sparse_binding, bool use_device_group,
-    uint32_t device_peer_memory_size, bool use_protected_memory,
-    bool use_host_query_reset, VkColorSpaceKHR swapchain_color_space,
-    bool use_shared_presentation, bool use_mutable_swapchain_format,
-    const void* swapchain_extensions, bool use_vulkan_1_1, bool use_10bit_hdr,
-    void* device_next)
+    const VkPhysicalDeviceFeatures& features)
     : allocator_(allocator),
       log_(log),
       entry_data_(entry_data),
@@ -76,30 +69,35 @@ VulkanApplication::VulkanApplication(
       present_queue_(nullptr),
       render_queue_index_(0u),
       present_queue_index_(0u),
-      use_protected_memory_(use_protected_memory),
+      use_protected_memory_(options.use_protected_memory),
       library_wrapper_(allocator_, log_),
-      instance_(!use_vulkan_1_1 ? CreateInstanceForApplication(
+      instance_(
+          !options.use_vulkan_1_1
+              ? CreateInstanceForApplication(
                                       allocator_, &library_wrapper_,
                                       entry_data_, instance_extensions)
                                 : Create11InstanceForApplication(
                                       allocator_, &library_wrapper_,
                                       entry_data_, instance_extensions)),
       surface_(CreateDefaultSurface(&instance_, entry_data_)),
-      device_(!use_device_group
+      device_(!options.use_device_groups
                   ? CreateDevice(device_extensions, features,
-                                 use_async_compute_queue, use_sparse_binding,
-                                 use_host_query_reset, device_next)
+                                 options.use_async_compute_queue,
+                                 options.use_sparse_binding,
+                                 options.use_host_query_reset,
+                                 options.device_next)
                   : CreateDeviceGroup(device_extensions, features,
-                                      use_async_compute_queue,
-                                      use_sparse_binding, device_next)),
+                                      options.use_async_compute_queue,
+                                      options.use_sparse_binding,
+                                      options.device_next)),
       swapchain_(CreateDefaultSwapchain(
           &instance_, &device_, &surface_, allocator_, render_queue_index_,
-          present_queue_index_, entry_data_, swapchain_color_space,
-          use_shared_presentation,
-          use_mutable_swapchain_format
+          present_queue_index_, entry_data_, options.swapchain_color_space,
+          options.use_shared_presentation,
+          options.use_mutable_swapchain_format
               ? VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR
               : 0,
-          use_10bit_hdr, swapchain_extensions)),
+          options.use_10bit_hdr, options.swapchain_extensions)),
       command_pools_(allocator_),
       pipeline_cache_(CreateDefaultPipelineCache(&device_, entry_data)),
       host_accessible_heap_(allocator_),
@@ -190,8 +188,9 @@ VulkanApplication::VulkanApplication(
     device_memories[2].push_back(&coherent_heap_[i]);
   }
 
-  uint32_t device_memory_sizes[3] = {host_buffer_size, device_buffer_size,
-                                     coherent_buffer_size};
+  uint32_t device_memory_sizes[3] = {options.host_buffer_size,
+                                     options.device_buffer_size,
+                                     options.coherent_buffer_size};
 
   const uint32_t kAllBufferBits =
       (VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT << 1) - 1;
@@ -200,7 +199,8 @@ VulkanApplication::VulkanApplication(
       VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
       kAllBufferBits,
       VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT};
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+          VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT};
   VkMemoryPropertyFlags property_flags[3] = {
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
@@ -254,7 +254,7 @@ VulkanApplication::VulkanApplication(
   }
 
   // Special handling of peer memory
-  if (device_peer_memory_size > 0 && device_.num_devices() > 1) {
+  if (options.device_peer_memory_size > 0 && device_.num_devices() > 1) {
     LOG_ASSERT(==, log, 2, device_.num_devices());
     // 1) Create a tiny buffer so that we can determine what memory flags are
     // required.
@@ -317,11 +317,13 @@ VulkanApplication::VulkanApplication(
     // For now we only handle 2 devices.
 
     device_peer_memory_heaps_.push_back(containers::make_unique<VulkanArena>(
-        allocator_, allocator_, log_, device_peer_memory_size, memory_index0,
+        allocator_, allocator_, log_, options.device_peer_memory_size,
+        memory_index0,
         &device_, false));
 
     device_peer_memory_heaps_.push_back(containers::make_unique<VulkanArena>(
-        allocator_, allocator_, log_, device_peer_memory_size, memory_index1,
+        allocator_, allocator_, log_, options.device_peer_memory_size,
+        memory_index1,
         &device_, false));
   }
 
@@ -368,7 +370,7 @@ VulkanApplication::VulkanApplication(
         GetMemoryIndex(&device_, log_, requirements.memoryTypeBits,
                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     device_only_image_heap_ = containers::make_unique<VulkanArena>(
-        allocator_, allocator_, log_, device_image_size, memory_index, &device_,
+        allocator_, allocator_, log_, options.device_image_size, memory_index, &device_,
         false);
   }
 }
@@ -454,7 +456,8 @@ VkDevice VulkanApplication::CreateDevice(
 
 void VulkanApplication::InitializationComplete() {
   if (entry_data_->write_pipeline_cache()) {
-    WritePipelineCache(&device_, &pipeline_cache_, entry_data_->write_pipeline_cache());
+    WritePipelineCache(&device_, &pipeline_cache_,
+                       entry_data_->write_pipeline_cache());
   }
 }
 
@@ -742,11 +745,14 @@ VulkanApplication::CreateAndBindHostBuffer(
 containers::unique_ptr<VulkanApplication::Buffer>
 VulkanApplication::CreateAndBindCoherentBuffer(
     const VkBufferCreateInfo* create_info, const uint32_t* device_indices) {
-    // If this goes off, you have to update the bits when we create the coherent heap.
-    // Be careful not every implementation supports every usage. They all seem to
-    // support this usage.
-    LOG_ASSERT(==, log_, 0, create_info->usage & ~(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT));
+  // If this goes off, you have to update the bits when we create the coherent
+  // heap. Be careful not every implementation supports every usage. They all
+  // seem to support this usage.
+  LOG_ASSERT(==, log_, 0,
+             create_info->usage & ~(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                    VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT));
   uint32_t first_device_index = 0;
   if (device_indices != 0) {
     first_device_index = device_indices[0];
@@ -1539,7 +1545,8 @@ void VulkanGraphicsPipeline::SetDepthClampEnable(VkBool32 value) {
   rasterization_state_.depthClampEnable = value;
 }
 
-void VulkanGraphicsPipeline::EnableDepthBias(float constant, float slope, float clamp) {
+void VulkanGraphicsPipeline::EnableDepthBias(float constant, float slope,
+                                             float clamp) {
   rasterization_state_.depthBiasEnable = VK_TRUE;
   rasterization_state_.depthBiasConstantFactor = constant;
   rasterization_state_.depthBiasSlopeFactor = slope;

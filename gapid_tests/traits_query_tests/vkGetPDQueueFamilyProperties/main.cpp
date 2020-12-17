@@ -40,7 +40,8 @@ int main_entry(const entry::EntryData* data) {
       data->logger()->LogInfo("    Phyiscal Device: ", device);
       instance->vkGetPhysicalDeviceQueueFamilyProperties(
           device, &driver_counts[i], nullptr);
-      data->logger()->LogInfo("      # queue family properties: ", driver_counts[i]);
+      data->logger()->LogInfo("      # queue family properties: ",
+                              driver_counts[i]);
     }
   }
 
@@ -67,8 +68,7 @@ int main_entry(const entry::EntryData* data) {
       const auto device = physical_devices[i];
       data->logger()->LogInfo("    Phyiscal Device: ", device);
       uint32_t count = driver_counts[i] - 1;
-      containers::vector<VkQueueFamilyProperties> properties(
-          data->allocator());
+      containers::vector<VkQueueFamilyProperties> properties(data->allocator());
       properties.resize(count);
       instance->vkGetPhysicalDeviceQueueFamilyProperties(device, &count,
                                                          properties.data());
@@ -85,8 +85,7 @@ int main_entry(const entry::EntryData* data) {
       const auto device = physical_devices[i];
       data->logger()->LogInfo("    Phyiscal Device: ", device);
       auto count = driver_counts[i];
-      containers::vector<VkQueueFamilyProperties> properties(
-          data->allocator());
+      containers::vector<VkQueueFamilyProperties> properties(data->allocator());
       properties.resize(count);
       instance->vkGetPhysicalDeviceQueueFamilyProperties(device, &count,
                                                          properties.data());
@@ -103,8 +102,7 @@ int main_entry(const entry::EntryData* data) {
       const auto device = physical_devices[i];
       data->logger()->LogInfo("    Phyiscal Device: ", device);
       uint32_t count = driver_counts[i] + 3;
-      containers::vector<VkQueueFamilyProperties> properties(
-          data->allocator());
+      containers::vector<VkQueueFamilyProperties> properties(data->allocator());
       properties.resize(count);
       instance->vkGetPhysicalDeviceQueueFamilyProperties(device, &count,
                                                          properties.data());

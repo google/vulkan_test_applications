@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <array>
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <array>
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 uint32_t populating_attachments_frag[] =
 #include "intermediate.frag.spv"
@@ -168,13 +168,13 @@ class RenderQuadSample
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  // finalLayout
     };
     auto i_att_desc = VkAttachmentDescription{
-        0,                                         // flags
-        VK_FORMAT_D16_UNORM,                   // format
-        VK_SAMPLE_COUNT_1_BIT,                     // samples
-        VK_ATTACHMENT_LOAD_OP_LOAD,                // loadOp
-        VK_ATTACHMENT_STORE_OP_STORE,              // storeOp
-        VK_ATTACHMENT_LOAD_OP_LOAD,           // stenilLoadOp
-        VK_ATTACHMENT_STORE_OP_STORE,          // stenilStoreOp
+        0,                                                // flags
+        VK_FORMAT_D16_UNORM,                              // format
+        VK_SAMPLE_COUNT_1_BIT,                            // samples
+        VK_ATTACHMENT_LOAD_OP_LOAD,                       // loadOp
+        VK_ATTACHMENT_STORE_OP_STORE,                     // storeOp
+        VK_ATTACHMENT_LOAD_OP_LOAD,                       // stenilLoadOp
+        VK_ATTACHMENT_STORE_OP_STORE,                     // stenilStoreOp
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,  // initialLayout
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL   // finalLayout
     };
@@ -198,7 +198,7 @@ class RenderQuadSample
                 {
                     o_att_desc,  // Color Attachment
                     i_att_desc,  // Depth Input Attachment
-                },                 // AttachmentDescriptions
+                },               // AttachmentDescriptions
                 {
                     subpass_desc,
                 },  // SubpassDescriptions
@@ -208,8 +208,8 @@ class RenderQuadSample
     rendering_output_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
             data_->allocator(), app()->CreateGraphicsPipeline(
-                                       pipeline_layout_.get(),
-                                       rendering_output_render_pass_.get(), 0));
+                                    pipeline_layout_.get(),
+                                    rendering_output_render_pass_.get(), 0));
     rendering_output_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                           pass_through_vert);
     rendering_output_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -245,7 +245,7 @@ class RenderQuadSample
                 {
                     o_att_desc,  // Depth Attachment
                     i_att_desc,  // Color Input Attachment
-                },                 // AttachmentDescriptions
+                },               // AttachmentDescriptions
                 {
                     subpass_desc,
                 },  // SubpassDescriptions
@@ -267,7 +267,8 @@ class RenderQuadSample
     populating_attachments_pipeline_->SetScissor(scissor());
     populating_attachments_pipeline_->SetViewport(viewport());
     populating_attachments_pipeline_->SetSamples(VK_SAMPLE_COUNT_1_BIT);
-    populating_attachments_pipeline_->DepthStencilState().depthCompareOp = VK_COMPARE_OP_ALWAYS;
+    populating_attachments_pipeline_->DepthStencilState().depthCompareOp =
+        VK_COMPARE_OP_ALWAYS;
     populating_attachments_pipeline_->Commit();
 
     depth_data_ = containers::make_unique<vulkan::BufferFrameData<DepthData>>(
@@ -330,8 +331,8 @@ class RenderQuadSample
         *frame_data->trans_dst_img_,               // image
         VK_IMAGE_VIEW_TYPE_2D,                     // viewType
         frame_data->trans_dst_img_->format(),      // format
-        {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
-         VK_COMPONENT_SWIZZLE_IDENTITY},
+        {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+         VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
     ::VkImageView raw_trans_dst_view;
     LOG_ASSERT(==, data_->logger(), VK_SUCCESS,
@@ -425,7 +426,8 @@ class RenderQuadSample
             data_->allocator(),
             app()->AllocateDescriptorSet({descriptor_set_layout_binding_}));
     input_attachment_info.imageView = *frame_data->attachment_img_view_;
-    input_attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    input_attachment_info.imageLayout =
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     write.dstSet = *frame_data->rendering_output_descriptor_set_;
     app()->device()->vkUpdateDescriptorSets(app()->device(), 1, &write, 0,
                                             nullptr);
@@ -480,7 +482,8 @@ class RenderQuadSample
     // copy from buf to img. The swapchain image must be larger in both
     // dimensions.
     LOG_ASSERT(>=, data_->logger(), app()->swapchain().width(), src_data.width);
-    LOG_ASSERT(>=, data_->logger(), app()->swapchain().height(), src_data.height);
+    LOG_ASSERT(>=, data_->logger(), app()->swapchain().height(),
+               src_data.height);
     uint32_t copy_width = src_data.width;
     uint32_t copy_height = src_data.height;
     VkBufferImageCopy copy_region{

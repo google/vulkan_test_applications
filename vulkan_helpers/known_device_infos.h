@@ -31,7 +31,7 @@ struct DeviceInfo {
 extern const DeviceInfo PixelC;
 extern const DeviceInfo NvidiaK2200;
 extern const DeviceInfo Nvidia965M;
-}
+}  // namespace vulkan
 
 namespace {
 // Version converts a %d.%d.%d string into a Version instance which support
@@ -102,7 +102,7 @@ bool IsDeviceWithLowerDriverVersion(
   }
   return false;
 }
-}
+}  // namespace
 
 // Macro to check if the given |vulkan_device| does NOT have the same device ID
 // and vendor ID as the |check_device_info| or a lower/equal driver version
@@ -118,7 +118,7 @@ bool IsDeviceWithLowerDriverVersion(
 // |check_version| of Android. 'true' if the application is running on other
 // OS.
 #ifdef __ANDROID__
-#define NOT_ANDROID_VERSION(entry_data, check_os_version)                     \
+#define NOT_ANDROID_VERSION(entry_data, check_os_version)                      \
   (!EqualOrLowerAndroidVersion(entry_data->logger(), entry_data->os_version(), \
                                check_os_version, __FILE__, __LINE__))
 #else

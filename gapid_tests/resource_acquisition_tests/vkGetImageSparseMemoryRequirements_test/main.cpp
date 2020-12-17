@@ -73,10 +73,14 @@ int main_entry(const entry::EntryData* data) {
       data->logger()->LogInfo(
           "  formatProperties.imageGranularity.depth: ",
           requirements[i].formatProperties.imageGranularity.depth);
-      data->logger()->LogInfo("    imageMipTailFirstLod: ", requirements[i].imageMipTailFirstLod);
-      data->logger()->LogInfo("        imageMipTailSize: ", requirements[i].imageMipTailSize);
-      data->logger()->LogInfo("      imageMipTailOffset: ", requirements[i].imageMipTailOffset);
-      data->logger()->LogInfo("      imageMipTailStride: ", requirements[i].imageMipTailStride);
+      data->logger()->LogInfo("    imageMipTailFirstLod: ",
+                              requirements[i].imageMipTailFirstLod);
+      data->logger()->LogInfo("        imageMipTailSize: ",
+                              requirements[i].imageMipTailSize);
+      data->logger()->LogInfo("      imageMipTailOffset: ",
+                              requirements[i].imageMipTailOffset);
+      data->logger()->LogInfo("      imageMipTailStride: ",
+                              requirements[i].imageMipTailStride);
     }
   }
   data->logger()->LogInfo("Application Shutdown");

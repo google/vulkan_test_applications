@@ -70,8 +70,9 @@ class VkCommandBuffer {
 
   void begin_command_buffer(const VkCommandBufferBeginInfo* begin_info) {
     device_mask_ = default_mask_;
-    const VkDeviceGroupCommandBufferBeginInfo* dgcbbi = 
-      reinterpret_cast<const VkDeviceGroupCommandBufferBeginInfo*>(begin_info->pNext);
+    const VkDeviceGroupCommandBufferBeginInfo* dgcbbi =
+        reinterpret_cast<const VkDeviceGroupCommandBufferBeginInfo*>(
+            begin_info->pNext);
     if (dgcbbi &&
         dgcbbi->sType ==
             VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO) {
@@ -92,7 +93,9 @@ class VkCommandBuffer {
   uint32_t default_mask_ = 0;
 
  public:
-  const ::VkCommandBuffer& get_command_buffer() const { return command_buffer_; }
+  const ::VkCommandBuffer& get_command_buffer() const {
+    return command_buffer_;
+  }
   operator ::VkCommandBuffer() const { return command_buffer_; }
   CommandBufferFunctions* operator->() { return functions_; }
   CommandBufferFunctions& operator*() { return *functions_; }

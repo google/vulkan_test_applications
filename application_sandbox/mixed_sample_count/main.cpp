@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -72,15 +72,16 @@ struct MixedSamplesFrameData {
 
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
-class MixedSamplesSample : public sample_application::Sample<MixedSamplesFrameData> {
+class MixedSamplesSample
+    : public sample_application::Sample<MixedSamplesFrameData> {
  public:
   MixedSamplesSample(const entry::EntryData* data)
       : data_(data),
         Sample<MixedSamplesFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions()
-			.EnableMultisampling()
-            .EnableMixedMultisampling(),
+                .EnableMultisampling()
+                .EnableMixedMultisampling(),
             {0}, {}, {VK_AMD_MIXED_ATTACHMENT_SAMPLES_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data),
         floor_(data->allocator(), data->logger(), floor_data) {}
@@ -119,7 +120,7 @@ class MixedSamplesSample : public sample_application::Sample<MixedSamplesFrameDa
     VkAttachmentReference depth_attachment = {
         1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
-	VkAttachmentDescription color_attachment_description {
+    VkAttachmentDescription color_attachment_description{
         0,                                         // flags
         render_format(),                           // format
         num_color_samples(),                       // samples
@@ -130,7 +131,7 @@ class MixedSamplesSample : public sample_application::Sample<MixedSamplesFrameDa
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // initialLayout
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL   // finalLayout
     };
-    VkAttachmentDescription depth_stencil_attachment_description {
+    VkAttachmentDescription depth_stencil_attachment_description{
         0,                                                // flags
         kDepthStencilFormat,                              // format
         num_depth_stencil_samples(),                      // samples
@@ -145,10 +146,8 @@ class MixedSamplesSample : public sample_application::Sample<MixedSamplesFrameDa
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
         data_->allocator(),
         app()->CreateRenderPass(
-            {
-				color_attachment_description,
-				depth_stencil_attachment_description
-			},  // AttachmentDescriptions
+            {color_attachment_description,
+             depth_stencil_attachment_description},  // AttachmentDescriptions
             {{
                 0,                                // flags
                 VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
@@ -166,9 +165,8 @@ class MixedSamplesSample : public sample_application::Sample<MixedSamplesFrameDa
 
     // Initialize cube shaders
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -183,9 +181,8 @@ class MixedSamplesSample : public sample_application::Sample<MixedSamplesFrameDa
 
     // Initialize floor shaders
     floor_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     floor_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                floor_vertex_shader);
     floor_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -209,9 +206,8 @@ class MixedSamplesSample : public sample_application::Sample<MixedSamplesFrameDa
 
     // Initialize mirror pipeline
     mirror_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     mirror_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                 mirror_vertex_shader);
     mirror_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -281,7 +277,8 @@ class MixedSamplesSample : public sample_application::Sample<MixedSamplesFrameDa
         VK_IMAGE_TYPE_2D,                     // imageType
         kDepthStencilFormat,                  // format
         {
-            app()->swapchain().width(), app()->swapchain().height(),
+            app()->swapchain().width(),
+            app()->swapchain().height(),
             app()->swapchain().depth(),
         },                                            // extent
         1,                                            // mipLevels
@@ -322,7 +319,7 @@ class MixedSamplesSample : public sample_application::Sample<MixedSamplesFrameDa
     VkWriteDescriptorSet write{
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
         nullptr,                                 // pNext
-        *frame_data->cube_descriptor_set_,            // dstSet
+        *frame_data->cube_descriptor_set_,       // dstSet
         0,                                       // dstbinding
         0,                                       // dstArrayElement
         2,                                       // descriptorCount

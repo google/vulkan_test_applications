@@ -60,9 +60,10 @@ int main_entry(const entry::EntryData* data) {
                                          &image_memory_requirements);
     data->logger()->LogInfo("Memory Requirements: ");
     data->logger()->LogInfo("    size : ", image_memory_requirements.size);
-    data->logger()->LogInfo("    alignment : ", image_memory_requirements.alignment);
+    data->logger()->LogInfo("    alignment : ",
+                            image_memory_requirements.alignment);
     data->logger()->LogInfo("    memoryTypeBits : ",
-                       image_memory_requirements.memoryTypeBits);
+                            image_memory_requirements.memoryTypeBits);
 
     uint32_t memory_index = vulkan::GetMemoryIndex(
         &device, data->logger(), image_memory_requirements.memoryTypeBits,
@@ -85,7 +86,6 @@ int main_entry(const entry::EntryData* data) {
                device->vkBindImageMemory(device, image, device_memory, 0));
 
     device->vkFreeMemory(device, device_memory, nullptr);
-
   }
   data->logger()->LogInfo("Application Shutdown");
   return 0;

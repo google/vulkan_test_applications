@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <array>
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <array>
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 uint32_t populating_attachments_frag[] =
 #include "intermediate.frag.spv"
@@ -208,8 +208,8 @@ class RenderQuadSample
     rendering_output_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
             data_->allocator(), app()->CreateGraphicsPipeline(
-                                       pipeline_layout_.get(),
-                                       rendering_output_render_pass_.get(), 0));
+                                    pipeline_layout_.get(),
+                                    rendering_output_render_pass_.get(), 0));
     rendering_output_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                           pass_through_vert);
     rendering_output_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -470,7 +470,8 @@ class RenderQuadSample
     // copy from buf to img. The swapchain image must be larger in both
     // dimensions.
     LOG_ASSERT(>=, data_->logger(), app()->swapchain().width(), src_data.width);
-    LOG_ASSERT(>=, data_->logger(), app()->swapchain().height(), src_data.height);
+    LOG_ASSERT(>=, data_->logger(), app()->swapchain().height(),
+               src_data.height);
     uint32_t copy_width = src_data.width;
     uint32_t copy_height = src_data.height;
     VkBufferImageCopy copy_region{

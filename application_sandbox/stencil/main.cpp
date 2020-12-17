@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -157,9 +157,8 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
 
     // Initialize cube shaders
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -174,9 +173,8 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
 
     // Initialize floor shaders
     floor_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     floor_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                floor_vertex_shader);
     floor_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -200,9 +198,8 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
 
     // Initialize mirror pipeline
     mirror_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     mirror_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                 mirror_vertex_shader);
     mirror_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -272,7 +269,8 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
         VK_IMAGE_TYPE_2D,                     // imageType
         kDepthStencilFormat,                  // format
         {
-            app()->swapchain().width(), app()->swapchain().height(),
+            app()->swapchain().width(),
+            app()->swapchain().height(),
             app()->swapchain().depth(),
         },                                            // extent
         1,                                            // mipLevels
@@ -313,7 +311,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
     VkWriteDescriptorSet write{
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
         nullptr,                                 // pNext
-        *frame_data->cube_descriptor_set_,            // dstSet
+        *frame_data->cube_descriptor_set_,       // dstSet
         0,                                       // dstbinding
         0,                                       // dstArrayElement
         2,                                       // descriptorCount

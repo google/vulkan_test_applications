@@ -68,7 +68,8 @@ int main_entry(const entry::EntryData* data) {
           nullptr, &num_extension_properties, extension_properties.data()));
 
   for (const auto& extension : extension_properties) {
-    data->logger()->LogInfo("Instance Extension Found ", extension.extensionName);
+    data->logger()->LogInfo("Instance Extension Found ",
+                            extension.extensionName);
   }
 
   for (const auto& layer : layer_properties) {
@@ -130,7 +131,8 @@ int main_entry(const entry::EntryData* data) {
                    extension_properties.data()));
 
     for (const auto& extension : extension_properties) {
-      data->logger()->LogInfo("  Device Extension Found ", extension.extensionName);
+      data->logger()->LogInfo("  Device Extension Found ",
+                              extension.extensionName);
     }
 
     for (const auto& layer : layer_properties) {
@@ -147,7 +149,8 @@ int main_entry(const entry::EntryData* data) {
                      physical_device, layer.layerName,
                      &num_extension_properties, extension_properties.data()));
       for (const auto& extension : extension_properties) {
-        data->logger()->LogInfo("    Extension Found ", extension.extensionName);
+        data->logger()->LogInfo("    Extension Found ",
+                                extension.extensionName);
       }
     }
   }

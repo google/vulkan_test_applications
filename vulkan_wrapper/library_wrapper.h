@@ -20,7 +20,6 @@
 #include "support/containers/unique_ptr.h"
 #include "support/dynamic_loader/dynamic_library.h"
 #include "support/log/log.h"
-
 #include "vulkan_helpers/vulkan_header_wrapper.h"
 #include "vulkan_wrapper/lazy_function.h"
 
@@ -36,7 +35,7 @@ class LibraryWrapper {
   LibraryWrapper(containers::Allocator* allocator, logging::Logger* logger);
   bool is_valid() { return vulkan_lib_ && vulkan_lib_->is_valid(); }
 
-#define LAZY_FUNCTION(function)                   \
+#define LAZY_FUNCTION(function)                  \
   LazyLibraryFunction<PFN_##function> function = \
       LazyLibraryFunction<PFN_##function>(nullptr, #function, this)
   LAZY_FUNCTION(vkCreateInstance);
@@ -57,6 +56,6 @@ class LibraryWrapper {
   logging::Logger* logger_;
   containers::unique_ptr<dynamic_loader::DynamicLibrary> vulkan_lib_;
 };
-}
+}  // namespace vulkan
 
 #endif  // VULKAN_WRAPPER_LIBRARY_WRAPPER_H_

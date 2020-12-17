@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -120,9 +120,8 @@ class CopyImageBufferSample : public sample_application::Sample<CubeFrameData> {
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -381,7 +380,7 @@ class CopyImageBufferSample : public sample_application::Sample<CubeFrameData> {
         &as_dst_buf,    // pBufferMemoryBarriers
         1,              // imageMemoryBarrierCount
         &attach_to_src  // pImageMemoryBarriers
-        );
+    );
 
     // Copy the render result to the staging buffer.
     VkBufferImageCopy copy_region{
@@ -435,7 +434,7 @@ class CopyImageBufferSample : public sample_application::Sample<CubeFrameData> {
         &as_src_buf,    // pBufferMemoryBarriers
         1,              // imageMemoryBarrierCount
         &attach_to_dst  // pImageMemoryBarriers
-        );
+    );
 
     // Copy the staging buffer data to the swapchain image.
     copy_region.imageOffset = {int(app()->swapchain().width() / 3),

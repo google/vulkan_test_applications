@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 #define STICK_THICKNESS 0.001f
 
@@ -119,15 +119,13 @@ class ConservativeRasterizationSample
 
     conservative_rasterization_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+            data_->allocator(),
+            app()->CreateGraphicsPipeline(pipeline_layout_.get(),
+                                          render_pass_.get(), 0));
     conservative_rasterization_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT,
-                                                    "main",
-                              cube_vertex_shader);
+                                                    "main", cube_vertex_shader);
     conservative_rasterization_pipeline_->AddShader(
-        VK_SHADER_STAGE_FRAGMENT_BIT, "main",
-                              cube_fragment_shader);
+        VK_SHADER_STAGE_FRAGMENT_BIT, "main", cube_fragment_shader);
     conservative_rasterization_pipeline_->SetTopology(
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     conservative_rasterization_pipeline_->SetInputStreams(&cube_);
@@ -136,7 +134,7 @@ class ConservativeRasterizationSample
     conservative_rasterization_pipeline_->SetSamples(num_samples());
     conservative_rasterization_pipeline_->AddAttachment();
 
-	// Setup conservative rasterization
+    // Setup conservative rasterization
     VkPhysicalDeviceConservativeRasterizationPropertiesEXT
         conservativeRasterProps{};
     VkPhysicalDeviceProperties2KHR deviceProperties2{};
@@ -329,7 +327,8 @@ class ConservativeRasterizationSample
 
   const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
-  containers::unique_ptr<vulkan::VulkanGraphicsPipeline> conservative_rasterization_pipeline_;
+  containers::unique_ptr<vulkan::VulkanGraphicsPipeline>
+      conservative_rasterization_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
   VkDescriptorSetLayoutBinding cube_descriptor_set_layouts_[2];
   vulkan::VulkanModel cube_;

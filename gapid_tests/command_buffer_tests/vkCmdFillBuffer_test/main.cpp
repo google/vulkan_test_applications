@@ -13,17 +13,17 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+
 #include "support/entry/entry.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/vulkan_application.h"
 
-#include <algorithm>
-
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                        data);
+  vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
+                                        vulkan::VulkanApplicationOptions());
   {
     // Fill a buffer first with data: 0x12345678, size: VK_WHOLE_SIZE and
     // offset: 0, then fill it again with data: 0xabcdabcd, size: 256 and
@@ -56,7 +56,7 @@ int main_entry(const entry::EntryData* data) {
                              0,               // dstOffset
                              VK_WHOLE_SIZE,   // size
                              first_fill_uint  // pData
-                             );
+    );
 
     VkBufferMemoryBarrier dst_to_src_barrier{
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
@@ -80,7 +80,7 @@ int main_entry(const entry::EntryData* data) {
         &dst_to_src_barrier,             // pBufferMemoryBarriers
         0,                               // imageMemoryBarrierCount
         nullptr                          // pImageMemoryBarriers
-        );
+    );
 
     cmd_buf->vkEndCommandBuffer(cmd_buf);
     VkCommandBuffer raw_cmd_buf = cmd_buf.get_command_buffer();
@@ -116,7 +116,7 @@ int main_entry(const entry::EntryData* data) {
                              fill_offset,      // dstOffset
                              fill_size,        // size
                              second_fill_uint  // pData
-                             );
+    );
     cmd_buf->vkCmdPipelineBarrier(
         cmd_buf,                         // commandBuffer
         VK_PIPELINE_STAGE_HOST_BIT,      // srcStageMask
@@ -128,7 +128,7 @@ int main_entry(const entry::EntryData* data) {
         &dst_to_src_barrier,             // pBufferMemoryBarriers
         0,                               // imageMemoryBarrierCount
         nullptr                          // pImageMemoryBarriers
-        );
+    );
     cmd_buf->vkEndCommandBuffer(cmd_buf);
     application.render_queue()->vkQueueSubmit(
         application.render_queue(), 1, &submit,

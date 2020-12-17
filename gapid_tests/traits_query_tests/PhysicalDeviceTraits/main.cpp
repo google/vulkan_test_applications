@@ -38,8 +38,10 @@ int main_entry(const entry::EntryData* data) {
     for (const auto& device : physical_devices) {
       data->logger()->LogInfo("  Phyiscal Device: ", device);
       instance->vkGetPhysicalDeviceFeatures(device, &features);
-      data->logger()->LogInfo("    shaderInt16: ", BoolString(features.shaderInt16));
-      data->logger()->LogInfo("    shaderInt64: ", BoolString(features.shaderInt64));
+      data->logger()->LogInfo("    shaderInt16: ",
+                              BoolString(features.shaderInt16));
+      data->logger()->LogInfo("    shaderInt64: ",
+                              BoolString(features.shaderInt64));
       data->logger()->LogInfo("    logicOp: ", BoolString(features.logicOp));
 
       // Test helper function: vulkan::SupportRequestPhysicalDeviceFeatures().
@@ -57,8 +59,10 @@ int main_entry(const entry::EntryData* data) {
     for (const auto& device : physical_devices) {
       data->logger()->LogInfo("  Phyiscal Device: ", device);
       instance->vkGetPhysicalDeviceMemoryProperties(device, &properties);
-      data->logger()->LogInfo("    # memory types: ", properties.memoryTypeCount);
-      data->logger()->LogInfo("    # memory heaps: ", properties.memoryHeapCount);
+      data->logger()->LogInfo("    # memory types: ",
+                              properties.memoryTypeCount);
+      data->logger()->LogInfo("    # memory heaps: ",
+                              properties.memoryHeapCount);
     }
   }
 

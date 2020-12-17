@@ -113,7 +113,7 @@ vulkan::VulkanGraphicsPipeline CreatePipeline(
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, vulkan::VulkanApplicationOptions());
   auto pipeline = CreatePipeline(data, &app);
 
   {

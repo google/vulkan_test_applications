@@ -73,8 +73,8 @@ int main_entry(const entry::EntryData* data) {
     vulkan::VkCommandPool command_pool(raw_command_pool, nullptr, &device);
     LOG_ASSERT(
         ==, data->logger(), VK_SUCCESS,
-        device->vkResetCommandPool(device, command_pool,
-                                   VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
+        device->vkResetCommandPool(
+            device, command_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
   }
 
   {
@@ -89,8 +89,8 @@ int main_entry(const entry::EntryData* data) {
     vulkan::VkCommandPool command_pool(raw_command_pool, nullptr, &device);
     LOG_ASSERT(
         ==, data->logger(), VK_SUCCESS,
-        device->vkResetCommandPool(device, command_pool,
-                                   VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
+        device->vkResetCommandPool(
+            device, command_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
   }
 
   data->logger()->LogInfo("Application Shutdown");

@@ -14,6 +14,7 @@
  */
 
 #include "support/log/log.h"
+
 #include <cstring>
 
 namespace logging {

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
@@ -19,8 +21,6 @@
 #include "vulkan_helpers/shader_collection.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
 
 namespace {
 
@@ -115,16 +115,14 @@ class PassthroughSample
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
-
     // Create vertex buffers and index buffer
     const auto vertices_buf_create_info = GetBufferCreateInfo(
         sizeof(kVertices),
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    const auto uv_buf_create_info = GetBufferCreateInfo(
-        sizeof(kUV),
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    vertices_buf_ =
-        app()->CreateAndBindHostBuffer(&vertices_buf_create_info);
+    const auto uv_buf_create_info =
+        GetBufferCreateInfo(sizeof(kUV), VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    vertices_buf_ = app()->CreateAndBindHostBuffer(&vertices_buf_create_info);
     uv_buf_ = app()->CreateAndBindHostBuffer(&uv_buf_create_info);
 
     app()->FillHostVisibleBuffer(&*vertices_buf_,
@@ -136,8 +134,6 @@ class PassthroughSample
                                  sizeof(kUV), 0, initialization_buffer,
                                  VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
                                  VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
-
-
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
         data_->allocator(), app()->CreatePipelineLayout({{}}));
@@ -180,10 +176,10 @@ class PassthroughSample
             app()->CreateGraphicsPipeline(pipeline_layout_.get(),
                                           render_pass_.get(), 0));
     vulkan::ShaderCollection shaders(
-        data_->logger(), data_->shader_compiler(),
-        glslc_glsl_vertex_shader, glslc_glsl_fragment_shader,
-        glslc_hlsl_vertex_shader, glslc_hlsl_fragment_shader,
-        dxc_hlsl_vertex_shader, dxc_hlsl_fragment_shader);
+        data_->logger(), data_->shader_compiler(), glslc_glsl_vertex_shader,
+        glslc_glsl_fragment_shader, glslc_hlsl_vertex_shader,
+        glslc_hlsl_fragment_shader, dxc_hlsl_vertex_shader,
+        dxc_hlsl_fragment_shader);
     passthrough_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                      shaders.vertexShader(),
                                      shaders.vertexShaderWordCount());

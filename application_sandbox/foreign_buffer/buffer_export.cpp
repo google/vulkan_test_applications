@@ -42,6 +42,7 @@ int main_entry(const entry::EntryData* data) {
 
   vulkan::VulkanApplication app(
       data->allocator(), data->logger(), data,
+      vulkan::VulkanApplicationOptions(),
       {VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
        VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME},
       {VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
