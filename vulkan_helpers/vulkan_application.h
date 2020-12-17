@@ -37,9 +37,9 @@ struct VulkanModel;
 struct AllocationToken;
 
 struct VulkanApplicationOptions {
-  uint32_t host_buffer_size = 1024 * 1024; // 1 MiB
-  uint32_t device_image_size = 1024 * 1024;  // 1 MiB
-  uint32_t device_buffer_size = 1024 * 1024;  // 1 MiB
+  uint32_t host_buffer_size = 1024 * 1024;      // 1 MiB
+  uint32_t device_image_size = 1024 * 1024;     // 1 MiB
+  uint32_t device_buffer_size = 1024 * 1024;    // 1 MiB
   uint32_t coherent_buffer_size = 1024 * 1024;  // 1 MiB
   uint32_t device_peer_memory_size = 0;
 
@@ -115,7 +115,8 @@ struct VulkanApplicationOptions {
     return *this;
   }
 
-  VulkanApplicationOptions& SetSwapchainColorSpace(VkColorSpaceKHR color_space) {
+  VulkanApplicationOptions& SetSwapchainColorSpace(
+      VkColorSpaceKHR color_space) {
     swapchain_color_space = color_space;
     return *this;
   }
