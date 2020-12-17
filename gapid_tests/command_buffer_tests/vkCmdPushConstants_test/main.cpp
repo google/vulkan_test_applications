@@ -25,7 +25,7 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
   VkDescriptorSetLayoutBinding binding{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                                        VK_SHADER_STAGE_VERTEX_BIT, nullptr};

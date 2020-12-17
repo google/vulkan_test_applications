@@ -21,7 +21,7 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
 
   const VkImageType type = VK_IMAGE_TYPE_2D;

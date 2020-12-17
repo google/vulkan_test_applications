@@ -344,7 +344,7 @@ vulkan::VkQueryPool QueryWithoutDrawingAnything(
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, vulkan::VulkanApplicationOptions());
 
   {
     // 1. Get 32-bit results from all the queries in a four-query pool,

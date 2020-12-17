@@ -22,7 +22,7 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
   {
     // 1. Present a queue with no semaphore and result array, but one swapchain.

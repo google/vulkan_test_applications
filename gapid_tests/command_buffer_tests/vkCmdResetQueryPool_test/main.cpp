@@ -23,7 +23,7 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
   {
     // Creates one query pool with 4 queries, another one with 7 queries, then

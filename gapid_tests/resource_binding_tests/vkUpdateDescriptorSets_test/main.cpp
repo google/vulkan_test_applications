@@ -26,7 +26,7 @@ int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
   auto allocator = data->allocator();
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
 
   {  // 1. Zero writes and zero copies.

@@ -22,8 +22,8 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                        data);
+  vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
+                                        vulkan::VulkanApplicationOptions());
   {
     // Fill a buffer first with data: 0x12345678, size: VK_WHOLE_SIZE and
     // offset: 0, then fill it again with data: 0xabcdabcd, size: 256 and

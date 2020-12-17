@@ -24,7 +24,7 @@
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
   vulkan::VkCommandBuffer cmd_buf = app.GetCommandBuffer();
   ::VkCommandBuffer raw_cmd_buf = cmd_buf.get_command_buffer();

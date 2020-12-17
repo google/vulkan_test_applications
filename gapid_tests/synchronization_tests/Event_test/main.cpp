@@ -109,7 +109,7 @@ struct CommonHandles {
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, vulkan::VulkanApplicationOptions());
   // Basic test of vkSetEvent, vkResetEvent and vkGetEventStatus
   {
     // Use "TAG" in the trace to figure out where we are supposed to be

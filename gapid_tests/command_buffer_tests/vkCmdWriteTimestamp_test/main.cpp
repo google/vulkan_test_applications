@@ -60,7 +60,7 @@ const uint32_t kIndex[] = {0, 1, 2};
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
   uint32_t queue_family_index = app.render_queue().index();
   auto queue_family_properties = vulkan::GetQueueFamilyProperties(

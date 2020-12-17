@@ -20,7 +20,7 @@ int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
   vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                        data);
+                                        data, vulkan::VulkanApplicationOptions());
   {
     // 1. Render pass and framebuffer without attachments or dependencies. The
     // render pass begin info has render area with x/y offsets of value 5 and

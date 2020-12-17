@@ -139,7 +139,8 @@ int main_entry(const entry::EntryData* data) {
     const float depth_bias_slope_factor = 3.3f;
     // 1. Test with depthBiasClamp set to zero, so physical device feature:
     // depthBiasClamp is not required.
-    vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+    vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                  vulkan::VulkanApplicationOptions());
     CreatePipelineAndSetDepthBias(data, &app, depth_bias_constant_factor,
                                   depth_bias_clamp, depth_bias_slope_factor);
   }
@@ -152,8 +153,9 @@ int main_entry(const entry::EntryData* data) {
     const float depth_bias_slope_factor = 3.3f;
     VkPhysicalDeviceFeatures request_features = {0};
     request_features.depthBiasClamp = VK_TRUE;
-    vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {},
-                                  {}, request_features);
+    vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                  vulkan::VulkanApplicationOptions(), {}, {},
+                                  request_features);
     if (app.device().is_valid()) {
       CreatePipelineAndSetDepthBias(data, &app, depth_bias_constant_factor,
                                     depth_bias_clamp, depth_bias_slope_factor);
