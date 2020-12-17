@@ -23,8 +23,8 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                        data);
+  vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
+                                        vulkan::VulkanApplicationOptions());
 
   const VkExtent3D sample_image_extent{32, 32, 1};
   const VkImageCreateInfo sample_image_create_info{
