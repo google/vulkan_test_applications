@@ -17,7 +17,7 @@
 
 #include <utility>
 
-static_assert(VK_VERSION_1_0 == 1 && VK_HEADER_VERSION == 129,
+static_assert(VK_VERSION_1_0 == 1 && VK_HEADER_VERSION == 165,
               "review the following to make sure that all enumerant values are "
               "covered after updating vulkan.h");
 
@@ -28,8 +28,15 @@ containers::vector<::VkFormat> AllVkFormats(containers::Allocator* allocator) {
   //                       0: VK_FORMAT_UNDEFINED
   //          1 -        184: assigned
   // 1000054000 - 1000054007: assigned
-	// 1000066000 - 1000066013: assigned
-  formats.reserve(VK_FORMAT_RANGE_SIZE + 8 + 14);
+  // 1000066000 - 1000066013: assigned
+  // 1000156000 - 1000156033: assigned
+  // 1000340000 - 1000340001: assigned
+  // These are due to BEGIN_RANGE, END_RANGE, RANGE_SIZE removed in 1.2.140
+  const uint64_t VK_FORMAT_BEGIN_RANGE = VK_FORMAT_UNDEFINED;
+  const uint64_t VK_FORMAT_END_RANGE = VK_FORMAT_ASTC_12x12_SRGB_BLOCK;
+  const uint64_t VK_FORMAT_RANGE_SIZE =
+      (VK_FORMAT_ASTC_12x12_SRGB_BLOCK - VK_FORMAT_UNDEFINED + 1);
+  formats.reserve(VK_FORMAT_RANGE_SIZE + 8 + 14 + 34 + 2);
   for (uint64_t i = VK_FORMAT_BEGIN_RANGE; i <= VK_FORMAT_END_RANGE; ++i) {
     formats.push_back(static_cast<::VkFormat>(i));
   }
@@ -39,6 +46,12 @@ containers::vector<::VkFormat> AllVkFormats(containers::Allocator* allocator) {
   for (uint64_t i = 1000066000ul; i <= 1000066013ul; ++i) {
     formats.push_back(static_cast<::VkFormat>(i));
   }
+  for (uint64_t i = 1000156000ul; i <= 1000156033ul; ++i) {
+    formats.push_back(static_cast<::VkFormat>(i));
+  }
+  for (uint64_t i = 1000340000ul; i <= 1000340001ul; ++i) {
+    formats.push_back(static_cast<::VkFormat>(i));
+  }
 
   return std::move(formats);
 }
@@ -46,6 +59,11 @@ containers::vector<::VkFormat> AllVkFormats(containers::Allocator* allocator) {
 containers::vector<::VkImageType> AllVkImageTypes(
     containers::Allocator* allocator) {
   containers::vector<::VkImageType> types(allocator);
+  // These are due to BEGIN_RANGE, END_RANGE, RANGE_SIZE removed in 1.2.140
+  const uint64_t VK_IMAGE_TYPE_BEGIN_RANGE = VK_IMAGE_TYPE_1D;
+  const uint64_t VK_IMAGE_TYPE_END_RANGE = VK_IMAGE_TYPE_3D;
+  const uint64_t VK_IMAGE_TYPE_RANGE_SIZE =
+      (VK_IMAGE_TYPE_3D - VK_IMAGE_TYPE_1D + 1);
   types.reserve(VK_IMAGE_TYPE_RANGE_SIZE);
   for (uint64_t i = VK_IMAGE_TYPE_BEGIN_RANGE; i <= VK_IMAGE_TYPE_END_RANGE;
        ++i) {
@@ -57,6 +75,11 @@ containers::vector<::VkImageType> AllVkImageTypes(
 containers::vector<::VkImageTiling> AllVkImageTilings(
     containers::Allocator* allocator) {
   containers::vector<::VkImageTiling> tilings(allocator);
+  // These are due to BEGIN_RANGE, END_RANGE, RANGE_SIZE removed in 1.2.140
+  const uint64_t VK_IMAGE_TILING_BEGIN_RANGE = VK_IMAGE_TILING_OPTIMAL;
+  const uint64_t VK_IMAGE_TILING_END_RANGE = VK_IMAGE_TILING_LINEAR;
+  const uint64_t VK_IMAGE_TILING_RANGE_SIZE =
+      (VK_IMAGE_TILING_LINEAR - VK_IMAGE_TILING_OPTIMAL + 1);
   tilings.reserve(VK_IMAGE_TILING_RANGE_SIZE);
   for (uint64_t i = VK_IMAGE_TILING_BEGIN_RANGE; i <= VK_IMAGE_TILING_END_RANGE;
        ++i) {
@@ -103,6 +126,13 @@ containers::vector<::VkSampleCountFlagBits> DecomposeVkSmapleCountFlagBits(
 containers::vector<::VkCommandBufferLevel> AllVkCommandBufferLevels(
     containers::Allocator* allocator) {
   containers::vector<::VkCommandBufferLevel> levels(allocator);
+  // These are due to BEGIN_RANGE, END_RANGE, RANGE_SIZE removed in 1.2.140
+  const uint64_t VK_COMMAND_BUFFER_LEVEL_BEGIN_RANGE =
+      VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  const uint64_t VK_COMMAND_BUFFER_LEVEL_END_RANGE =
+      VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+  const uint64_t VK_COMMAND_BUFFER_LEVEL_RANGE_SIZE =
+      (VK_COMMAND_BUFFER_LEVEL_SECONDARY - VK_COMMAND_BUFFER_LEVEL_PRIMARY + 1);
   levels.reserve(VK_COMMAND_BUFFER_LEVEL_RANGE_SIZE);
   for (uint64_t i = VK_COMMAND_BUFFER_LEVEL_BEGIN_RANGE;
        i <= VK_COMMAND_BUFFER_LEVEL_END_RANGE; ++i) {
