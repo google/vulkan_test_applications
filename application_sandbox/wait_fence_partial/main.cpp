@@ -28,20 +28,16 @@
 #include "vulkan_wrapper/sub_objects.h"
 
 struct FrameData {
-    // Command Buffers
     containers::unique_ptr<vulkan::VkCommandBuffer> gCommandBuffer;
     containers::unique_ptr<vulkan::VkCommandBuffer> postCommandBuffer;
 
-    // Semaphores
     containers::unique_ptr<vulkan::VkSemaphore> gRenderFinished;
     containers::unique_ptr<vulkan::VkSemaphore> imageAcquired;
     containers::unique_ptr<vulkan::VkSemaphore> postRenderFinished;
 
-    // Fences
     containers::unique_ptr<vulkan::VkFence> renderingFence;
     containers::unique_ptr<vulkan::VkFence> postProcessFence;
 
-    // Descriptor Sets
     containers::unique_ptr<vulkan::DescriptorSet> descriptorSet;
 };
 
@@ -69,6 +65,16 @@ namespace screen_model {
 #include "fullscreen_quad.obj.h"
 }
 const auto& screen_data = screen_model::model;
+
+
+const size_t COLOR_BUFFER_SIZE = sizeof(float) * 3;
+
+
+const float colors[3][3] = {
+    {1.0f, 1.0f, 0.0f},
+    {1.0f, 0.0f, 1.0f},
+    {0.0f, 1.0f, 1.0f},
+};
 
 vulkan::VkRenderPass buildRenderPass(
     vulkan::VulkanApplication *app,
@@ -123,6 +129,13 @@ vulkan::VulkanGraphicsPipeline buildTrianglePipeline(
     vulkan::PipelineLayout pipeline_layout(app->CreatePipelineLayout({{}}));
     vulkan::VulkanGraphicsPipeline pipeline = app->CreateGraphicsPipeline(&pipeline_layout, render_pass, 0);
 
+    vulkan::VulkanGraphicsPipeline::InputStream input_stream{
+        0,                           // binding
+        VK_FORMAT_R32G32B32_SFLOAT,  // format
+        0                            // offset
+    };
+    
+    pipeline.AddInputStream(COLOR_BUFFER_SIZE,VK_VERTEX_INPUT_RATE_VERTEX, {input_stream});
     pipeline.AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main", gBuffer::vert);
     pipeline.AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main", gBuffer::frag);
 
@@ -373,6 +386,21 @@ containers::vector<vulkan::VkFramebuffer> buildFramebuffers(
     return framebuffers;
 }
 
+containers::unique_ptr<vulkan::VulkanApplication::Buffer> buildColorBuffer(vulkan::VulkanApplication *app) {
+    VkBufferCreateInfo create_info = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // sType
+        nullptr,                               // pNext
+        0,                                     // flags
+        COLOR_BUFFER_SIZE,                     // size
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,  // usage
+        VK_SHARING_MODE_EXCLUSIVE,
+        0,
+        nullptr
+    };
+
+    return app->CreateAndBindDeviceBuffer(&create_info);
+}
+
 int main_entry(const entry::EntryData* data) {
     data->logger()->LogInfo("Application Startup");
 
@@ -439,6 +467,8 @@ int main_entry(const entry::EntryData* data) {
         post_image_views,
         data
     );
+
+    auto colorBuffer = buildColorBuffer(&app);
 
     // FrameData
     containers::vector<FrameData> frameData(data->allocator());
@@ -525,6 +555,10 @@ int main_entry(const entry::EntryData* data) {
 
         geo_ref->vkCmdBeginRenderPass(geo_ref, &g_pass_begin, VK_SUBPASS_CONTENTS_INLINE);
         geo_ref->vkCmdBindPipeline(geo_ref, VK_PIPELINE_BIND_POINT_GRAPHICS, g_pipeline);
+
+        VkDeviceSize offsets[] = {0};
+        VkBuffer vertexBuffers[1] = {*colorBuffer};
+        geo_ref->vkCmdBindVertexBuffers(geo_ref, 0, 1, vertexBuffers, offsets);
         geo_ref->vkCmdDraw(geo_ref, 3, 1, 0, 0);
         geo_ref->vkCmdEndRenderPass(geo_ref);
         LOG_ASSERT(==, data->logger(), VK_SUCCESS,
@@ -569,6 +603,9 @@ int main_entry(const entry::EntryData* data) {
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             post_cmd_buf.get()
         );
+
+        app.FillSmallBuffer(colorBuffer.get(), static_cast<const void*>(colors[current_frame % 3]),
+        COLOR_BUFFER_SIZE, 0, &post_ref_cmd, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, 0);
 
         post_ref_cmd->vkCmdBeginRenderPass(post_ref_cmd, &post_pass_begin, VK_SUBPASS_CONTENTS_INLINE);
         post_ref_cmd->vkCmdBindDescriptorSets(
