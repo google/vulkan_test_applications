@@ -30,7 +30,7 @@ class InternalDynamicLibrary : public DynamicLibrary {
     lib_with_extension += "-1.dll";
     // We choose RTLD_LAZY because we expect most of the functions
     // in this library to be resolved by other calls to dlsym.
-    lib_ = LoadLibrary(lib_with_e xtension.c_str());
+    lib_ = LoadLibrary(lib_with_extension.c_str());
   }
 
   ~InternalDynamicLibrary() override {
