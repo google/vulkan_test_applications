@@ -48,7 +48,28 @@
 // - ...
 //
 // This effectively interleaves queue submissions of work for different frames,
-// thus implementing overlapping frame preparation.
+// thus implementing overlapping frame preparation. In practice, we need at
+// least 2 swapchain images, and we use frame indexes within [0 .. number of
+// swapchain images].
+//
+// Vulkan synchronization: for a given frame index, the synchronization overview
+// is:
+//
+// 1. wait for rendering fence
+// 2. submit gbuffer: signals gbuffer semaphore gbuffer
+// 3. acquire swapchain image: signals swapchain image sempahores
+// 4. submit postprocessing: wait for gbuffer and swapchain image semaphores,
+//    signals postprocessing semaphore and rendering fence.
+// 5. present: wait on postprocessing semaphore
+//
+// The semaphores make sure gbuffer, postprocessing and present are synchronized
+// on the device-side. A fence is also needed when we start a new frame on the
+// same frame index, to prevent host-side editing of the gbuffer rendering
+// resources while it could still be running for the previous use of this frame
+// index. On a simple rendering app, one tend to use the vkQueuePresent fence to
+// make sure not to edit the rendering resources while they may still be in use.
+// Here, gbuffer output is consumed only by postprocessing, hence as soon as
+// postprocessing is terminated, we can edit and submit the gbuffer.
 
 struct FrameData {
   // Command Buffers
@@ -384,10 +405,9 @@ containers::vector<vulkan::VkFramebuffer> buildFramebuffers(
 }
 
 int main_entry(const entry::EntryData* data) {
-  data->logger()->LogInfo("Application Startup");
+  data->logger()->LogInfo("Start app: overlapping_frames");
 
-  // Due to overlapping frames, this app needs at least 3 swapchain images
-  const uint32_t min_swapchain_image_count = 3;
+  const uint32_t min_swapchain_image_count = 2;
   const uint32_t default_size = 1024 * 1024;
   vulkan::VulkanApplication app(
       data->allocator(), data->logger(), data, {}, {}, {0}, default_size,
@@ -513,7 +533,8 @@ int main_entry(const entry::EntryData* data) {
   LOG_ASSERT(==, data->logger(), VK_SUCCESS,
              app.EndAndSubmitCommandBuffer(
                  cmd_buf.get(), &app.render_queue(), {}, {},
-                 {frameData[current_frame].gRenderFinished->get_raw_object()},
+                 {// Synchro: signal once gbuffer is terminated
+                  frameData[current_frame].gRenderFinished->get_raw_object()},
                  VK_NULL_HANDLE));
 
   app.device()->vkWaitForFences(app.device(), 1, &init_fence.get_raw_object(),
@@ -521,24 +542,19 @@ int main_entry(const entry::EntryData* data) {
 
   // main loop
   while (!data->WindowClosing()) {
-    // Submit gbuffer render pass for next_frame
+    // # Step 1: Prepare and submit gbuffer render pass for next_frame
+
+    // Synchro: wait on the rendering fence. This is necessary to make sure the
+    // previous postprocessing render pass on this frame index has terminated,
+    // since postprocessing consumes gbuffer results, and here we are about to
+    // edit gbuffer rendering resources.
     app.device()->vkWaitForFences(
         app.device(), 1,
         &frameData[next_frame].renderingFence->get_raw_object(), VK_TRUE,
         UINT64_MAX);
-
     app.device()->vkResetFences(
         app.device(), 1,
         &frameData[next_frame].renderingFence->get_raw_object());
-
-    VkRenderPassBeginInfo g_pass_begin{
-        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        nullptr,
-        g_render_pass,
-        g_framebuffers[next_frame].get_raw_object(),
-        {{0, 0}, {app.swapchain().width(), app.swapchain().height()}},
-        1,
-        &clear_color};
 
     // Update push constants
     std::chrono::steady_clock::time_point current_time_point =
@@ -549,10 +565,20 @@ int main_entry(const entry::EntryData* data) {
                        1000.0;
     g_push_constant_data.time = triangle_speed * time_lapse;
 
+    // Write command buffer
     auto& geometry_buf = frameData[next_frame].gCommandBuffer;
     auto& geo_ref = *geometry_buf;
 
     app.BeginCommandBuffer(geometry_buf.get());
+
+    VkRenderPassBeginInfo g_pass_begin{
+        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        nullptr,
+        g_render_pass,
+        g_framebuffers[next_frame].get_raw_object(),
+        {{0, 0}, {app.swapchain().width(), app.swapchain().height()}},
+        1,
+        &clear_color};
 
     geo_ref->vkCmdBeginRenderPass(geo_ref, &g_pass_begin,
                                   VK_SUBPASS_CONTENTS_INLINE);
@@ -566,23 +592,18 @@ int main_entry(const entry::EntryData* data) {
     LOG_ASSERT(==, data->logger(), VK_SUCCESS,
                app.EndAndSubmitCommandBuffer(
                    geometry_buf.get(), &app.render_queue(), {}, {},
-                   {frameData[next_frame].gRenderFinished->get_raw_object()},
+                   {// Synchro: signal gBuffer is done
+                    frameData[next_frame].gRenderFinished->get_raw_object()},
                    VK_NULL_HANDLE));
 
-    // Submit postprocessing render pass for current_frame
+    // # Step 2: prepare and submit postprocessing render pass for
+    // current_frame, and present this frame.
+
+    // This render pass renders into the swapchain image.
     app.device()->vkAcquireNextImageKHR(
         app.device(), app.swapchain().get_raw_object(), UINT64_MAX,
         frameData[current_frame].imageAcquired->get_raw_object(),
         static_cast<VkFence>(VK_NULL_HANDLE), &image_index);
-
-    VkRenderPassBeginInfo post_pass_begin{
-        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        nullptr,
-        post_render_pass,
-        post_framebuffers[current_frame].get_raw_object(),
-        {{0, 0}, {app.swapchain().width(), app.swapchain().height()}},
-        1,
-        &clear_color};
 
     auto& post_cmd_buf = frameData[current_frame].postCommandBuffer;
     vulkan::VkCommandBuffer& post_ref_cmd = *post_cmd_buf;
@@ -593,6 +614,15 @@ int main_entry(const entry::EntryData* data) {
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}, VK_IMAGE_LAYOUT_UNDEFINED, 0,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, post_cmd_buf.get());
+
+    VkRenderPassBeginInfo post_pass_begin{
+        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        nullptr,
+        post_render_pass,
+        post_framebuffers[current_frame].get_raw_object(),
+        {{0, 0}, {app.swapchain().width(), app.swapchain().height()}},
+        1,
+        &clear_color};
 
     post_ref_cmd->vkCmdBeginRenderPass(post_ref_cmd, &post_pass_begin,
                                        VK_SUBPASS_CONTENTS_INLINE);
@@ -608,26 +638,23 @@ int main_entry(const entry::EntryData* data) {
         app.EndAndSubmitCommandBuffer(
             &post_ref_cmd, &app.render_queue(),
             {
-                frameData[current_frame]
-                    .imageAcquired->get_raw_object(),  // wait for image
-                frameData[current_frame]
-                    .gRenderFinished
-                    ->get_raw_object(),  // wait for gPass: not needed? maybe
-                                         // implicit synchro is enough.
+                // Synchro: wait for swapchain image
+                frameData[current_frame].imageAcquired->get_raw_object(),
+                // Synchro: wait for the gbuffer render pass
+                frameData[current_frame].gRenderFinished->get_raw_object(),
             },
             {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
-            {frameData[current_frame]
-                 .postRenderFinished->get_raw_object()},  // postPass is done
-            frameData[current_frame]
-                .renderingFence->get_raw_object()  // frame fence
-            ));
+            {// Synchro: signal postprocessing is done
+             frameData[current_frame].postRenderFinished->get_raw_object()},
+            // Synchro: signal rendering is done
+            frameData[current_frame].renderingFence->get_raw_object()));
 
     // Present current_frame
     VkSemaphore wait_semaphores[] = {
+        // Synchro: wait on postprocessing to be finished
         frameData[current_frame].postRenderFinished->get_raw_object()};
     VkSwapchainKHR swapchains[] = {app.swapchain().get_raw_object()};
-
     VkPresentInfoKHR present_info{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
                                   nullptr,
                                   1,
@@ -636,7 +663,6 @@ int main_entry(const entry::EntryData* data) {
                                   swapchains,
                                   &image_index,
                                   nullptr};
-
     app.present_queue()->vkQueuePresentKHR(app.present_queue(), &present_info);
 
     // Update frame indexes
