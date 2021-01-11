@@ -28,6 +28,28 @@
 #include "vulkan_wrapper/descriptor_set_wrapper.h"
 #include "vulkan_wrapper/sub_objects.h"
 
+// This application implements overlapping frames: at each main loop iteration,
+// several frames are being prepared. This technique is employed by some engines
+// to pipeline frame creation.
+//
+// Here, each frame is rendered with two renderpasses: first, the "gbuffer"
+// renderpass renders a triangle, then the "postprocessing" renderpass inverts
+// the framebuffer colors. At each main iteration loop, the gbuffer renderpass
+// of frame N+1 and the postprocessing renderpass of frame N are run, such that
+// if we unroll the queue submissions we obtain:
+//
+// - ...
+// - gbuffer frame N+1
+// - postprocessing + present frame N
+// - gbuffer frame N+2
+// - postprocessing + present frame N+1
+// - gbuffer frame N+3
+// - postprocessing + present frame N+2
+// - ...
+//
+// This effectively interleaves queue submissions of work for different frames,
+// thus leading to overlapping frame preparation.
+
 vulkan::DescriptorSet buildDescriptorSet(
     vulkan::VulkanApplication* app, const vulkan::VkSampler& sampler,
     const vulkan::VkImageView& image_view) {
