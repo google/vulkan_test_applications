@@ -100,7 +100,7 @@ uint32_t vert[] =
 uint32_t frag[] =
 #include "triangle.frag.spv"
     ;
-};  // namespace gBuffer
+}  // namespace gBuffer
 
 namespace postBuffer {
 uint32_t vert[] =
@@ -110,7 +110,7 @@ uint32_t vert[] =
 uint32_t frag[] =
 #include "postprocessing.frag.spv"
     ;
-};  // namespace postBuffer
+}  // namespace postBuffer
 
 namespace screenModel {
 #include "fullscreen_quad.obj.h"
@@ -253,7 +253,7 @@ containers::vector<vulkan::ImagePointer> buildSamplerImages(
   containers::vector<vulkan::ImagePointer> images(data->allocator());
   images.reserve(app->swapchain_images().size());
 
-  for (int index = 0; index < app->swapchain_images().size(); index++) {
+  for (size_t i = 0; i < app->swapchain_images().size(); i++) {
     VkImageCreateInfo image_create_info = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  // sType
         nullptr,                              // pNext
@@ -287,8 +287,8 @@ containers::vector<vulkan::VkImageView> buildSwapchainImageViews(
   containers::vector<vulkan::VkImageView> image_views(data->allocator());
   image_views.reserve(app->swapchain_images().size());
 
-  for (int index = 0; index < app->swapchain_images().size(); index++) {
-    VkImage& swapchain_image = app->swapchain_images()[index];
+  for (size_t i = 0; i < app->swapchain_images().size(); i++) {
+    VkImage& swapchain_image = app->swapchain_images()[i];
 
     VkImageViewCreateInfo image_view_create_info{
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  // sType
@@ -332,8 +332,8 @@ containers::vector<vulkan::VkImageView> buildSamplerImageViews(
   containers::vector<vulkan::VkImageView> image_views(data->allocator());
   image_views.reserve(app->swapchain_images().size());
 
-  for (int index = 0; index < images.size(); index++) {
-    auto sampler_image = images[index].get();
+  for (size_t i = 0; i < images.size(); i++) {
+    auto sampler_image = images[i].get();
 
     VkImageViewCreateInfo image_view_create_info{
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  // sType
@@ -377,14 +377,14 @@ containers::vector<vulkan::VkFramebuffer> buildFramebuffers(
   containers::vector<vulkan::VkFramebuffer> framebuffers(data->allocator());
   framebuffers.reserve(app->swapchain_images().size());
 
-  for (int index = 0; index < app->swapchain_images().size(); index++) {
+  for (size_t i = 0; i < app->swapchain_images().size(); i++) {
     VkFramebufferCreateInfo framebuffer_create_info{
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // sType
         nullptr,                                    // pNext
         0,                                          // flags
         render_pass,                                // renderPass
         1,                                          // attachmentCount
-        &image_views[index].get_raw_object(),       // attachments
+        &image_views[i].get_raw_object(),           // attachments
         app->swapchain().width(),                   // width
         app->swapchain().height(),                  // height
         1                                           // layers
@@ -459,32 +459,31 @@ int main_entry(const entry::EntryData* data) {
   auto post_framebuffers =
       buildFramebuffers(&app, post_render_pass, post_image_views, data);
 
-  // FrameData
-  containers::vector<FrameData> frameData(data->allocator());
-  frameData.resize(app.swapchain_images().size());
+  // Frame data
+  containers::vector<FrameData> frame_data(data->allocator());
+  frame_data.resize(app.swapchain_images().size());
 
-  for (int index = 0; index < app.swapchain_images().size(); index++) {
-    frameData[index].gCommandBuffer =
+  for (size_t i = 0; i < app.swapchain_images().size(); i++) {
+    frame_data[i].gCommandBuffer =
         containers::make_unique<vulkan::VkCommandBuffer>(
             data->allocator(), app.GetCommandBuffer());
-    frameData[index].postCommandBuffer =
+    frame_data[i].postCommandBuffer =
         containers::make_unique<vulkan::VkCommandBuffer>(
             data->allocator(), app.GetCommandBuffer());
-    frameData[index].gRenderFinished =
+    frame_data[i].gRenderFinished =
         containers::make_unique<vulkan::VkSemaphore>(
             data->allocator(), vulkan::CreateSemaphore(&app.device()));
-    frameData[index].imageAcquired =
+    frame_data[i].imageAcquired = containers::make_unique<vulkan::VkSemaphore>(
+        data->allocator(), vulkan::CreateSemaphore(&app.device()));
+    frame_data[i].postRenderFinished =
         containers::make_unique<vulkan::VkSemaphore>(
             data->allocator(), vulkan::CreateSemaphore(&app.device()));
-    frameData[index].postRenderFinished =
-        containers::make_unique<vulkan::VkSemaphore>(
-            data->allocator(), vulkan::CreateSemaphore(&app.device()));
-    frameData[index].renderingFence = containers::make_unique<vulkan::VkFence>(
+    frame_data[i].renderingFence = containers::make_unique<vulkan::VkFence>(
         data->allocator(), vulkan::CreateFence(&app.device(), 1));
-    frameData[index].descriptorSet =
+    frame_data[i].descriptorSet =
         containers::make_unique<vulkan::DescriptorSet>(
             data->allocator(),
-            buildDescriptorSet(&app, sampler, g_image_views[index]));
+            buildDescriptorSet(&app, sampler, g_image_views[i]));
   }
 
   // Clear with bright red such that the post-processing render pass results
@@ -505,7 +504,7 @@ int main_entry(const entry::EntryData* data) {
   // main loop, to initialize the interleaving work.
   app.device()->vkResetFences(
       app.device(), 1,
-      &frameData[current_frame].renderingFence->get_raw_object());
+      &frame_data[current_frame].renderingFence->get_raw_object());
 
   VkRenderPassBeginInfo g_pass_begin{
       VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -516,7 +515,7 @@ int main_entry(const entry::EntryData* data) {
       1,
       &clear_color};
 
-  auto& cmd_buf = frameData[current_frame].gCommandBuffer;
+  auto& cmd_buf = frame_data[current_frame].gCommandBuffer;
   auto& ref_buf = *cmd_buf;
 
   app.BeginCommandBuffer(cmd_buf.get());
@@ -534,7 +533,7 @@ int main_entry(const entry::EntryData* data) {
              app.EndAndSubmitCommandBuffer(
                  cmd_buf.get(), &app.render_queue(), {}, {},
                  {// Synchro: signal once gbuffer is terminated
-                  frameData[current_frame].gRenderFinished->get_raw_object()},
+                  frame_data[current_frame].gRenderFinished->get_raw_object()},
                  VK_NULL_HANDLE));
 
   app.device()->vkWaitForFences(app.device(), 1, &init_fence.get_raw_object(),
@@ -550,23 +549,22 @@ int main_entry(const entry::EntryData* data) {
     // edit gbuffer rendering resources.
     app.device()->vkWaitForFences(
         app.device(), 1,
-        &frameData[next_frame].renderingFence->get_raw_object(), VK_TRUE,
+        &frame_data[next_frame].renderingFence->get_raw_object(), VK_TRUE,
         UINT64_MAX);
     app.device()->vkResetFences(
         app.device(), 1,
-        &frameData[next_frame].renderingFence->get_raw_object());
+        &frame_data[next_frame].renderingFence->get_raw_object());
 
     // Update push constants
     std::chrono::steady_clock::time_point current_time_point =
         std::chrono::steady_clock::now();
-    float time_lapse = std::chrono::duration_cast<std::chrono::microseconds>(
+    float time_lapse = std::chrono::duration_cast<std::chrono::milliseconds>(
                            current_time_point - start_time_point)
-                           .count() /
-                       1000.0;
+                           .count();
     g_push_constant_data.time = triangle_speed * time_lapse;
 
     // Write command buffer
-    auto& geometry_buf = frameData[next_frame].gCommandBuffer;
+    auto& geometry_buf = frame_data[next_frame].gCommandBuffer;
     auto& geo_ref = *geometry_buf;
 
     app.BeginCommandBuffer(geometry_buf.get());
@@ -593,7 +591,7 @@ int main_entry(const entry::EntryData* data) {
                app.EndAndSubmitCommandBuffer(
                    geometry_buf.get(), &app.render_queue(), {}, {},
                    {// Synchro: signal gBuffer is done
-                    frameData[next_frame].gRenderFinished->get_raw_object()},
+                    frame_data[next_frame].gRenderFinished->get_raw_object()},
                    VK_NULL_HANDLE));
 
     // # Step 2: prepare and submit postprocessing render pass for
@@ -602,10 +600,10 @@ int main_entry(const entry::EntryData* data) {
     // This render pass renders into the swapchain image.
     app.device()->vkAcquireNextImageKHR(
         app.device(), app.swapchain().get_raw_object(), UINT64_MAX,
-        frameData[current_frame].imageAcquired->get_raw_object(),
+        frame_data[current_frame].imageAcquired->get_raw_object(),
         static_cast<VkFence>(VK_NULL_HANDLE), &image_index);
 
-    auto& post_cmd_buf = frameData[current_frame].postCommandBuffer;
+    auto& post_cmd_buf = frame_data[current_frame].postCommandBuffer;
     vulkan::VkCommandBuffer& post_ref_cmd = *post_cmd_buf;
 
     app.BeginCommandBuffer(post_cmd_buf.get());
@@ -628,7 +626,7 @@ int main_entry(const entry::EntryData* data) {
                                        VK_SUBPASS_CONTENTS_INLINE);
     post_ref_cmd->vkCmdBindDescriptorSets(
         post_ref_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, post_pipeline_layout, 0,
-        1, &frameData[current_frame].descriptorSet->raw_set(), 0, nullptr);
+        1, &frame_data[current_frame].descriptorSet->raw_set(), 0, nullptr);
     post_ref_cmd->vkCmdBindPipeline(
         post_ref_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, post_pipeline);
     screen.Draw(&post_ref_cmd);
@@ -639,21 +637,21 @@ int main_entry(const entry::EntryData* data) {
             &post_ref_cmd, &app.render_queue(),
             {
                 // Synchro: wait for swapchain image
-                frameData[current_frame].imageAcquired->get_raw_object(),
+                frame_data[current_frame].imageAcquired->get_raw_object(),
                 // Synchro: wait for the gbuffer render pass
-                frameData[current_frame].gRenderFinished->get_raw_object(),
+                frame_data[current_frame].gRenderFinished->get_raw_object(),
             },
             {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
             {// Synchro: signal postprocessing is done
-             frameData[current_frame].postRenderFinished->get_raw_object()},
+             frame_data[current_frame].postRenderFinished->get_raw_object()},
             // Synchro: signal rendering is done
-            frameData[current_frame].renderingFence->get_raw_object()));
+            frame_data[current_frame].renderingFence->get_raw_object()));
 
     // Present current_frame
     VkSemaphore wait_semaphores[] = {
         // Synchro: wait on postprocessing to be finished
-        frameData[current_frame].postRenderFinished->get_raw_object()};
+        frame_data[current_frame].postRenderFinished->get_raw_object()};
     VkSwapchainKHR swapchains[] = {app.swapchain().get_raw_object()};
     VkPresentInfoKHR present_info{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
                                   nullptr,
