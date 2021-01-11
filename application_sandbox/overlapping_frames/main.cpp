@@ -91,10 +91,10 @@ uint32_t frag[] =
     ;
 };  // namespace postBuffer
 
-namespace screen_model {
+namespace screenModel {
 #include "fullscreen_quad.obj.h"
 }
-const auto& screen_data = screen_model::model;
+const auto& screen_data = screenModel::model;
 
 vulkan::DescriptorSet buildDescriptorSet(
     vulkan::VulkanApplication* app, const vulkan::VkSampler& sampler,
