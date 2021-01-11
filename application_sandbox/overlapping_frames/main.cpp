@@ -128,7 +128,6 @@ vulkan::DescriptorSet buildDescriptorSet(
 vulkan::VkRenderPass buildRenderPass(vulkan::VulkanApplication* app,
                                      VkImageLayout initial_layout,
                                      VkImageLayout final_layout) {
-  // Build render pass
   VkAttachmentReference color_attachment = {
       0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
   vulkan::VkRenderPass render_pass = app->CreateRenderPass(
@@ -172,7 +171,6 @@ vulkan::VkRenderPass buildRenderPass(vulkan::VulkanApplication* app,
 vulkan::VulkanGraphicsPipeline buildTrianglePipeline(
     vulkan::VulkanApplication* app, vulkan::VkRenderPass* render_pass,
     vulkan::PipelineLayout* pipeline_layout) {
-  // Build Triangle Pipeline
   vulkan::VulkanGraphicsPipeline pipeline =
       app->CreateGraphicsPipeline(pipeline_layout, render_pass, 0);
 
@@ -202,7 +200,6 @@ vulkan::VulkanGraphicsPipeline buildTrianglePipeline(
 vulkan::VulkanGraphicsPipeline buildPostPipeline(
     vulkan::VulkanApplication* app, vulkan::PipelineLayout* pipeline_layout,
     vulkan::VkRenderPass* render_pass, vulkan::VulkanModel* screen) {
-  // Build Post Pipeline
   vulkan::VulkanGraphicsPipeline pipeline =
       app->CreateGraphicsPipeline(pipeline_layout, render_pass, 0);
 
