@@ -32,10 +32,10 @@
 // several frames are being prepared. This technique is employed by some engines
 // to pipeline frame creation.
 //
-// Here, each frame is rendered with two renderpasses: first, the "gbuffer"
-// renderpass renders a triangle, then the "postprocessing" renderpass inverts
-// the framebuffer colors. At each main iteration loop, the gbuffer renderpass
-// of frame N+1 and the postprocessing renderpass of frame N are run, such that
+// Here, each frame is rendered with two render passes: first, the "gbuffer"
+// render pass renders a triangle, then the "postprocessing" render pass inverts
+// the framebuffer colors. At each main iteration loop, the gbuffer render pass
+// of frame N+1 and the postprocessing render pass of frame N are run, such that
 // if we unroll the queue submissions we obtain:
 //
 // - ...
@@ -48,7 +48,7 @@
 // - ...
 //
 // This effectively interleaves queue submissions of work for different frames,
-// thus leading to overlapping frame preparation.
+// thus implementing overlapping frame preparation.
 
 struct FrameData {
   // Command Buffers
@@ -410,7 +410,7 @@ int main_entry(const entry::EntryData* data) {
   // Default Sampler
   auto sampler = CreateDefaultSampler(&app.device());
 
-  // Geometry Render Pass
+  // gbuffer render pass
   auto g_render_pass =
       buildRenderPass(&app, VK_IMAGE_LAYOUT_UNDEFINED,
                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -427,7 +427,7 @@ int main_entry(const entry::EntryData* data) {
   auto g_framebuffers =
       buildFramebuffers(&app, g_render_pass, g_image_views, data);
 
-  // Post Render Pass
+  // Post render pass
   auto post_render_pass = buildRenderPass(&app, VK_IMAGE_LAYOUT_UNDEFINED,
                                           VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
   auto post_pipeline_layout =
@@ -467,8 +467,12 @@ int main_entry(const entry::EntryData* data) {
             buildDescriptorSet(&app, sampler, g_image_views[index]));
   }
 
-  VkClearValue clear_color = {0.40f, 0.94f, 0.59f, 1.0f};
+  // Clear with bright red such that the post-processing render pass results
+  // in a rather dark purple.
+  VkClearValue clear_color = {1.0f, 0.8f, 0.8f, 1.0f};
 
+  // In each iteration, we track the current and next frame. We also use time
+  // to rotate the triangle.
   uint32_t current_frame = 0;
   uint32_t next_frame = 1;
   uint32_t image_index;
@@ -477,7 +481,8 @@ int main_entry(const entry::EntryData* data) {
   const float triangle_speed = 0.01f;
   GeometryPushConstantData g_push_constant_data{0.0f};
 
-  // First Geometry RP
+  // Run the gbuffer render pass of the very first frame before entering the
+  // main loop, to initialize the interleaving work.
   app.device()->vkResetFences(
       app.device(), 1,
       &frameData[current_frame].renderingFence->get_raw_object());
@@ -514,10 +519,9 @@ int main_entry(const entry::EntryData* data) {
   app.device()->vkWaitForFences(app.device(), 1, &init_fence.get_raw_object(),
                                 VK_TRUE, UINT64_MAX);
 
-  // MAIN LOOP ======
-
+  // main loop
   while (!data->WindowClosing()) {
-    // Geometry RP for next_frame
+    // Submit gbuffer render pass for next_frame
     app.device()->vkWaitForFences(
         app.device(), 1,
         &frameData[next_frame].renderingFence->get_raw_object(), VK_TRUE,
@@ -536,7 +540,7 @@ int main_entry(const entry::EntryData* data) {
         1,
         &clear_color};
 
-    // Update Push Constants
+    // Update push constants
     std::chrono::steady_clock::time_point current_time_point =
         std::chrono::steady_clock::now();
     float time_lapse = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -565,8 +569,7 @@ int main_entry(const entry::EntryData* data) {
                    {frameData[next_frame].gRenderFinished->get_raw_object()},
                    VK_NULL_HANDLE));
 
-    // Post Processing RP for current_frame
-
+    // Submit postprocessing render pass for current_frame
     app.device()->vkAcquireNextImageKHR(
         app.device(), app.swapchain().get_raw_object(), UINT64_MAX,
         frameData[current_frame].imageAcquired->get_raw_object(),
@@ -620,6 +623,7 @@ int main_entry(const entry::EntryData* data) {
                 .renderingFence->get_raw_object()  // frame fence
             ));
 
+    // Present current_frame
     VkSemaphore wait_semaphores[] = {
         frameData[current_frame].postRenderFinished->get_raw_object()};
     VkSwapchainKHR swapchains[] = {app.swapchain().get_raw_object()};
@@ -635,10 +639,12 @@ int main_entry(const entry::EntryData* data) {
 
     app.present_queue()->vkQueuePresentKHR(app.present_queue(), &present_info);
 
+    // Update frame indexes
     current_frame = next_frame;
     next_frame = (next_frame + 1) % app.swapchain_images().size();
   }
 
+  // Terminate
   app.device()->vkDeviceWaitIdle(app.device());
   data->logger()->LogInfo("Application Shutdown");
 
