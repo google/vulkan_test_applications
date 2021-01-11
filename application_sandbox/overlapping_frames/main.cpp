@@ -386,12 +386,14 @@ containers::vector<vulkan::VkFramebuffer> buildFramebuffers(
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  // Enforce min_swapchain_image_count = 3
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {}, {},
-                                {0}, 1024 * 1024, 1024 * 1024, 1024 * 1024,
-                                1024 * 1024, false, false, false, 0, false,
-                                false, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, false,
-                                false, nullptr, false, false, nullptr, 3);
+  // Due to overlapping frames, this app needs at least 3 swapchain images
+  const uint32_t min_swapchain_image_count = 3;
+  const uint32_t default_size = 1024 * 1024;
+  vulkan::VulkanApplication app(
+      data->allocator(), data->logger(), data, {}, {}, {0}, default_size,
+      default_size, default_size, default_size, false, false, false, 0, false,
+      false, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, false, false, nullptr, false,
+      false, nullptr, min_swapchain_image_count);
 
   auto sampler_images = buildSamplerImages(&app, data);
   vulkan::VulkanModel screen(data->allocator(), data->logger(), screen_data);
