@@ -50,35 +50,6 @@
 // This effectively interleaves queue submissions of work for different frames,
 // thus leading to overlapping frame preparation.
 
-vulkan::DescriptorSet buildDescriptorSet(
-    vulkan::VulkanApplication* app, const vulkan::VkSampler& sampler,
-    const vulkan::VkImageView& image_view) {
-  auto descriptor_set =
-      app->AllocateDescriptorSet({{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                   1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr}});
-
-  VkDescriptorImageInfo image_info = {sampler.get_raw_object(),
-                                      image_view.get_raw_object(),
-                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-
-  VkWriteDescriptorSet write{
-      VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,     // sType
-      nullptr,                                    // pNext
-      descriptor_set,                             // dstSet
-      0,                                          // dstbinding
-      0,                                          // dstArrayElement
-      1,                                          // descriptorCount
-      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  // descriptorType
-      &image_info,                                // pImageInfo
-      nullptr,                                    // pBufferInfo
-      nullptr,                                    // pTexelBufferView
-  };
-
-  app->device()->vkUpdateDescriptorSets(app->device(), 1, &write, 0, nullptr);
-
-  return descriptor_set;
-}
-
 struct FrameData {
   // Command Buffers
   containers::unique_ptr<vulkan::VkCommandBuffer> gCommandBuffer;
@@ -124,6 +95,35 @@ namespace screen_model {
 #include "fullscreen_quad.obj.h"
 }
 const auto& screen_data = screen_model::model;
+
+vulkan::DescriptorSet buildDescriptorSet(
+    vulkan::VulkanApplication* app, const vulkan::VkSampler& sampler,
+    const vulkan::VkImageView& image_view) {
+  auto descriptor_set =
+      app->AllocateDescriptorSet({{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                   1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr}});
+
+  VkDescriptorImageInfo image_info = {sampler.get_raw_object(),
+                                      image_view.get_raw_object(),
+                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+
+  VkWriteDescriptorSet write{
+      VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,     // sType
+      nullptr,                                    // pNext
+      descriptor_set,                             // dstSet
+      0,                                          // dstbinding
+      0,                                          // dstArrayElement
+      1,                                          // descriptorCount
+      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  // descriptorType
+      &image_info,                                // pImageInfo
+      nullptr,                                    // pBufferInfo
+      nullptr,                                    // pTexelBufferView
+  };
+
+  app->device()->vkUpdateDescriptorSets(app->device(), 1, &write, 0, nullptr);
+
+  return descriptor_set;
+}
 
 vulkan::VkRenderPass buildRenderPass(vulkan::VulkanApplication* app,
                                      VkImageLayout initial_layout,
