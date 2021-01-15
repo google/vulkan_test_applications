@@ -234,7 +234,19 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdEndDebugUtilsLabelEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdInsertDebugUtilsLabelEXT),
-        CONSTRUCT_LAZY_FUNCTION(vkCmdPushDescriptorSetKHR)
+        CONSTRUCT_LAZY_FUNCTION(vkCmdPushDescriptorSetKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdBindVertexBuffers2EXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetCullModeEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetDepthBoundsTestEnableEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetDepthCompareOpEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetDepthTestEnableEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetDepthWriteEnableEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetFrontFaceEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetPrimitiveTopologyEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetScissorWithCountEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetStencilOpEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetStencilTestEnableEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetViewportWithCountEXT)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -299,6 +311,18 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdEndDebugUtilsLabelEXT);
   LAZY_FUNCTION(vkCmdInsertDebugUtilsLabelEXT);
   LAZY_FUNCTION(vkCmdPushDescriptorSetKHR);
+  LAZY_FUNCTION(vkCmdBindVertexBuffers2EXT);
+  LAZY_FUNCTION(vkCmdSetCullModeEXT);
+  LAZY_FUNCTION(vkCmdSetDepthBoundsTestEnableEXT);
+  LAZY_FUNCTION(vkCmdSetDepthCompareOpEXT);
+  LAZY_FUNCTION(vkCmdSetDepthTestEnableEXT);
+  LAZY_FUNCTION(vkCmdSetDepthWriteEnableEXT);
+  LAZY_FUNCTION(vkCmdSetFrontFaceEXT);
+  LAZY_FUNCTION(vkCmdSetPrimitiveTopologyEXT);
+  LAZY_FUNCTION(vkCmdSetScissorWithCountEXT);
+  LAZY_FUNCTION(vkCmdSetStencilOpEXT);
+  LAZY_FUNCTION(vkCmdSetStencilTestEnableEXT);
+  LAZY_FUNCTION(vkCmdSetViewportWithCountEXT);
 #undef LAZY_FUNCTION
 };
 
