@@ -37,6 +37,7 @@ struct SampleOptions {
   bool enable_multisampling = false;
   bool enable_mixed_multisampling = false;
   bool enable_depth_buffer = false;
+  bool enable_stencil = false;
   bool verbose_output = false;
   bool async_compute = false;
   bool sparse_binding = false;
@@ -60,6 +61,10 @@ struct SampleOptions {
   }
   SampleOptions& EnableDepthBuffer() {
     enable_depth_buffer = true;
+    return *this;
+  }
+  SampleOptions& EnableStencil() {
+    enable_stencil = true;
     return *this;
   }
   SampleOptions& EnableVerbose() {
@@ -274,6 +279,27 @@ class Sample {
           &hdr10_metadata);
     }
 
+    depth_stencil_format_ = kDepthFormat;
+    if (options_.enable_stencil) {
+      VkFormatProperties properties = {};
+      depth_stencil_format_ = VK_FORMAT_D32_SFLOAT_S8_UINT;
+      application_.instance()->vkGetPhysicalDeviceFormatProperties(
+          application_.device().physical_device(), depth_stencil_format_,
+          &properties);
+      if ((properties.optimalTilingFeatures &
+           VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0) {
+        // Check the other format instead.
+        depth_stencil_format_ = VK_FORMAT_D24_UNORM_S8_UINT;
+        application_.instance()->vkGetPhysicalDeviceFormatProperties(
+            application_.device().physical_device(), depth_stencil_format_,
+            &properties);
+        // Double check that this is supported.
+        LOG_ASSERT(!=, data_->logger(), 0,
+                   (properties.optimalTilingFeatures &
+                    VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT));
+      }
+    }
+
     for (size_t i = 0; i < swapchain_images_.size(); ++i) {
       frame_data_.push_back(SampleFrameData());
       InitializeLocalFrameData(&frame_data_.back(),
@@ -314,7 +340,7 @@ class Sample {
   // format if we are rendering multi-sampled.
   VkFormat render_format() const { return render_target_format_; }
 
-  VkFormat depth_format() const { return kDepthFormat; }
+  VkFormat depth_format() const { return depth_stencil_format_; }
 
   // The number of samples that we are rendering with.
   VkSampleCountFlagBits num_samples() const { return num_samples_; }
@@ -645,7 +671,7 @@ class Sample {
         /* pNext = */ nullptr,
         /* flags = */ 0,
         /* imageType = */ VK_IMAGE_TYPE_2D,
-        /* format = */ kDepthFormat,
+        /* format = */ depth_stencil_format_,
         /* extent = */
         {
             /* width = */ application_.swapchain().width(),
@@ -669,16 +695,20 @@ class Sample {
         VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
+    VkImageAspectFlags depth_aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+    if (options_.enable_stencil) {
+      depth_aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
     VkImageViewCreateInfo view_create_info = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  // sType
         nullptr,                                   // pNext
         0,                                         // flags
         VK_NULL_HANDLE,                            // image
         VK_IMAGE_VIEW_TYPE_2D,                     // viewType
-        kDepthFormat,                              // format
+        depth_stencil_format_,                     // format
         {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
          VK_COMPONENT_SWIZZLE_A},
-        {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1}};
+        {depth_aspect, 0, 1, 0, 1}};
 
     ::VkImageView raw_view;
 
@@ -742,7 +772,7 @@ class Sample {
          options_.enable_depth_buffer
              ? static_cast<::VkImage>(*data->depth_stencil_)
              : static_cast<::VkImage>(VK_NULL_HANDLE),  // image
-         {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1}},
+         {depth_aspect, 0, 1, 0, 1}},
         {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,    // sType
          nullptr,                                   // pNext
          0,                                         // srcAccessMask
@@ -753,7 +783,7 @@ class Sample {
          VK_QUEUE_FAMILY_IGNORED,                   // dstQueueFamilyIndex
          (options_.enable_multisampling && !options_.enable_mixed_multisampling)
              ? *data->multisampled_target_
-		     : data->swapchain_image_,  // image
+             : data->swapchain_image_,  // image
          {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}}};
 
     (*initialization_buffer)
@@ -981,6 +1011,8 @@ class Sample {
   float average_frame_time_;
   // If this is set to false, the application cannot be safely run.
   bool is_valid_;
+  // The format used for depth stencil attachment.
+  VkFormat depth_stencil_format_;
 };  // namespace sample_application
 }  // namespace sample_application
 
