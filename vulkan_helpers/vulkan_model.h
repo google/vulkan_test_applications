@@ -203,6 +203,9 @@ struct VulkanModel {
   }
 
   size_t NumIndices() const { return num_indices_; }
+  size_t NumVertices() const { return num_vertices_; }
+  ::VkBuffer VertexBuffer() const { return *vertexBuffer_; }
+  ::VkBuffer IndexBuffer() const { return *indexBuffer_; }
 
  private:
   const float* positions_;

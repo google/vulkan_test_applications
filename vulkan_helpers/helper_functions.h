@@ -181,7 +181,7 @@ VkSwapchainKHR CreateDefaultSwapchain(
     uint32_t graphics_queue_index, const entry::EntryData* data,
     VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
     bool use_shared_presentation = false, VkSwapchainCreateFlagsKHR flags = 0,
-    bool use_10bit_hdr = false, const void* extensions = nullptr, 
+    bool use_10bit_hdr = false, const void* extensions = nullptr,
     uint32_t min_image_count = 0);
 
 // Returns a uint32_t with only the lowest bit set.
