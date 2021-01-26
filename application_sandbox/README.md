@@ -49,5 +49,6 @@ output that demonstrates the feature.
 [sparse_binding](sparse_binding/README.md)
 [stencil](stencil/README.md)
 [textured_cube](textured_cube/README.md)
+[wait_fence_partial](wait_fence_partial/README.md)
 [wireframe](wireframe/README.md)
 [write_timestamp](write_timestamp/README.md)

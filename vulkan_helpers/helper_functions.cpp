@@ -1141,8 +1141,11 @@ VkSwapchainKHR CreateDefaultSwapchain(
       image_extent = VkExtent2D{data->width(), data->height()};
     }
 
-    uint32_t maxSwapchains =
-        std::max(surface_caps.maxImageCount, surface_caps.minImageCount + 1);
+    uint32_t minSwapchains =
+        std::max(surface_caps.minImageCount + 1, min_image_count + 1);
+
+    uint32_t numSwapchain =
+        std::min(surface_caps.maxImageCount, minSwapchains);
 
     if (use_10bit_hdr) {
       surface_formats[0].format = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
@@ -1154,9 +1157,7 @@ VkSwapchainKHR CreateDefaultSwapchain(
         extensions,                                   // pNext
         flags,                                        // flags
         *surface,                                     // surface
-        (min_image_count == 0) ? std::min(
-            surface_caps.minImageCount + 1,
-            maxSwapchains) : min_image_count,         // minImageCount
+        numSwapchain,                   // minImageCount
         surface_formats[0].format,      // surfaceFormat
         surface_formats[0].colorSpace,  // colorSpace
         image_extent,                   // imageExtent
