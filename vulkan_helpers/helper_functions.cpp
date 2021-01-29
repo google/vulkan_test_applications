@@ -17,16 +17,15 @@
 
 #include <algorithm>
 #include <cstring>
-#include <tuple>
 #include <fstream>
+#include <tuple>
 
 #include "support/containers/vector.h"
 #include "support/log/log.h"
 
 namespace vulkan {
 VkInstance CreateEmptyInstance(containers::Allocator* allocator,
-                               LibraryWrapper* wrapper,
-                               uint32_t version) {
+                               LibraryWrapper* wrapper, uint32_t version) {
   // Test a non-nullptr pApplicationInfo
   VkApplicationInfo app_info{VK_STRUCTURE_TYPE_APPLICATION_INFO,
                              nullptr,
@@ -143,7 +142,7 @@ VkInstance CreateVerisonedInstanceForApplicaiton(
   if (data->output_frame_index() >= 0) {
     layer = callback_layer;
   } else if (data->validation()) {
-		layer = validation_layer;
+    layer = validation_layer;
   }
 
   std::vector<const char*> extensions;
@@ -656,10 +655,11 @@ VkDevice CreateDeviceForSwapchain(
         0,                                              // enabledLayerCount
         nullptr,                                        // ppEnabledLayerNames
         static_cast<uint32_t>(
-            enabled_extensions.size()),                 // enabledExtensionCount
-        enabled_extensions.data(),                      // ppEnabledExtensionNames
-        memcmp(&features, &empty_features, sizeof(features)) == 0 ?
-            nullptr : &features                         // ppEnabledFeatures
+            enabled_extensions.size()),  // enabledExtensionCount
+        enabled_extensions.data(),       // ppEnabledExtensionNames
+        memcmp(&features, &empty_features, sizeof(features)) == 0
+            ? nullptr
+            : &features  // ppEnabledFeatures
     };
 
     ::VkDevice raw_device;
@@ -987,12 +987,11 @@ VkSurfaceKHR CreateDefaultSurface(VkInstance* instance,
   (*instance)->vkCreateAndroidSurfaceKHR(*instance, &create_info, nullptr,
                                          &surface);
 #elif defined __ggp__
-  VkStreamDescriptorSurfaceCreateInfoGGP create_info {
-    VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP,
-    nullptr, 0, 1
-  } ;
-  (*instance)->vkCreateStreamDescriptorSurfaceGGP(*instance, &create_info, nullptr,
-                                         &surface);
+  VkStreamDescriptorSurfaceCreateInfoGGP create_info{
+      VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP, nullptr, 0,
+      1};
+  (*instance)->vkCreateStreamDescriptorSurfaceGGP(*instance, &create_info,
+                                                  nullptr, &surface);
 #elif defined __linux__
   VkXcbSurfaceCreateInfoKHR create_info{
       VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR, 0, 0,
@@ -1046,8 +1045,8 @@ VkSwapchainKHR CreateDefaultSwapchain(
     containers::Allocator* allocator, uint32_t graphics_queue_index,
     uint32_t present_queue_index, const entry::EntryData* data,
     VkColorSpaceKHR swapchain_color_space, bool use_shared_presentation,
-    VkSwapchainCreateFlagsKHR flags, bool use_10bit_hdr,
-    const void* extensions, uint32_t min_image_count) {
+    VkSwapchainCreateFlagsKHR flags, bool use_10bit_hdr, const void* extensions,
+    uint32_t min_image_count) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
   containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
@@ -1076,11 +1075,10 @@ VkSwapchainKHR CreateDefaultSwapchain(
                    surface_formats.data()),
                VK_SUCCESS);
 
-	VkSurfaceFormatKHR surface_format = surface_formats[0];
+    VkSurfaceFormatKHR surface_format = surface_formats[0];
 
-	if (swapchain_color_space != 0) {
-      containers::vector<VkSurfaceFormat2KHR> surface_formats2(
-          allocator);
+    if (swapchain_color_space != 0) {
+      containers::vector<VkSurfaceFormat2KHR> surface_formats2(allocator);
       surface_formats.resize(1);
 
       VkPhysicalDeviceSurfaceInfo2KHR surface_info{
@@ -1110,7 +1108,7 @@ VkSwapchainKHR CreateDefaultSwapchain(
           surface_format = surface_formats2[i].surfaceFormat;
         }
       }
-	}
+    }
 
     uint32_t num_present_modes = 0;
     LOG_ASSERT(
@@ -1141,11 +1139,24 @@ VkSwapchainKHR CreateDefaultSwapchain(
       image_extent = VkExtent2D{data->width(), data->height()};
     }
 
-    uint32_t minSwapchains =
-        std::max(surface_caps.minImageCount + 1, min_image_count + 1);
+    // By default double-buffer our swapchain images, and use
+    // min_image_count if explicitly provided.
+    uint32_t minSwapchains = min_image_count ? min_image_count : 2;
 
+    // Make sure that we conform to at LEAST surface_caps.minImageCount;
+    minSwapchains = std::max(min_image_count, surface_caps.minImageCount);
+
+    // If maxImageCount is non-zero then also make sure we
+    //   conform to that.
     uint32_t numSwapchain =
-        std::min(surface_caps.maxImageCount, minSwapchains);
+        surface_caps.maxImageCount
+            ? std::min(surface_caps.maxImageCount, minSwapchains)
+            : minSwapchains;
+
+    // If min_image_count was set, and we could not create such a swapchain
+    //   e.g. min_image_count > surface_caps.maxImageCount, crash here,
+    //       because the sample cannot behave correctly.
+    LOG_ASSERT(>, instance->GetLogger(), numSwapchain, min_image_count);
 
     if (use_10bit_hdr) {
       surface_formats[0].format = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
@@ -1157,11 +1168,11 @@ VkSwapchainKHR CreateDefaultSwapchain(
         extensions,                                   // pNext
         flags,                                        // flags
         *surface,                                     // surface
-        numSwapchain,                   // minImageCount
-        surface_formats[0].format,      // surfaceFormat
-        surface_formats[0].colorSpace,  // colorSpace
-        image_extent,                   // imageExtent
-        1,                              // imageArrayLayers
+        numSwapchain,                                 // minImageCount
+        surface_formats[0].format,                    // surfaceFormat
+        surface_formats[0].colorSpace,                // colorSpace
+        image_extent,                                 // imageExtent
+        1,                                            // imageArrayLayers
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
             VK_IMAGE_USAGE_TRANSFER_DST_BIT,  // imageUsage
         has_multiple_queues ? VK_SHARING_MODE_CONCURRENT
@@ -1303,13 +1314,15 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(
 }
 
 // Creates a default pipeline cache, it does not load anything from disk.
-VkPipelineCache CreateDefaultPipelineCache(VkDevice* device, const entry::EntryData* entry_data) {
+VkPipelineCache CreateDefaultPipelineCache(VkDevice* device,
+                                           const entry::EntryData* entry_data) {
   ::VkPipelineCache cache = VK_NULL_HANDLE;
   void* initial_data = nullptr;
   size_t initial_size = 0;
   std::vector<char> buffer;
   if (entry_data->load_pipeline_cache()) {
-    std::ifstream in_file(entry_data->load_pipeline_cache(), std::ios::binary | std::ios::ate);
+    std::ifstream in_file(entry_data->load_pipeline_cache(),
+                          std::ios::binary | std::ios::ate);
     initial_size = in_file.tellg();
     in_file.seekg(0, std::ios::beg);
     buffer.resize(initial_size);
@@ -1318,7 +1331,8 @@ VkPipelineCache CreateDefaultPipelineCache(VkDevice* device, const entry::EntryD
     initial_data = buffer.data();
 
     entry_data->logger()->LogInfo("Loaded pipeline cache from \"",
-      entry_data->load_pipeline_cache(), "\" [", initial_size, "] bytes");
+                                  entry_data->load_pipeline_cache(), "\" [",
+                                  initial_size, "] bytes");
   }
 
   VkPipelineCacheCreateInfo create_info{
@@ -1337,15 +1351,18 @@ VkPipelineCache CreateDefaultPipelineCache(VkDevice* device, const entry::EntryD
 }
 
 // Writes the given pipeline cache to the given location on disk.
-void WritePipelineCache(VkDevice* device, VkPipelineCache* cache, const char* location) {
-   device->GetLogger()->LogInfo("Wrote pipeline cache to \"", location, "\"");
+void WritePipelineCache(VkDevice* device, VkPipelineCache* cache,
+                        const char* location) {
+  device->GetLogger()->LogInfo("Wrote pipeline cache to \"", location, "\"");
   std::vector<char> buffer;
   size_t size = 0;
-  LOG_ASSERT(==, device->GetLogger(), VK_SUCCESS,
-    (*device)->vkGetPipelineCacheData(*device, *cache, &size, nullptr));
+  LOG_ASSERT(
+      ==, device->GetLogger(), VK_SUCCESS,
+      (*device)->vkGetPipelineCacheData(*device, *cache, &size, nullptr));
   buffer.resize(size);
-  LOG_ASSERT(==, device->GetLogger(), VK_SUCCESS,
-    (*device)->vkGetPipelineCacheData(*device, *cache, &size, buffer.data()));
+  LOG_ASSERT(
+      ==, device->GetLogger(), VK_SUCCESS,
+      (*device)->vkGetPipelineCacheData(*device, *cache, &size, buffer.data()));
   std::ofstream out_file(location, std::ios::binary);
   out_file.write(buffer.data(), size);
   LOG_ASSERT(==, device->GetLogger(), false, out_file.bad());
