@@ -193,6 +193,14 @@ VulkanApplication::VulkanApplication(
   uint32_t device_memory_sizes[3] = {host_buffer_size, device_buffer_size,
                                      coherent_buffer_size};
 
+  VkMemoryAllocateFlags flags[3] = {0, 0, 0};
+  for (auto ext : device_extensions) {
+    if (strcmp(ext, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) == 0) {
+      flags[1] = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+      break;
+    }
+  }
+
   const uint32_t kAllBufferBits =
       (VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT << 1) - 1;
 
@@ -249,7 +257,7 @@ VulkanApplication::VulkanApplication(
           &device_, log_, requirements.memoryTypeBits, property_flags[i]);
       *device_memories[i][j] = containers::make_unique<VulkanArena>(
           allocator_, allocator_, log_, device_memory_sizes[i], memory_index,
-          &device_, host_mapped, m_gpu ? device_mask : 0);
+          &device_, host_mapped, m_gpu ? device_mask : 0, flags[i]);
     }
   }
 
@@ -1198,7 +1206,8 @@ struct AllocationToken {
 
 VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
                          ::VkDeviceSize buffer_size, uint32_t memory_type_index,
-                         VkDevice* device, bool map, uint32_t device_mask)
+                         VkDevice* device, bool map, uint32_t device_mask,
+                         VkMemoryAllocateFlags allocate_flags)
     : allocator_(allocator),
       freeblocks_(allocator_),
       first_block_(nullptr),
@@ -1209,11 +1218,11 @@ VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
       log_(log) {
   void* pNext = nullptr;
   VkMemoryAllocateFlagsInfo flags = {
-      VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO, nullptr,
-      VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT, 0};
+      VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO, nullptr, allocate_flags, 0};
 
   uint32_t nDevices = 0;
   if (device->num_devices() > 1) {
+    flags.flags |= VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
     pNext = &flags;
     if (device_mask == 0) {
       for (size_t i = 0; i < device->num_devices(); ++i) {
@@ -1228,6 +1237,9 @@ VulkanArena::VulkanArena(containers::Allocator* allocator, logging::Logger* log,
         }
       }
     }
+  }
+  if (allocate_flags != 0) {
+    pNext = &flags;
   }
 
   // It is illegal to have map memory that is bound to
