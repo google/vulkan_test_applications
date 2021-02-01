@@ -50,6 +50,7 @@ class InstanceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkEnumerateDeviceLayerProperties),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceFeatures),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceFeatures2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceMemoryProperties),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceMemoryProperties2),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceProperties),
@@ -120,6 +121,7 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkEnumerateDeviceLayerProperties);
   LAZY_FUNCTION(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT);
   LAZY_FUNCTION(vkGetPhysicalDeviceFeatures);
+  LAZY_FUNCTION(vkGetPhysicalDeviceFeatures2KHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceMemoryProperties);
   LAZY_FUNCTION(vkGetPhysicalDeviceMemoryProperties2);
   LAZY_FUNCTION(vkGetPhysicalDeviceProperties);
@@ -471,7 +473,10 @@ class DeviceFunctions {
             vkGetPipelineExecutableInternalRepresentationsKHR),
         CONSTRUCT_LAZY_FUNCTION(vkSetHdrMetadataEXT),
         CONSTRUCT_LAZY_FUNCTION(vkWaitSemaphoresKHR),
-        CONSTRUCT_LAZY_FUNCTION(vkSignalSemaphoreKHR)
+        CONSTRUCT_LAZY_FUNCTION(vkSignalSemaphoreKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetBufferDeviceAddressKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetBufferOpaqueCaptureAddressKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkGetDeviceMemoryOpaqueCaptureAddressKHR)
 #if defined _WIN32
         ,
         CONSTRUCT_LAZY_FUNCTION(vkGetMemoryWin32HandleKHR),
@@ -606,6 +611,9 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkSetHdrMetadataEXT);
   LAZY_FUNCTION(vkWaitSemaphoresKHR);
   LAZY_FUNCTION(vkSignalSemaphoreKHR);
+  LAZY_FUNCTION(vkGetBufferDeviceAddressKHR);
+  LAZY_FUNCTION(vkGetBufferOpaqueCaptureAddressKHR);
+  LAZY_FUNCTION(vkGetDeviceMemoryOpaqueCaptureAddressKHR);
 #if defined _WIN32
   LAZY_FUNCTION(vkGetMemoryWin32HandleKHR);
   LAZY_FUNCTION(vkGetFenceWin32HandleKHR);

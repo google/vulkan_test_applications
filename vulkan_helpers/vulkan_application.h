@@ -45,7 +45,8 @@ class VulkanArena {
   // address.
   VulkanArena(containers::Allocator* allocator, logging::Logger* log,
               ::VkDeviceSize buffer_size, uint32_t memory_type_index,
-              VkDevice* device, bool map, uint32_t device_mask = 0);
+              VkDevice* device, bool map, uint32_t device_mask = 0,
+              VkMemoryAllocateFlags allocate_flags = 0);
   ~VulkanArena();
 
   // Returns an AllocationToken for the memory of a given size and alignment.
