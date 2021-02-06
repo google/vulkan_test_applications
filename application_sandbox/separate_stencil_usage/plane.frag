@@ -20,21 +20,6 @@ layout(location = 0) out vec4 out_color;
 layout(input_attachment_index = 0, binding = 0, set = 0) uniform subpassInput stencil;
 
 void main() {
-    vec4 f = subpassLoad(stencil).rgba;
-    out_color = vec4(0, 0, 0, 0);
-    if (f.r > 0.5) {
-	out_color.r = out_color.r + 0.5; 
-	}
-    if (f.g > 0.5) {
-	out_color.r = out_color.r + 0.5; 
-	}
-    if (f.b > 0.5) {
-	out_color.b = out_color.b + 0.5; 
-	}
-    if (f.a > 0.5) {
-	out_color.b = out_color.b + 0.5; 
-	}
-    out_color.g = 1;
-    //out_color = vec4(f);//pow(f.rgb, vec3(10.0, 10.0, 10.0)) , 1.0);
-    //out_color = vec4(1, 1, 1, 1);
+    vec4 f = subpassLoad(stencil).rrrr;
+    out_color = vec4(pow(f.rgb, vec3(10.0, 10.0, 10.0)), 1.0);
 }
