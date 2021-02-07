@@ -171,19 +171,21 @@ class SeparateStencilUsageSample
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL  // finalLayout
                 },
             },  // AttachmentDescriptions
-            {{
-                0,                                // flags
-                VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
-                0,                                // inputAttachmentCount
-                nullptr,                          // pInputAttachments
-                1,                                // colorAttachmentCount
-                &color_attachment,                // colorAttachment
-                nullptr,                          // pResolveAttachments
-                &depth_attachment,                // pDepthStencilAttachment
-                0,                                // preserveAttachmentCount
-                nullptr                           // pPreserveAttachments
-            }},                                   // SubpassDescriptions
-            {}                                    // SubpassDependencies
+            {
+                {
+                    0,                                // flags
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
+                    0,                                // inputAttachmentCount
+                    nullptr,                          // pInputAttachments
+                    1,                                // colorAttachmentCount
+                    &color_attachment,                // colorAttachment
+                    nullptr,                          // pResolveAttachments
+                    &depth_attachment,                // pDepthStencilAttachment
+                    0,                                // preserveAttachmentCount
+                    nullptr                           // pPreserveAttachments
+                },
+            },  // SubpassDescriptions
+            {}  // SubpassDependencies
             ));
 
     read_stencil_render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
@@ -213,19 +215,21 @@ class SeparateStencilUsageSample
                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL  // finalLayout
                 },
             },  // AttachmentDescriptions
-            {{
-                0,                                // flags
-                VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
-                1,                                // inputAttachmentCount
-                &read_stencil_attachment,         // pInputAttachments
-                1,                                // colorAttachmentCount
-                &color_attachment,                // colorAttachment
-                nullptr,                          // pResolveAttachments
-                nullptr,                          // pDepthStencilAttachment
-                0,                                // preserveAttachmentCount
-                nullptr                           // pPreserveAttachments
-            }},                                   // SubpassDescriptions
-            {}                                    // SubpassDependencies
+            {
+                {
+                    0,                                // flags
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
+                    1,                                // inputAttachmentCount
+                    &read_stencil_attachment,         // pInputAttachments
+                    1,                                // colorAttachmentCount
+                    &color_attachment,                // colorAttachment
+                    nullptr,                          // pResolveAttachments
+                    nullptr,                          // pDepthStencilAttachment
+                    0,                                // preserveAttachmentCount
+                    nullptr                           // pPreserveAttachments
+                },
+            },  // SubpassDescriptions
+            {}  // SubpassDependencies
             ));
 
     // Initialize cube pipeline
@@ -265,6 +269,7 @@ class SeparateStencilUsageSample
     floor_pipeline_->DepthStencilState().front.writeMask = 0xFF;
     floor_pipeline_->Commit();
 
+    // Initialize read stencil pipeline
     read_stencil_pipeline_ =
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
             data_->allocator(),
@@ -406,7 +411,6 @@ class SeparateStencilUsageSample
         buffer_infos,                            // pBufferInfo
         nullptr,                                 // pTexelBufferView
     };
-
     app()->device()->vkUpdateDescriptorSets(app()->device(), 1, &write, 0,
                                             nullptr);
 
