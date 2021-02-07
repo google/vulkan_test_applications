@@ -74,8 +74,9 @@ struct SeparateStencilUsageFrameData {
   containers::unique_ptr<vulkan::DescriptorSet> read_stencil_descriptor_set_;
 
   // The default support for building a depth/stencil image is insufficient
-  // for this sample, we declare another one here. We also declar two views
-  // of the image, one that is both depth/stencil and then a stencil only.
+  // for this sample due to a required pNext, so we declare one here. We
+  // also declare two views of the image, one that is both depth/stencil and
+  // then a stencil only.
   vulkan::ImagePointer depth_stencil_image_;
   containers::unique_ptr<vulkan::VkImageView> depth_stencil_view_;
   containers::unique_ptr<vulkan::VkImageView> depth_stencil_view_stencil_only_;
@@ -274,7 +275,7 @@ class SeparateStencilUsageSample
                                       plane_fragment_shader);
     read_stencil_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     // The stencil readback is limited to the right hand side of the screen,
-    // to show a sort of color/stencil side-by-side
+    // to show a sort of color/stencil side-by-side.
     auto vp = viewport();
     vp.x = vp.width / 2;
     vp.width = vp.width / 2;
