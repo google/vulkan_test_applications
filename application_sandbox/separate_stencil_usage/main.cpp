@@ -192,7 +192,7 @@ class SeparateStencilUsageSample
                     0,                                         // flags
                     render_format(),                           // format
                     num_samples(),                             // samples
-                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // loadOp
+                    VK_ATTACHMENT_LOAD_OP_LOAD,                // loadOp
                     VK_ATTACHMENT_STORE_OP_STORE,              // storeOp
                     VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // stenilLoadOp
                     VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stenilStoreOp
