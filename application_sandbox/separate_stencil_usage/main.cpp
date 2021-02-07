@@ -323,33 +323,32 @@ class SeparateStencilUsageSample
     // support VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT while the
     // stencil aspect has VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT and
     // VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT.
-    // VkImageStencilUsageCreateInfo stencil_usage_create_info = {
-    //    VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO,  // sType;
-    //    nullptr,                                            // pNext;
-    //    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-    //        VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,  // stencilUsage;
-    //};
+    VkImageStencilUsageCreateInfo stencil_usage_create_info = {
+        VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO,  // sType;
+        nullptr,                                            // pNext;
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+            VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,  // stencilUsage;
+    };
     VkImageCreateInfo depth_stencil_image_create_info = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  // sType
-        nullptr,              //&stencil_usage_create_info,           // pNext
-        0,                    // flags
-        VK_IMAGE_TYPE_2D,     // imageType
-        kDepthStencilFormat,  // format
+        &stencil_usage_create_info,           // pNext
+        0,                                    // flags
+        VK_IMAGE_TYPE_2D,                     // imageType
+        kDepthStencilFormat,                  // format
         {
             app()->swapchain().width(),
             app()->swapchain().height(),
             app()->swapchain().depth(),
-        },                        // extent
-        1,                        // mipLevels
-        1,                        // arrayLayers
-        num_color_samples(),      // samples
-        VK_IMAGE_TILING_OPTIMAL,  // tiling
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-            VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,  // usage
-        VK_SHARING_MODE_EXCLUSIVE,                // sharingMode
-        0,                                        // queueFamilyIndexCount
-        nullptr,                                  // pQueueFamilyIndices
-        VK_IMAGE_LAYOUT_UNDEFINED,                // initialLayout
+        },                                            // extent
+        1,                                            // mipLevels
+        1,                                            // arrayLayers
+        num_color_samples(),                          // samples
+        VK_IMAGE_TILING_OPTIMAL,                      // tiling
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,  // usage
+        VK_SHARING_MODE_EXCLUSIVE,                    // sharingMode
+        0,                                            // queueFamilyIndexCount
+        nullptr,                                      // pQueueFamilyIndices
+        VK_IMAGE_LAYOUT_UNDEFINED,                    // initialLayout
     };
     frame_data->depth_stencil_image_ =
         app()->CreateAndBindImage(&depth_stencil_image_create_info);
