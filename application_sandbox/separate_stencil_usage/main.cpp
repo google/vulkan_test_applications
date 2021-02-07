@@ -168,7 +168,7 @@ class SeparateStencilUsageSample
                     VK_ATTACHMENT_LOAD_OP_CLEAR,   // stencilLoadOp
                     VK_ATTACHMENT_STORE_OP_STORE,  // stencilStoreOp
                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,  // initialLayout
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL  // finalLayout
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL  // finalLayout
                 },
             },  // AttachmentDescriptions
             {
@@ -204,14 +204,14 @@ class SeparateStencilUsageSample
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL   // finalLayout
                 },
                 {
-                    0,                                         // flags
-                    kDepthStencilFormat,                       // format
-                    num_samples(),                             // samples
-                    VK_ATTACHMENT_LOAD_OP_LOAD,                // loadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,          // storeOp
-                    VK_ATTACHMENT_LOAD_OP_LOAD,                // stenilLoadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stenilStoreOp
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // initialLayout
+                    0,                                 // flags
+                    kDepthStencilFormat,               // format
+                    num_samples(),                     // samples
+                    VK_ATTACHMENT_LOAD_OP_LOAD,        // loadOp
+                    VK_ATTACHMENT_STORE_OP_DONT_CARE,  // storeOp
+                    VK_ATTACHMENT_LOAD_OP_LOAD,        // stenilLoadOp
+                    VK_ATTACHMENT_STORE_OP_DONT_CARE,  // stenilStoreOp
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,  // initialLayout
                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL  // finalLayout
                 },
             },  // AttachmentDescriptions
