@@ -322,7 +322,8 @@ class SeparateStencilUsageSample
     // from the stock depth/stencil support. The depth aspect only
     // support VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT while the
     // stencil aspect has VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT and
-    // VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT.
+    // VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT. This allow the stencil
+    // aspect to be used as input in the stencil read renderpass.
     VkImageStencilUsageCreateInfo stencil_usage_create_info = {
         VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO,  // sType;
         nullptr,                                            // pNext;
