@@ -352,7 +352,7 @@ class SeparateStencilUsageSample
         {VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1});
     frame_data->depth_stencil_view_stencil_only_ = app()->CreateImageView(
         frame_data->depth_stencil_image_.get(), VK_IMAGE_VIEW_TYPE_2D,
-        {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1});
+        {VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1});
 
     // Need to transition to VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
     // for the first renderpass
