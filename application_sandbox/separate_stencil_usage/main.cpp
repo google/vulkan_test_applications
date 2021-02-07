@@ -88,7 +88,7 @@ class SeparateStencilUsageSample
       : data_(data),
         Sample<SeparateStencilUsageFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
-            sample_application::SampleOptions(), {0}, {},
+            sample_application::SampleOptions().EnableVulkan11(), {0}, {},
             {VK_EXT_SEPARATE_STENCIL_USAGE_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data),
         floor_(data->allocator(), data->logger(), floor_data),
@@ -354,7 +354,7 @@ class SeparateStencilUsageSample
         {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1});
 
     // Need to transition to VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-    // for renderpass
+    // for the first renderpass
     VkImageMemoryBarrier depth_stencil_image_barrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,            // sType
         nullptr,                                           // pNext
