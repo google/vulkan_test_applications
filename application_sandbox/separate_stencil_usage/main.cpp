@@ -70,6 +70,7 @@ const VkFormat kDepthStencilFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
 struct SeparateStencilUsageFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
+  containers::unique_ptr<vulkan::VkFramebuffer> read_stencil_framebuffer_;
   containers::unique_ptr<vulkan::DescriptorSet> descriptor_set_;
   containers::unique_ptr<vulkan::DescriptorSet> read_stencil_descriptor_set_;
 
@@ -435,28 +436,59 @@ class SeparateStencilUsageSample
     app()->device()->vkUpdateDescriptorSets(app()->device(), 1,
                                             &read_stencil_write, 0, nullptr);
 
-    ::VkImageView raw_views[2] = {color_view(frame_data),
-                                  *frame_data->depth_stencil_view_};
+    // Create a framebuffer with color/depth for render_pass_
+    {
+      ::VkImageView raw_views[2] = {color_view(frame_data),
+                                    *frame_data->depth_stencil_view_};
 
-    // Create a framebuffer with depth and image attachments
-    VkFramebufferCreateInfo framebuffer_create_info{
-        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // sType
-        nullptr,                                    // pNext
-        0,                                          // flags
-        *render_pass_,                              // renderPass
-        2,                                          // attachmentCount
-        raw_views,                                  // attachments
-        app()->swapchain().width(),                 // width
-        app()->swapchain().height(),                // height
-        1                                           // layers
-    };
+      VkFramebufferCreateInfo framebuffer_create_info{
+          VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // sType
+          nullptr,                                    // pNext
+          0,                                          // flags
+          *render_pass_,                              // renderPass
+          2,                                          // attachmentCount
+          raw_views,                                  // attachments
+          app()->swapchain().width(),                 // width
+          app()->swapchain().height(),                // height
+          1                                           // layers
+      };
 
-    ::VkFramebuffer raw_framebuffer;
-    app()->device()->vkCreateFramebuffer(
-        app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
-    frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-        data_->allocator(),
-        vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
+      ::VkFramebuffer raw_framebuffer;
+      app()->device()->vkCreateFramebuffer(
+          app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
+      frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
+          data_->allocator(),
+          vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
+    }
+
+    // Create a framebuffer with color/input for read_stencil_render_pass_
+    {
+      ::VkImageView raw_views[2] = {
+          color_view(frame_data),
+          *frame_data->depth_stencil_view_stencil_only_};
+
+      // Create a framebuffer with depth and image attachments
+      VkFramebufferCreateInfo framebuffer_create_info{
+          VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // sType
+          nullptr,                                    // pNext
+          0,                                          // flags
+          *read_stencil_render_pass_,                 // renderPass
+          2,                                          // attachmentCount
+          raw_views,                                  // attachments
+          app()->swapchain().width(),                 // width
+          app()->swapchain().height(),                // height
+          1                                           // layers
+      };
+
+      ::VkFramebuffer raw_framebuffer;
+      app()->device()->vkCreateFramebuffer(
+          app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
+      frame_data->read_stencil_framebuffer_ =
+          containers::make_unique<vulkan::VkFramebuffer>(
+              data_->allocator(),
+              vulkan::VkFramebuffer(raw_framebuffer, nullptr,
+                                    &app()->device()));
+    }
 
     // Populate the render command buffer
     frame_data->command_buffer_ =
@@ -498,8 +530,18 @@ class SeparateStencilUsageSample
     floor_.Draw(&cmdBuffer);
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
 
-    pass_begin.renderPass = *read_stencil_render_pass_;
-    cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &pass_begin,
+    VkRenderPassBeginInfo read_stencil_pass_begin = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
+        nullptr,                                   // pNext
+        *read_stencil_render_pass_,                // renderPass
+        *frame_data->read_stencil_framebuffer_,    // framebuffer
+        {{0, 0},
+         {app()->swapchain().width(),
+          app()->swapchain().height()}},  // renderArea
+        0,                                // clearValueCount
+        nullptr                           // clears
+    };
+    cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &read_stencil_pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);
     cmdBuffer->vkCmdBindDescriptorSets(
         cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
