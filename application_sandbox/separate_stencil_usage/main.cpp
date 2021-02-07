@@ -469,7 +469,7 @@ class SeparateStencilUsageSample
     VkClearValue clears[2];
     clears[0].color = {0.5f, 1.0f, 1.0f, 1.0f};
     clears[1].depthStencil.depth = 1.0f;
-    clears[1].depthStencil.stencil = 0xAB;
+    clears[1].depthStencil.stencil = 0;
 
     VkRenderPassBeginInfo pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
