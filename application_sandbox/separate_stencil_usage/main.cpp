@@ -420,9 +420,9 @@ class SeparateStencilUsageSample
                                     {read_stencil_pipeline_layout_bindings_}));
 
     VkDescriptorImageInfo image_info = {
-        VK_NULL_HANDLE,                                 // sampler
-        *frame_data->depth_stencil_view_stencil_only_,  // imageView
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL // imageLayout
+        VK_NULL_HANDLE,                                  // sampler
+        *frame_data->depth_stencil_view_stencil_only_,   // imageView
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL  // imageLayout
     };
 
     VkWriteDescriptorSet read_stencil_write{
@@ -467,9 +467,8 @@ class SeparateStencilUsageSample
 
     // Create a framebuffer with color/input for read_stencil_render_pass_
     {
-      ::VkImageView raw_views[2] = {
-          color_view(frame_data),
-          *frame_data->depth_stencil_view_};
+      ::VkImageView raw_views[2] = {color_view(frame_data),
+                                    *frame_data->depth_stencil_view_};
 
       // Create a framebuffer with depth and image attachments
       VkFramebufferCreateInfo framebuffer_create_info{
@@ -547,12 +546,12 @@ class SeparateStencilUsageSample
         VK_QUEUE_FAMILY_IGNORED,            // srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,            // dstQueueFamilyIndex
         *frame_data->depth_stencil_image_,  // image
-        {VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1}};
+        {VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1}};
 
-    cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
-            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-            &renderpass_barrier);
+    cmdBuffer->vkCmdPipelineBarrier(
+        cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+        &renderpass_barrier);
 
     VkRenderPassBeginInfo read_stencil_pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
