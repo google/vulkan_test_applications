@@ -476,7 +476,11 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkSignalSemaphoreKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetBufferDeviceAddressKHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetBufferOpaqueCaptureAddressKHR),
-        CONSTRUCT_LAZY_FUNCTION(vkGetDeviceMemoryOpaqueCaptureAddressKHR)
+        CONSTRUCT_LAZY_FUNCTION(vkGetDeviceMemoryOpaqueCaptureAddressKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkCreatePrivateDataSlotEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkDestroyPrivateDataSlotEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPrivateDataEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkSetPrivateDataEXT)
 #if defined _WIN32
         ,
         CONSTRUCT_LAZY_FUNCTION(vkGetMemoryWin32HandleKHR),
@@ -614,6 +618,10 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkGetBufferDeviceAddressKHR);
   LAZY_FUNCTION(vkGetBufferOpaqueCaptureAddressKHR);
   LAZY_FUNCTION(vkGetDeviceMemoryOpaqueCaptureAddressKHR);
+  LAZY_FUNCTION(vkCreatePrivateDataSlotEXT);
+  LAZY_FUNCTION(vkDestroyPrivateDataSlotEXT);
+  LAZY_FUNCTION(vkGetPrivateDataEXT);
+  LAZY_FUNCTION(vkSetPrivateDataEXT);
 #if defined _WIN32
   LAZY_FUNCTION(vkGetMemoryWin32HandleKHR);
   LAZY_FUNCTION(vkGetFenceWin32HandleKHR);
