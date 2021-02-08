@@ -142,7 +142,7 @@ class SeparateStencilUsageSample
     VkAttachmentReference depth_attachment = {
         1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
     VkAttachmentReference read_stencil_attachment = {
-        1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
         data_->allocator(),
@@ -211,7 +211,7 @@ class SeparateStencilUsageSample
                     VK_ATTACHMENT_STORE_OP_DONT_CARE,  // storeOp
                     VK_ATTACHMENT_LOAD_OP_LOAD,        // stenilLoadOp
                     VK_ATTACHMENT_STORE_OP_DONT_CARE,  // stenilStoreOp
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // initialLayout
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,  // initialLayout
                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL  // finalLayout
                 },
             },  // AttachmentDescriptions
@@ -422,7 +422,7 @@ class SeparateStencilUsageSample
     VkDescriptorImageInfo image_info = {
         VK_NULL_HANDLE,                                 // sampler
         *frame_data->depth_stencil_view_stencil_only_,  // imageView
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL        // imageLayout
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL // imageLayout
     };
 
     VkWriteDescriptorSet read_stencil_write{
@@ -469,7 +469,7 @@ class SeparateStencilUsageSample
     {
       ::VkImageView raw_views[2] = {
           color_view(frame_data),
-          *frame_data->depth_stencil_view_stencil_only_};
+          *frame_data->depth_stencil_view_};
 
       // Create a framebuffer with depth and image attachments
       VkFramebufferCreateInfo framebuffer_create_info{
@@ -543,11 +543,11 @@ class SeparateStencilUsageSample
         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,      // srcAccessMask
         VK_ACCESS_SHADER_READ_BIT,                         // dstAccessMask
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,  // oldLayout
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,          // newLayout
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,   // newLayout
         VK_QUEUE_FAMILY_IGNORED,            // srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,            // dstQueueFamilyIndex
         *frame_data->depth_stencil_image_,  // image
-        {VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1}};
+        {VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1}};
 
     cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
             VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
