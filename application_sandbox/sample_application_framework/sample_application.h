@@ -228,6 +228,28 @@ class Sample {
     // multi-sampling. Fix this later by adding a vkCmdBlitImage command
     // after the vkCmdResolveImage.
     render_target_format_ = application_.swapchain().format();
+
+    depth_stencil_format_ = kDepthFormat;
+    if (options_.enable_stencil) {
+      VkFormatProperties properties = {};
+      depth_stencil_format_ = VK_FORMAT_D32_SFLOAT_S8_UINT;
+      application_.instance()->vkGetPhysicalDeviceFormatProperties(
+          application_.device().physical_device(), depth_stencil_format_,
+          &properties);
+      if ((properties.optimalTilingFeatures &
+           VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0) {
+        // Check the other format instead.
+        depth_stencil_format_ = VK_FORMAT_D24_UNORM_S8_UINT;
+        application_.instance()->vkGetPhysicalDeviceFormatProperties(
+            application_.device().physical_device(), depth_stencil_format_,
+            &properties);
+        // Double check that this is supported.
+        LOG_ASSERT(!=, data_->logger(), 0,
+                   (properties.optimalTilingFeatures &
+                    VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT));
+      }
+    }
+
     num_samples_ = options.enable_multisampling ? kVkMultiSampledSampleCount
                                                 : VK_SAMPLE_COUNT_1_BIT;
 
@@ -277,27 +299,6 @@ class Sample {
       application_.device()->vkSetHdrMetadataEXT(
           application_.device(), 1, &application_.swapchain().get_raw_object(),
           &hdr10_metadata);
-    }
-
-    depth_stencil_format_ = kDepthFormat;
-    if (options_.enable_stencil) {
-      VkFormatProperties properties = {};
-      depth_stencil_format_ = VK_FORMAT_D32_SFLOAT_S8_UINT;
-      application_.instance()->vkGetPhysicalDeviceFormatProperties(
-          application_.device().physical_device(), depth_stencil_format_,
-          &properties);
-      if ((properties.optimalTilingFeatures &
-           VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0) {
-        // Check the other format instead.
-        depth_stencil_format_ = VK_FORMAT_D24_UNORM_S8_UINT;
-        application_.instance()->vkGetPhysicalDeviceFormatProperties(
-            application_.device().physical_device(), depth_stencil_format_,
-            &properties);
-        // Double check that this is supported.
-        LOG_ASSERT(!=, data_->logger(), 0,
-                   (properties.optimalTilingFeatures &
-                    VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT));
-      }
     }
 
     for (size_t i = 0; i < swapchain_images_.size(); ++i) {
