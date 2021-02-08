@@ -211,7 +211,7 @@ class SeparateStencilUsageSample
                     VK_ATTACHMENT_STORE_OP_DONT_CARE,  // storeOp
                     VK_ATTACHMENT_LOAD_OP_LOAD,        // stenilLoadOp
                     VK_ATTACHMENT_STORE_OP_DONT_CARE,  // stenilStoreOp
-                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,  // initialLayout
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // initialLayout
                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL  // finalLayout
                 },
             },  // AttachmentDescriptions
@@ -533,6 +533,26 @@ class SeparateStencilUsageSample
                                  *floor_pipeline_);
     floor_.Draw(&cmdBuffer);
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
+
+    // Add an image barrier and layout transition here to synchronize the
+    // the stencil write in the first pass with the readback in the second
+    // pass
+    VkImageMemoryBarrier renderpass_barrier = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,            // sType
+        nullptr,                                           // pNext
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,      // srcAccessMask
+        VK_ACCESS_SHADER_READ_BIT,                         // dstAccessMask
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,  // oldLayout
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,          // newLayout
+        VK_QUEUE_FAMILY_IGNORED,            // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,            // dstQueueFamilyIndex
+        *frame_data->depth_stencil_image_,  // image
+        {VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1}};
+
+    cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
+            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+            &renderpass_barrier);
 
     VkRenderPassBeginInfo read_stencil_pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
