@@ -61,8 +61,6 @@ uint32_t plane_fragment_shader[] =
 #include "plane.frag.spv"
     ;
 
-const VkFormat kDepthStencilFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
-
 struct SeparateStencilUsageFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
@@ -95,6 +93,9 @@ class SeparateStencilUsageSample
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
+    depth_stencil_format_ =
+        GetSupportedDepthStencilFormat(&app()->instance(), &app()->device());
+
     cube_.InitializeData(app(), initialization_buffer);
     floor_.InitializeData(app(), initialization_buffer);
     plane_.InitializeData(app(), initialization_buffer);
@@ -157,7 +158,7 @@ class SeparateStencilUsageSample
                 },
                 {
                     0,                             // flags
-                    kDepthStencilFormat,           // format
+                    depth_stencil_format_,           // format
                     num_samples(),                 // samples
                     VK_ATTACHMENT_LOAD_OP_CLEAR,   // loadOp
                     VK_ATTACHMENT_STORE_OP_STORE,  // storeOp
@@ -201,7 +202,7 @@ class SeparateStencilUsageSample
                 },
                 {
                     0,                                 // flags
-                    kDepthStencilFormat,               // format
+                    depth_stencil_format_,               // format
                     num_samples(),                     // samples
                     VK_ATTACHMENT_LOAD_OP_LOAD,        // loadOp
                     VK_ATTACHMENT_STORE_OP_DONT_CARE,  // storeOp
@@ -331,7 +332,7 @@ class SeparateStencilUsageSample
         &stencil_usage_create_info,           // pNext
         0,                                    // flags
         VK_IMAGE_TYPE_2D,                     // imageType
-        kDepthStencilFormat,                  // format
+        depth_stencil_format_,                  // format
         {
             app()->swapchain().width(),
             app()->swapchain().height(),
@@ -628,6 +629,8 @@ class SeparateStencilUsageSample
 
   containers::unique_ptr<vulkan::BufferFrameData<CameraData>> camera_data_;
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
+
+  ::VkFormat depth_stencil_format_ = VK_FORMAT_UNDEFINED;
 };
 
 int main_entry(const entry::EntryData* data) {
