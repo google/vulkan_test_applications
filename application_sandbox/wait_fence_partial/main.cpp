@@ -90,8 +90,8 @@ vulkan::VkRenderPass buildRenderPass(
            VK_SAMPLE_COUNT_1_BIT,            // samples
            VK_ATTACHMENT_LOAD_OP_CLEAR,      // loadOp
            VK_ATTACHMENT_STORE_OP_STORE,     // storeOp
-           VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // stenilLoadOp
-           VK_ATTACHMENT_STORE_OP_DONT_CARE, // stenilStoreOp
+           VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // stencilLoadOp
+           VK_ATTACHMENT_STORE_OP_DONT_CARE, // stencilStoreOp
            initial_layout,                   // initialLayout
            final_layout                      // finalLayout
         }},                                  // AttachmentDescriptions
