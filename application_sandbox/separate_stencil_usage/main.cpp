@@ -64,7 +64,6 @@ uint32_t plane_fragment_shader[] =
 struct SeparateStencilUsageFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
-  containers::unique_ptr<vulkan::VkFramebuffer> read_stencil_framebuffer_;
   containers::unique_ptr<vulkan::DescriptorSet> descriptor_set_;
   containers::unique_ptr<vulkan::DescriptorSet> read_stencil_descriptor_set_;
 
@@ -158,7 +157,7 @@ class SeparateStencilUsageSample
                 },
                 {
                     0,                             // flags
-                    depth_stencil_format_,           // format
+                    depth_stencil_format_,         // format
                     num_samples(),                 // samples
                     VK_ATTACHMENT_LOAD_OP_CLEAR,   // loadOp
                     VK_ATTACHMENT_STORE_OP_STORE,  // storeOp
@@ -181,38 +180,6 @@ class SeparateStencilUsageSample
                     0,                                // preserveAttachmentCount
                     nullptr                           // pPreserveAttachments
                 },
-            },  // SubpassDescriptions
-            {}  // SubpassDependencies
-            ));
-
-    read_stencil_render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
-        data_->allocator(),
-        app()->CreateRenderPass(
-            {
-                {
-                    0,                                         // flags
-                    render_format(),                           // format
-                    num_samples(),                             // samples
-                    VK_ATTACHMENT_LOAD_OP_LOAD,                // loadOp
-                    VK_ATTACHMENT_STORE_OP_STORE,              // storeOp
-                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // stencilLoadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stencilStoreOp
-                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // initialLayout
-                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL   // finalLayout
-                },
-                {
-                    0,                                 // flags
-                    depth_stencil_format_,               // format
-                    num_samples(),                     // samples
-                    VK_ATTACHMENT_LOAD_OP_LOAD,        // loadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,  // storeOp
-                    VK_ATTACHMENT_LOAD_OP_LOAD,        // stencilLoadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,  // stencilStoreOp
-                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,  // initialLayout
-                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL  // finalLayout
-                },
-            },  // AttachmentDescriptions
-            {
                 {
                     0,                                // flags
                     VK_PIPELINE_BIND_POINT_GRAPHICS,  // pipelineBindPoint
@@ -226,7 +193,17 @@ class SeparateStencilUsageSample
                     nullptr                           // pPreserveAttachments
                 },
             },  // SubpassDescriptions
-            {}  // SubpassDependencies
+            {
+                {
+                    0,                                          // srcSubpass
+                    1,                                          // dstSubpass
+                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,  // srcStageMask
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,      // dstStageMask
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,  // srcAccessMask
+                    VK_ACCESS_SHADER_READ_BIT,  // dstAccessMask
+                    0,                          // flags
+                },
+            }  // SubpassDependencies
             ));
 
     // Initialize cube pipeline
@@ -271,7 +248,7 @@ class SeparateStencilUsageSample
         containers::make_unique<vulkan::VulkanGraphicsPipeline>(
             data_->allocator(),
             app()->CreateGraphicsPipeline(read_stencil_pipeline_layout_.get(),
-                                          read_stencil_render_pass_.get(), 0));
+                                          render_pass_.get(), 1));
     read_stencil_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                       plane_vertex_shader);
     read_stencil_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -332,7 +309,7 @@ class SeparateStencilUsageSample
         &stencil_usage_create_info,           // pNext
         0,                                    // flags
         VK_IMAGE_TYPE_2D,                     // imageType
-        depth_stencil_format_,                  // format
+        depth_stencil_format_,                // format
         {
             app()->swapchain().width(),
             app()->swapchain().height(),
@@ -437,58 +414,28 @@ class SeparateStencilUsageSample
     app()->device()->vkUpdateDescriptorSets(app()->device(), 1,
                                             &read_stencil_write, 0, nullptr);
 
-    // Create a framebuffer with color/depth for render_pass_
-    {
-      ::VkImageView raw_views[2] = {color_view(frame_data),
-                                    *frame_data->depth_stencil_view_};
+    // Create a framebuffer with for render_pass_
+    ::VkImageView raw_views[2] = {color_view(frame_data),
+                                  *frame_data->depth_stencil_view_};
 
-      VkFramebufferCreateInfo framebuffer_create_info{
-          VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // sType
-          nullptr,                                    // pNext
-          0,                                          // flags
-          *render_pass_,                              // renderPass
-          2,                                          // attachmentCount
-          raw_views,                                  // attachments
-          app()->swapchain().width(),                 // width
-          app()->swapchain().height(),                // height
-          1                                           // layers
-      };
+    VkFramebufferCreateInfo framebuffer_create_info{
+        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // sType
+        nullptr,                                    // pNext
+        0,                                          // flags
+        *render_pass_,                              // renderPass
+        2,                                          // attachmentCount
+        raw_views,                                  // attachments
+        app()->swapchain().width(),                 // width
+        app()->swapchain().height(),                // height
+        1                                           // layers
+    };
 
-      ::VkFramebuffer raw_framebuffer;
-      app()->device()->vkCreateFramebuffer(
-          app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
-      frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
-          data_->allocator(),
-          vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
-    }
-
-    // Create a framebuffer with color/input for read_stencil_render_pass_
-    {
-      ::VkImageView raw_views[2] = {color_view(frame_data),
-                                    *frame_data->depth_stencil_view_};
-
-      // Create a framebuffer with depth and image attachments
-      VkFramebufferCreateInfo framebuffer_create_info{
-          VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // sType
-          nullptr,                                    // pNext
-          0,                                          // flags
-          *read_stencil_render_pass_,                 // renderPass
-          2,                                          // attachmentCount
-          raw_views,                                  // attachments
-          app()->swapchain().width(),                 // width
-          app()->swapchain().height(),                // height
-          1                                           // layers
-      };
-
-      ::VkFramebuffer raw_framebuffer;
-      app()->device()->vkCreateFramebuffer(
-          app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
-      frame_data->read_stencil_framebuffer_ =
-          containers::make_unique<vulkan::VkFramebuffer>(
-              data_->allocator(),
-              vulkan::VkFramebuffer(raw_framebuffer, nullptr,
-                                    &app()->device()));
-    }
+    ::VkFramebuffer raw_framebuffer;
+    app()->device()->vkCreateFramebuffer(
+        app()->device(), &framebuffer_create_info, nullptr, &raw_framebuffer);
+    frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
+        data_->allocator(),
+        vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
 
     // Populate the render command buffer
     frame_data->command_buffer_ =
@@ -528,41 +475,9 @@ class SeparateStencilUsageSample
     cmdBuffer->vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                  *floor_pipeline_);
     floor_.Draw(&cmdBuffer);
-    cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
 
-    // Add an image barrier and layout transition here to synchronize the
-    // the stencil write in the first pass with the readback in the second
-    // pass
-    VkImageMemoryBarrier renderpass_barrier = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,            // sType
-        nullptr,                                           // pNext
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,      // srcAccessMask
-        VK_ACCESS_SHADER_READ_BIT,                         // dstAccessMask
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,  // oldLayout
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,   // newLayout
-        VK_QUEUE_FAMILY_IGNORED,            // srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,            // dstQueueFamilyIndex
-        *frame_data->depth_stencil_image_,  // image
-        {VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1}};
+    cmdBuffer->vkCmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-    cmdBuffer->vkCmdPipelineBarrier(
-        cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-        &renderpass_barrier);
-
-    VkRenderPassBeginInfo read_stencil_pass_begin = {
-        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
-        nullptr,                                   // pNext
-        *read_stencil_render_pass_,                // renderPass
-        *frame_data->read_stencil_framebuffer_,    // framebuffer
-        {{0, 0},
-         {app()->swapchain().width(),
-          app()->swapchain().height()}},  // renderArea
-        0,                                // clearValueCount
-        nullptr                           // clears
-    };
-    cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &read_stencil_pass_begin,
-                                    VK_SUBPASS_CONTENTS_INLINE);
     cmdBuffer->vkCmdBindDescriptorSets(
         cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         ::VkPipelineLayout(*read_stencil_pipeline_layout_), 0, 1,
@@ -620,7 +535,6 @@ class SeparateStencilUsageSample
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> floor_pipeline_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> read_stencil_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
-  containers::unique_ptr<vulkan::VkRenderPass> read_stencil_render_pass_;
   VkDescriptorSetLayoutBinding descriptor_set_layouts_[2];
   VkDescriptorSetLayoutBinding read_stencil_pipeline_layout_bindings_ = {};
   vulkan::VulkanModel cube_;
