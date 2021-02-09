@@ -1,6 +1,6 @@
 # Separate Stencil Usage
 
-This sample execerises the extension VK_EXT_separate_stencil_usage by creating
+This sample exercises the extension VK_EXT_separate_stencil_usage by creating
 a depth/stencil image where only the stencil aspect can be used as an input
 attachment. The sample first draws a cube and a plane, the pixels for the plane
 are also written to the stencil buffer. A second pass uses a full screen quad
