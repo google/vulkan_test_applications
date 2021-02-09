@@ -45,6 +45,7 @@ output that demonstrates the feature.
 [render_input_attachment](render_input_attachment/README.md)
 [render_quad](render_quad/README.md)
 [set_event](set_event/README.md)
+[separate_stencil_usage](separate_stencil_usage/README.md)
 [simple_compute](simple_compute/README.md)
 [sparse_binding](sparse_binding/README.md)
 [stencil](stencil/README.md)
