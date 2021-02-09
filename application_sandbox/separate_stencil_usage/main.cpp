@@ -26,14 +26,14 @@
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
 
+uint32_t camera_model_vertex_shader[] =
+#include "camera_model.vert.spv"
+    ;
+
 namespace cube_model {
 #include "cube.obj.h"
 }
 const auto& cube_data = cube_model::model;
-
-uint32_t cube_vertex_shader[] =
-#include "cube.vert.spv"
-    ;
 
 uint32_t cube_fragment_shader[] =
 #include "cube.frag.spv"
@@ -43,10 +43,6 @@ namespace floor_model {
 #include "floor.obj.h"
 }
 const auto& floor_data = floor_model::model;
-
-uint32_t floor_vertex_shader[] =
-#include "floor.vert.spv"
-    ;
 
 uint32_t floor_fragment_shader[] =
 #include "floor.frag.spv"
@@ -237,7 +233,7 @@ class SeparateStencilUsageSample
         data_->allocator(), app()->CreateGraphicsPipeline(
                                 pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
-                              cube_vertex_shader);
+                              camera_model_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
                               cube_fragment_shader);
     cube_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
@@ -253,7 +249,7 @@ class SeparateStencilUsageSample
         data_->allocator(), app()->CreateGraphicsPipeline(
                                 pipeline_layout_.get(), render_pass_.get(), 0));
     floor_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
-                               floor_vertex_shader);
+                               camera_model_vertex_shader);
     floor_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
                                floor_fragment_shader);
     floor_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);

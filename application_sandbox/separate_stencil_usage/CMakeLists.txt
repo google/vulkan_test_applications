@@ -14,10 +14,9 @@
 
 add_shader_library(separate_stencil_usage_shaders
   SOURCES
+    camera_model.vert
     cube.frag
-    cube.vert
     floor.frag
-    floor.vert
     plane.frag
     plane.vert
   SHADER_DEPS
