@@ -411,6 +411,31 @@ void LoadContainer(logging::Logger* log, Function& fn,
   ret_val->resize(num_values);
   LOG_ASSERT(==, log, (fn)(args..., &num_values, ret_val->data()), VK_SUCCESS);
 }
+
+// Returns a supported depth/stencil format, one of VK_FORMAT_D32_SFLOAT_S8_UINT
+// or VK_FORMAT_D24_UNORM_S8_UINT based the instance/device features. In the
+// event that no depth/stencil format is supported, VK_FORMAT_UNDEFINED is
+// returned.
+inline VkFormat GetSupportedDepthStencilFormat(VkInstance* instance, VkDevice* device) {
+  VkFormatProperties properties = {};
+  VkFormat depth_stencil_format = VK_FORMAT_D32_SFLOAT_S8_UINT;
+  (*instance)->vkGetPhysicalDeviceFormatProperties(
+      device->physical_device(), depth_stencil_format, &properties);
+  if ((properties.optimalTilingFeatures &
+       VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0) {
+    // Check the other format instead.
+    depth_stencil_format = VK_FORMAT_D24_UNORM_S8_UINT;
+    (*instance)->vkGetPhysicalDeviceFormatProperties(
+        device->physical_device(), depth_stencil_format, &properties);
+    // Return undefined if neither is supported.
+    if ((properties.optimalTilingFeatures &
+         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0) {
+      return VK_FORMAT_UNDEFINED;
+    }
+  }
+  return depth_stencil_format;
+}
+
 }  // namespace vulkan
 
 #endif  //  VULKAN_HELPERS_HELPER_FUNCTIONS_H_

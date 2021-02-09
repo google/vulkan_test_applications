@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -56,18 +56,10 @@ uint32_t mirror_vertex_shader[] =
 #include "mirror.vert.spv"
     ;
 
-const VkFormat kDepthStencilFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
-
 struct StencilFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
   containers::unique_ptr<vulkan::DescriptorSet> cube_descriptor_set_;
-
-  // The sample application assumes the depth format to  VK_FORMAT_D16_UNORM.
-  // As we need to use stencil aspect, we declare another depth_stencil image
-  // and its view here.
-  vulkan::ImagePointer depth_stencil_image_;
-  containers::unique_ptr<vulkan::VkImageView> depth_stencil_image_view_;
 };
 
 // This creates an application with 16MB of image memory, and defaults
@@ -77,7 +69,9 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
   StencilSample(const entry::EntryData* data)
       : data_(data),
         Sample<StencilFrameData>(data->allocator(), data, 1, 512, 1, 1,
-                                 sample_application::SampleOptions()),
+                                 sample_application::SampleOptions()
+                                     .EnableDepthBuffer()
+                                     .EnableStencil()),
         cube_(data->allocator(), data->logger(), cube_data),
         floor_(data->allocator(), data->logger(), floor_data) {}
   virtual void InitializeApplicationData(
@@ -131,7 +125,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
              },
              {
                  0,                                 // flags
-                 kDepthStencilFormat,               // format
+                 depth_format(),                    // format
                  num_samples(),                     // samples
                  VK_ATTACHMENT_LOAD_OP_CLEAR,       // loadOp
                  VK_ATTACHMENT_STORE_OP_STORE,      // storeOp
@@ -157,9 +151,8 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
 
     // Initialize cube shaders
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -174,9 +167,8 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
 
     // Initialize floor shaders
     floor_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     floor_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                floor_vertex_shader);
     floor_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -200,9 +192,8 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
 
     // Initialize mirror pipeline
     mirror_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     mirror_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                 mirror_vertex_shader);
     mirror_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -264,33 +255,6 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
       StencilFrameData* frame_data,
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t frame_index) override {
-    // Initalize the depth stencil image and the image view.
-    VkImageCreateInfo depth_stencil_image_create_info = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  // sType
-        nullptr,                              // pNext
-        0,                                    // flags
-        VK_IMAGE_TYPE_2D,                     // imageType
-        kDepthStencilFormat,                  // format
-        {
-            app()->swapchain().width(), app()->swapchain().height(),
-            app()->swapchain().depth(),
-        },                                            // extent
-        1,                                            // mipLevels
-        1,                                            // arrayLayers
-        VK_SAMPLE_COUNT_1_BIT,                        // samples
-        VK_IMAGE_TILING_OPTIMAL,                      // tiling
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,  // usage
-        VK_SHARING_MODE_EXCLUSIVE,                    // sharingMode
-        0,                                            // queueFamilyIndexCount
-        nullptr,                                      // pQueueFamilyIndices
-        VK_IMAGE_LAYOUT_UNDEFINED,                    // initialLayout
-    };
-    frame_data->depth_stencil_image_ =
-        app()->CreateAndBindImage(&depth_stencil_image_create_info);
-    frame_data->depth_stencil_image_view_ = app()->CreateImageView(
-        frame_data->depth_stencil_image_.get(), VK_IMAGE_VIEW_TYPE_2D,
-        {VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1});
-
     // Initialize the descriptor sets
     frame_data->cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
@@ -313,7 +277,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
     VkWriteDescriptorSet write{
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
         nullptr,                                 // pNext
-        *frame_data->cube_descriptor_set_,            // dstSet
+        *frame_data->cube_descriptor_set_,       // dstSet
         0,                                       // dstbinding
         0,                                       // dstArrayElement
         2,                                       // descriptorCount
@@ -327,7 +291,7 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
                                             nullptr);
 
     ::VkImageView raw_views[2] = {color_view(frame_data),
-                                  *frame_data->depth_stencil_image_view_};
+                                  depth_view(frame_data)};
 
     // Create a framebuffer with depth and image attachments
     VkFramebufferCreateInfo framebuffer_create_info{
