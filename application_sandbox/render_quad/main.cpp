@@ -152,8 +152,8 @@ class RenderQuadSample
                     num_samples(),                     // samples
                     VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // loadOp
                     VK_ATTACHMENT_STORE_OP_STORE,      // storeOp
-                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // stenilLoadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,  // stenilStoreOp
+                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // stencilLoadOp
+                    VK_ATTACHMENT_STORE_OP_DONT_CARE,  // stencilStoreOp
                     VK_IMAGE_LAYOUT_UNDEFINED,         // initialLayout
                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL  // finalLayout
                 },  // Depth Attachment
@@ -163,8 +163,8 @@ class RenderQuadSample
                     num_samples(),                            // samples
                     VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // loadOp
                     VK_ATTACHMENT_STORE_OP_STORE,             // storeOp
-                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // stenilLoadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,         // stenilStoreOp
+                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // stencilLoadOp
+                    VK_ATTACHMENT_STORE_OP_DONT_CARE,         // stencilStoreOp
                     VK_IMAGE_LAYOUT_UNDEFINED,                // initialLayout
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  // finalLayout
                 },  // Color Attachment
@@ -174,8 +174,8 @@ class RenderQuadSample
                     num_samples(),                             // samples
                     VK_ATTACHMENT_LOAD_OP_LOAD,                // loadOp
                     VK_ATTACHMENT_STORE_OP_DONT_CARE,          // storeOp
-                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // stenilLoadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stenilStoreOp
+                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // stencilLoadOp
+                    VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stencilStoreOp
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // initialLayout
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL   // finalLayout
                 },  // Color Input Attachment
@@ -185,8 +185,8 @@ class RenderQuadSample
                     num_samples(),                             // samples
                     VK_ATTACHMENT_LOAD_OP_LOAD,                // loadOp
                     VK_ATTACHMENT_STORE_OP_DONT_CARE,          // storeOp
-                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // stenilLoadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stenilStoreOp
+                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,           // stencilLoadOp
+                    VK_ATTACHMENT_STORE_OP_DONT_CARE,          // stencilStoreOp
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // initialLayout
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL   // finalLayout
                 },  // Depth Input Attachment
