@@ -320,7 +320,7 @@ class Sample {
     data_->NotifyReady();
   }
 
-  void WaitIdle() { app()->device()->vkDeviceWaitIdle(app()->device()); }
+  virtual void WaitIdle() { app()->device()->vkDeviceWaitIdle(app()->device()); }
 
   // The format that we are using to render. This will be either the swapchain
   // format if we are not rendering multi-sampled, or the multisampled image
