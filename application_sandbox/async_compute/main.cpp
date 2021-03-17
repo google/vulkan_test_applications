@@ -395,10 +395,12 @@ class ASyncThreadRunner {
         ->vkQueueWaitIdle((*app_->async_compute_queue()));
   }
 
-  ~ASyncThreadRunner() {
+  void Shutdown() {
     exit_.store(true);
     runner_.join();
   }
+
+  ~ASyncThreadRunner() {}
 
   // There is only one time that index can be a value that was not
   // returned from this function before, and that is if this is the
@@ -693,6 +695,13 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
       app()->GetLogger()->LogError("Could not find async compute queue.");
       set_invalid(true);
     }
+  }
+
+  void WaitIdle() override {
+      if(should_exit() || data_->WindowClosing()) {
+          thread_runner_.Shutdown();
+      }
+      sample_application::Sample<AsyncFrameData>::WaitIdle();
   }
 
   virtual void InitializeApplicationData(
