@@ -171,8 +171,9 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
           "VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT");
     }
     app()->instance()->GetLogger()->LogInfo("duration: ", pcf.duration);
-    app()->instance()->GetLogger()->LogInfo("PipelineStageCreationFeedback:");
     for (int i = 0; i < kNumStages; i++) {
+      app()->instance()->GetLogger()->LogInfo(
+          "PipelineStageCreationFeedback (Stage ", i, ")");
       if (pscf[i].flags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT) {
         app()->instance()->GetLogger()->LogInfo(
             "flags: VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT");
