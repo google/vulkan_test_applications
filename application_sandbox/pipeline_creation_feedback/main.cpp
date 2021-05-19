@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -38,6 +38,8 @@ uint32_t cube_vertex_shader[] =
 uint32_t cube_fragment_shader[] =
 #include "cube.frag.spv"
     ;
+
+const int kNumStages = 2;
 
 struct CubeFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
@@ -115,27 +117,28 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
 
     VkPipelineCreationFeedbackEXT pcf{
         VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT |
-        VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT |
-        VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT,
-		0
-	};
-    VkPipelineCreationFeedbackEXT pscf{
-        VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT |
             VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT |
             VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT,
-        0
-	};
+        0};
+    VkPipelineCreationFeedbackEXT pscf[kNumStages] = {
+        {VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT |
+             VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT |
+             VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT,
+         0},
+        {VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT |
+             VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT |
+             VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT,
+         0}};
     VkPipelineCreationFeedbackCreateInfoEXT pcfci{
         VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT,
-        nullptr,  // pNext;
-        &pcf,     // pPipelineCreationFeedback;
-        1,        // pipelineStageCreationFeedbackCount;
-        &pscf,    // pPipelineStageCreationFeedbacks;
+        nullptr,     // pNext;
+        &pcf,        // pPipelineCreationFeedback;
+        kNumStages,  // pipelineStageCreationFeedbackCount;
+        pscf,        // pPipelineStageCreationFeedbacks;
     };
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -168,25 +171,28 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
           "VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT");
     }
     app()->instance()->GetLogger()->LogInfo("duration: ", pcf.duration);
-    app()->instance()->GetLogger()->LogInfo("PipelineStageCreationFeedback:");
-    if (pscf.flags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT) {
+    for (int i = 0; i < kNumStages; i++) {
       app()->instance()->GetLogger()->LogInfo(
-          "flags: VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT");
+          "PipelineStageCreationFeedback (Stage ", i, "):");
+      if (pscf[i].flags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT) {
+        app()->instance()->GetLogger()->LogInfo(
+            "flags: VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT");
+      }
+      if (pscf[i].flags &
+          VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT) {
+        app()->instance()->GetLogger()->LogInfo(
+            "flags: "
+            "VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_"
+            "EXT HIT");
+      }
+      if (pscf[i].flags &
+          VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT) {
+        app()->instance()->GetLogger()->LogInfo(
+            "flags: "
+            "VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT");
+      }
+      app()->instance()->GetLogger()->LogInfo("duration: ", pscf[i].duration);
     }
-    if (pscf.flags &
-        VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT) {
-      app()->instance()->GetLogger()->LogInfo(
-          "flags: "
-          "VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_"
-          "EXT HIT");
-    }
-    if (pscf.flags &
-        VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT) {
-      app()->instance()->GetLogger()->LogInfo(
-          "flags: "
-          "VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT");
-    }
-    app()->instance()->GetLogger()->LogInfo("duration: ", pscf.duration);
 
     camera_data_ = containers::make_unique<vulkan::BufferFrameData<CameraData>>(
         data_->allocator(), app(), num_swapchain_images,
@@ -312,6 +318,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             Mat44::RotationX(3.14f * time_since_last_render) *
             Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
   }
+
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       CubeFrameData* frame_data) override {
     // Update our uniform buffers.
