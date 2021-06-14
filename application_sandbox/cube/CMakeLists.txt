@@ -21,7 +21,10 @@ add_shader_library(cube_shaders
 )
 
 add_vulkan_sample_application(cube
-  SOURCES main.cpp
+  SOURCES 
+    main.cpp
+    cube_render.cpp
+    render_quad.cpp
   LIBS
     vulkan_helpers
   MODELS

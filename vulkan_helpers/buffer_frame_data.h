@@ -22,9 +22,11 @@ namespace vulkan {
 
 const size_t kMaxOffsetAlignment = 256;
 
+namespace {
 // Rounds to the given power_of_2
 size_t RoundUp(size_t to_round, size_t power_of_2_to_round) {
   return (to_round + power_of_2_to_round - 1) & ~(power_of_2_to_round - 1);
+}
 }
 
 template <typename T>

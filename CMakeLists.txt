@@ -60,7 +60,7 @@ add_vulkan_subdirectory(standard_images)
 
 # All of the support code has to go above here, below here should come all of
 # the actual tests.
-add_vulkan_subdirectory(gapid_tests)
+# add_vulkan_subdirectory(gapid_tests)
 
 # Sample Applications and Sandbox
 add_vulkan_subdirectory(application_sandbox)
