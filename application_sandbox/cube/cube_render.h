@@ -14,7 +14,8 @@ struct CubeRenderData {
 };
 
 struct CubeVulkanInfo {
-    VkFormat format;
+    VkFormat colorFormat;
+    VkFormat depthFormat;
     VkSampleCountFlagBits num_samples;
     VkViewport viewport;
     VkRect2D scissor;
