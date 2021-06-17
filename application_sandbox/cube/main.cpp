@@ -32,7 +32,7 @@ class CubeSample : public sample_application::Sample<CubeSampleData> {
       : data_(data),
         Sample<CubeSampleData>(
             data->allocator(), data, 10, 1024, 10, 1,
-            sample_application::SampleOptions().EnableMultisampling().EnableDepthBuffer()),
+            sample_application::SampleOptions().EnableMultisampling()),
             // cube(data),
             quad(data) {}
 
@@ -43,6 +43,7 @@ class CubeSample : public sample_application::Sample<CubeSampleData> {
     // CubeVulkanInfo cubeVulkanInfo{};
     // cubeVulkanInfo.num_samples = num_samples();
     // cubeVulkanInfo.format = render_format();
+    // cubeVulkanInfo.depthFormat = depth_format();
     // cubeVulkanInfo.scissor = scissor();
     // cubeVulkanInfo.viewport = viewport();
     // cube.InitializeCubeData(app(), data_->allocator(), cubeVulkanInfo, initialization_buffer, num_swapchain_images);
@@ -50,7 +51,6 @@ class CubeSample : public sample_application::Sample<CubeSampleData> {
     QuadVulkanInfo quadVulkanInfo{};
     quadVulkanInfo.num_samples = num_samples();
     quadVulkanInfo.colorFormat = render_format();
-    quadVulkanInfo.depthFormat = depth_format();
     quadVulkanInfo.scissor = scissor();
     quadVulkanInfo.viewport = viewport();
     quad.InitializeQuadData(app(), data_->allocator(), quadVulkanInfo, initialization_buffer, num_swapchain_images);
@@ -78,7 +78,6 @@ class CubeSample : public sample_application::Sample<CubeSampleData> {
         &frame_data->renderQuadData,
         data_->allocator(), 
         color_view(frame_data),
-        depth_view(frame_data),
         frame_index);
 
     cmdBuffer->vkBeginCommandBuffer(cmdBuffer, &sample_application::kBeginCommandBuffer);

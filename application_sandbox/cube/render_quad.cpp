@@ -84,10 +84,8 @@ void RenderQuad::InitializeQuadData(vulkan::VulkanApplication* app,
 
     VkAttachmentReference color_attachment = {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-    VkAttachmentReference depth_attachment = {
-        1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
     VkAttachmentReference input_attachment = {
-        2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
         allocator,
@@ -104,17 +102,6 @@ void RenderQuad::InitializeQuadData(vulkan::VulkanApplication* app,
                     VK_IMAGE_LAYOUT_UNDEFINED,                // initialLayout
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  // finalLayout
                 },  // Color Attachment
-                {
-                    0,                                 // flags
-                    vulkanInfo.depthFormat,           // format
-                    vulkanInfo.num_samples,            // samples
-                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // loadOp
-                    VK_ATTACHMENT_STORE_OP_STORE,      // storeOp
-                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // stencilLoadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,  // stencilStoreOp
-                    VK_IMAGE_LAYOUT_UNDEFINED,         // initialLayout
-                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL  // finalLayout
-                },  // Depth Attachment
                 {
                     0,                                         // flags
                     VK_FORMAT_R8G8B8A8_UINT,                   // format
@@ -135,7 +122,7 @@ void RenderQuad::InitializeQuadData(vulkan::VulkanApplication* app,
                 1,                                // colorAttachmentCount
                 &color_attachment,                // colorAttachment
                 nullptr,                          // pResolveAttachments
-                &depth_attachment,                // pDepthStencilAttachment
+                nullptr,                          // pDepthStencilAttachment
                 0,                                // preserveAttachmentCount
                 nullptr                           // pPreserveAttachments
             }},                                   // SubpassDescriptions
@@ -152,7 +139,6 @@ void RenderQuad::InitializeQuadData(vulkan::VulkanApplication* app,
     pipeline_->SetViewport(vulkanInfo.viewport);
     pipeline_->SetScissor(vulkanInfo.scissor);
     pipeline_->SetSamples(vulkanInfo.num_samples);
-    pipeline_->DepthStencilState().depthCompareOp = VK_COMPARE_OP_ALWAYS;
     pipeline_->AddAttachment();
 
     pipeline_->Commit();
@@ -168,7 +154,7 @@ void RenderQuad::InitializeQuadData(vulkan::VulkanApplication* app,
 void RenderQuad::InitializeInputImages(vulkan::VulkanApplication* app,
     RenderQuadData* renderData,
     containers::Allocator* allocator) {
-    // Create the color and depth staging images
+    // Create the staging image
     VkImageCreateInfo img_info{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  // sType
         nullptr,                              // pNext
@@ -220,25 +206,23 @@ void RenderQuad::InitializeFrameData(vulkan::VulkanApplication* app,
     RenderQuadData* renderData,
     containers::Allocator* allocator,
     const VkImageView& colorView,
-    const VkImageView& depthView,
     size_t frame_index) {
 
     InitializeInputImages(app, renderData, allocator);
 
     // Create a framebuffer for rendering
-    VkImageView views[3] = {
+    VkImageView views[2] = {
         colorView,
-        depthView,
         *renderData->color_input_view_,
     };
 
-    // Create a framebuffer with depth and image attachments
+    // Create a framebuffer with attachments
     VkFramebufferCreateInfo framebuffer_create_info{
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // sType
         nullptr,                                    // pNext
         0,                                          // flags
         *render_pass_,                              // renderPass
-        3,                                          // attachmentCount
+        2,                                          // attachmentCount
         views,                                      // attachments
         app->swapchain().width(),                   // width
         app->swapchain().height(),                  // height
@@ -278,7 +262,7 @@ void RenderQuad::InitializeFrameData(vulkan::VulkanApplication* app,
 }
 
 void RenderQuad::CopyInputImages(vulkan::VulkanApplication* app, RenderQuadData* renderData, vulkan::VkCommandBuffer& cmdBuffer, size_t frame_index) {
-    // Copy data from color/depth source buffer to the staging images.
+    // Copy data from color source buffer to the staging images.
     // Buffer barriers to src
     VkBufferMemoryBarrier color_data_to_src{
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,         // sType

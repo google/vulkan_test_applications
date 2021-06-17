@@ -24,7 +24,6 @@ struct alignas(alignof(containers::unique_ptr<vulkan::VkFramebuffer>)) RenderQua
 
 struct QuadVulkanInfo {
     VkFormat colorFormat;
-    VkFormat depthFormat;
     VkSampleCountFlagBits num_samples;
     VkViewport viewport;
     VkRect2D scissor;
@@ -37,7 +36,7 @@ public:
  	void InitializeQuadData(vulkan::VulkanApplication* app, containers::Allocator* allocator, 
     QuadVulkanInfo vulkanInfo, vulkan::VkCommandBuffer* initialization_buffer, size_t num_swapchain_images);
  	void InitializeFrameData(vulkan::VulkanApplication* app, RenderQuadData* renderData, 
-    containers::Allocator* allocator, const VkImageView& colorView, const VkImageView& depthView, size_t frame_index);
+    containers::Allocator* allocator, const VkImageView& colorView, size_t frame_index);
   void RecordRenderCmds(vulkan::VulkanApplication* app, RenderQuadData* renderData, 
     vulkan::VkCommandBuffer& cmdBuffer, size_t frame_index);
  	void Update(float time_since_last_render);
