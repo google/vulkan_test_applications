@@ -14,10 +14,8 @@
  */
 
 #version 450
-
-layout(location = 0) out vec4 out_color;
-layout (location = 1) in vec2 texcoord;
+#include "models/model_setup.glsl"
 
 void main() {
-    out_color = vec4(texcoord, 0.0, 1.0);
+    gl_Position =  get_position();
 }

@@ -16,8 +16,17 @@
 #version 450
 
 layout(location = 0) out vec4 out_color;
-layout (location = 1) in vec2 texcoord;
+layout(input_attachment_index = 0, binding = 0, set = 0) uniform usubpassInput color_data;
 
 void main() {
-    out_color = vec4(texcoord, 0.0, 1.0);
+    uint r = subpassLoad(color_data).r;
+    uint g = subpassLoad(color_data).g;
+    uint b = subpassLoad(color_data).b;
+    uint a = subpassLoad(color_data).a;
+    out_color.r = (r&0xFF)/255.0;
+    out_color.g = (g&0xFF)/255.0;
+    out_color.b = (b&0xFF)/255.0;
+    out_color.a = (a&0xFF)/255.0;
+
+    // out_color = vec4(1.0, 0.0, 0.0, 1.0);
 }

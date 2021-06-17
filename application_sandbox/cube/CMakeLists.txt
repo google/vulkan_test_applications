@@ -16,6 +16,8 @@ add_shader_library(cube_shaders
   SOURCES
     cube.frag
     cube.vert
+    quad.frag
+    quad.vert
   SHADER_DEPS
     shader_library
 )
@@ -31,4 +33,6 @@ add_vulkan_sample_application(cube
     standard_models
   SHADERS
     cube_shaders
+  TEXTURES
+    standard_images
 )

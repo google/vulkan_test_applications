@@ -41,7 +41,7 @@ public:
     vulkan::VkCommandBuffer& cmdBuffer);
 
  	void Update(float time_since_last_render);
- 	void Render(vulkan::VkQueue* queue, size_t frame_index);
+ 	void UpdateRenderData(vulkan::VkQueue* queue, size_t frame_index);
 
 private:
 	struct CameraData {

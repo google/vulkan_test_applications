@@ -5,16 +5,26 @@
 
 #include "mathfu/matrix.h"
 
+#include <array>
+
 using Mat4x4 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
 
-struct RenderQuadData {
+namespace simple_img {
+#include "star.png.h"
+}
+const auto& src_data = simple_img::texture;
+
+struct alignas(alignof(containers::unique_ptr<vulkan::VkFramebuffer>)) RenderQuadData {
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
-  containers::unique_ptr<vulkan::DescriptorSet> cube_descriptor_set_;
+  vulkan::ImagePointer color_staging_img_;
+  containers::unique_ptr<vulkan::VkImageView> color_input_view_;
+  containers::unique_ptr<vulkan::DescriptorSet> descriptor_set_;
 };
 
 struct QuadVulkanInfo {
-    VkFormat format;
+    VkFormat colorFormat;
+    VkFormat depthFormat;
     VkSampleCountFlagBits num_samples;
     VkViewport viewport;
     VkRect2D scissor;
@@ -24,41 +34,28 @@ class RenderQuad {
 public:
 	RenderQuad(const entry::EntryData* data);
 
- 	void InitializeCubeData(vulkan::VulkanApplication* app,
- 		containers::Allocator* allocator,
- 		CubeVulkanInfo vulkanInfo,
- 		vulkan::VkCommandBuffer* initialization_buffer,
-      	size_t num_swapchain_images);
-
- 	void InitializeFrameData(vulkan::VulkanApplication* app,
-    CubeRenderData* renderData,
- 		containers::Allocator* allocator,
- 		VkImageView colorView,
-    size_t frame_index);
-
-  void RecordRenderCmds(vulkan::VulkanApplication* app,
-    CubeRenderData* renderData,
-    vulkan::VkCommandBuffer& cmdBuffer);
-
+ 	void InitializeQuadData(vulkan::VulkanApplication* app, containers::Allocator* allocator, 
+    QuadVulkanInfo vulkanInfo, vulkan::VkCommandBuffer* initialization_buffer, size_t num_swapchain_images);
+ 	void InitializeFrameData(vulkan::VulkanApplication* app, RenderQuadData* renderData, 
+    containers::Allocator* allocator, const VkImageView& colorView, const VkImageView& depthView, size_t frame_index);
+  void RecordRenderCmds(vulkan::VulkanApplication* app, RenderQuadData* renderData, 
+    vulkan::VkCommandBuffer& cmdBuffer, size_t frame_index);
  	void Update(float time_since_last_render);
- 	void Render(vulkan::VkQueue* queue, size_t frame_index);
+ 	void UpdateRenderData(vulkan::VkQueue* queue, size_t frame_index);
 
 private:
-	struct CameraData {
-    	Mat4x4 projection_matrix;
-  	};
+  void InitializeInputImages(vulkan::VulkanApplication* app, RenderQuadData* renderData, 
+    containers::Allocator* allocator);
+  void CopyInputImages(vulkan::VulkanApplication* app, RenderQuadData* renderData, vulkan::VkCommandBuffer& cmdBuffer, size_t frame_index);
 
-  	struct ModelData {
-    	Mat4x4 transform;
-  	};
+  struct Data {
+    std::array<uint8_t, sizeof(src_data.data)> data;
+  };
 
-	vulkan::VulkanModel cube_;
-	VkDescriptorSetLayoutBinding cube_descriptor_set_layouts_[2];
+	vulkan::VulkanModel quad_;
 	containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
-	containers::unique_ptr<vulkan::VulkanGraphicsPipeline> cube_pipeline_;
-	
-  containers::unique_ptr<vulkan::BufferFrameData<CameraData>> camera_data_;
-	containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
-  
+	containers::unique_ptr<vulkan::VulkanGraphicsPipeline> pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
+  VkDescriptorSetLayoutBinding descriptor_set_layout_binding_;
+  containers::unique_ptr<vulkan::BufferFrameData<Data>> color_data_;
 };

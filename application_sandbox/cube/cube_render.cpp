@@ -212,7 +212,7 @@ void CubeRender::Update(float time_since_last_render) {
             Mat4x4::RotationY(3.14f * time_since_last_render * 0.5f));
 }
 
-void CubeRender::Render(vulkan::VkQueue* queue, size_t frame_index) {
+void CubeRender::UpdateRenderData(vulkan::VkQueue* queue, size_t frame_index) {
     // Update our uniform buffers.
     camera_data_->UpdateBuffer(queue, frame_index);
     model_data_->UpdateBuffer(queue, frame_index);
