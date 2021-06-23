@@ -1,3 +1,6 @@
+#ifndef RENDER_QUAD_H_
+#define RENDER_QUAD_H_
+
 #include "support/containers/unique_ptr.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/vulkan_application.h"
@@ -29,7 +32,7 @@ public:
  	void InitializeQuadData(vulkan::VulkanApplication* app, containers::Allocator* allocator, 
     QuadVulkanInfo vulkanInfo, vulkan::VkCommandBuffer* initialization_buffer, size_t num_swapchain_images);
  	void InitializeFrameData(vulkan::VulkanApplication* app, RenderQuadData* renderData, 
-    containers::Allocator* allocator, const VkImageView& colorView, const VkImageView& inputView, size_t frame_index);
+    containers::Allocator* allocator, const VkImageView& inputView, const VkImageView& colorView, size_t frame_index);
   void RecordRenderCmds(vulkan::VulkanApplication* app, RenderQuadData* renderData, 
     vulkan::VkCommandBuffer& cmdBuffer, size_t frame_index);
  	void Update(float time_since_last_render);
@@ -42,3 +45,5 @@ private:
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
   VkDescriptorSetLayoutBinding descriptor_set_layout_binding_;
 };
+
+#endif

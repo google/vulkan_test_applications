@@ -36,26 +36,15 @@ void RenderQuad::InitializeQuadData(vulkan::VulkanApplication* app,
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
         allocator, app->CreatePipelineLayout({{descriptor_set_layout_binding_}}));
 
-    VkAttachmentReference color_attachment = {
-        0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
     VkAttachmentReference input_attachment = {
-        1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+    VkAttachmentReference color_attachment = {
+        1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     render_pass_ = containers::make_unique<vulkan::VkRenderPass>(
         allocator,
         app->CreateRenderPass(
             {
-                {
-                    0,                                        // flags
-                    vulkanInfo.colorFormat,                   // format
-                    vulkanInfo.num_samples,                   // samples
-                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // loadOp
-                    VK_ATTACHMENT_STORE_OP_STORE,             // storeOp
-                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // stencilLoadOp
-                    VK_ATTACHMENT_STORE_OP_DONT_CARE,         // stencilStoreOp
-                    VK_IMAGE_LAYOUT_UNDEFINED,                // initialLayout
-                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  // finalLayout
-                },  // Color Attachment
                 {
                     0,                                         // flags
                     VK_FORMAT_R8G8B8A8_UINT,                   // format
@@ -67,6 +56,17 @@ void RenderQuad::InitializeQuadData(vulkan::VulkanApplication* app,
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // initialLayout
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL   // finalLayout
                 },  // Input Attachment
+                {
+                    0,                                        // flags
+                    vulkanInfo.colorFormat,                   // format
+                    vulkanInfo.num_samples,                   // samples
+                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // loadOp
+                    VK_ATTACHMENT_STORE_OP_STORE,             // storeOp
+                    VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // stencilLoadOp
+                    VK_ATTACHMENT_STORE_OP_DONT_CARE,         // stencilStoreOp
+                    VK_IMAGE_LAYOUT_UNDEFINED,                // initialLayout
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  // finalLayout
+                },  // Color Attachment
             },      // AttachmentDescriptions
             {{
                 0,                                // flags
@@ -101,14 +101,14 @@ void RenderQuad::InitializeQuadData(vulkan::VulkanApplication* app,
 void RenderQuad::InitializeFrameData(vulkan::VulkanApplication* app,
     RenderQuadData* renderData,
     containers::Allocator* allocator,
-    const VkImageView& colorView,
     const VkImageView& inputView,
+    const VkImageView& colorView,
     size_t frame_index) {
 
     // Create a framebuffer for rendering
     VkImageView views[2] = {
-        colorView,
         inputView,
+        colorView,
     };
 
     // Create a framebuffer with attachments

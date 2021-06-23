@@ -27,6 +27,7 @@ add_vulkan_sample_application(cube
     main.cpp
     cube_render.cpp
     render_quad.cpp
+    pre_quad.cpp
   LIBS
     vulkan_helpers
   MODELS
