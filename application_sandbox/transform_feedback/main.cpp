@@ -36,7 +36,7 @@ VkPhysicalDeviceTransformFeedbackFeaturesEXT transform_feedback_feature{
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT,  // sType
     nullptr,                                                            // pNext
     true,  // transformFeedback
-    true   // geometryStreams
+    false   // geometryStreams
 };
 
 struct TransformFeedbackFrameData {
