@@ -388,6 +388,10 @@ class TransformFeedbackSample
         transform_feedback_cmd_buffer, &transform_feedback_pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);
 
+    transform_feedback_cmd_buffer->vkCmdBindPipeline(
+        transform_feedback_cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                 *transform_feedback_pipeline_);
+
 	VkBuffer tf_buffer = (*transform_feedback_buffer_.get());
     VkDeviceSize offsets[1] = {0};
     transform_feedback_cmd_buffer->vkCmdBindTransformFeedbackBuffersEXT(
@@ -395,10 +399,6 @@ class TransformFeedbackSample
 
     transform_feedback_cmd_buffer->vkCmdBeginTransformFeedbackEXT(
         transform_feedback_cmd_buffer, 0, 0, nullptr, nullptr);
-
-    transform_feedback_cmd_buffer->vkCmdBindPipeline(
-        transform_feedback_cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                 *transform_feedback_pipeline_);
 
     transform_feedback_cmd_buffer->vkCmdBindDescriptorSets(
         transform_feedback_cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
