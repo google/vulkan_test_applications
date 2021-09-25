@@ -15,9 +15,9 @@
 
 if (ANDROID)
     configure_file(${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
-        ${CMAKE_CURRENT_BINARY_DIR}/android_native_app_glue.c COPY_ONLY)
+        ${CMAKE_CURRENT_BINARY_DIR}/android_native_app_glue.c COPYONLY)
     configure_file(${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.h
-        ${CMAKE_CURRENT_BINARY_DIR}/android_native_app_glue.h COPY_ONLY)
+        ${CMAKE_CURRENT_BINARY_DIR}/android_native_app_glue.h COPYONLY)
 
     add_vulkan_static_library(
         android_native_app_glue SOURCES
