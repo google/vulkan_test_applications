@@ -1120,7 +1120,7 @@ VkSwapchainKHR CreateDefaultSwapchain(
     uint32_t minSwapchains = min_image_count ? min_image_count : 2;
 
     // Make sure that we conform to at LEAST surface_caps.minImageCount;
-    minSwapchains = std::max(min_image_count, surface_caps.minImageCount);
+    minSwapchains = std::max(minSwapchains, surface_caps.minImageCount);
 
     // If maxImageCount is non-zero then also make sure we
     //   conform to that.
@@ -1132,7 +1132,7 @@ VkSwapchainKHR CreateDefaultSwapchain(
     // If min_image_count was set, and we could not create such a swapchain
     //   e.g. min_image_count > surface_caps.maxImageCount, crash here,
     //       because the sample cannot behave correctly.
-    LOG_ASSERT(>, instance->GetLogger(), numSwapchain, min_image_count);
+    LOG_ASSERT(>=, instance->GetLogger(), numSwapchain, min_image_count);
 
     if (use_10bit_hdr) {
       surface_formats[0].format = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
