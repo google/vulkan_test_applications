@@ -50,6 +50,10 @@ struct SampleOptions {
   bool enable_display_timing = false;
   bool enable_10bit_hdr = false;
   void* device_extension_structures = nullptr;
+  // The default value of zero means there is no application
+  // enforced minimum and the number of swapchains images
+  // is defined internally (within the surface capabilities).
+  int min_swapchain_image_count = 0;
 
   SampleOptions& EnableMultisampling() {
     enable_multisampling = true;
@@ -113,6 +117,10 @@ struct SampleOptions {
   }
   SampleOptions& AddDeviceExtensionStructure(void* device_extension_structure) {
     device_extension_structures = device_extension_structure;
+    return *this;
+  }
+  SampleOptions& SetMinSwapchainImageCount(int value) {
+    min_swapchain_image_count = value;
     return *this;
   }
 };
@@ -212,7 +220,8 @@ class Sample {
             options.mutable_swapchain_format ? &kMutableSwapchainImageFormatList
                                              : nullptr,
             options.enable_vulkan_1_1, options.enable_10bit_hdr,
-            options.device_extension_structures),
+            options.device_extension_structures,
+            options.min_swapchain_image_count),
         frame_data_(allocator),
         swapchain_images_(application_.swapchain_images()),
         last_frame_time_(std::chrono::high_resolution_clock::now()),
