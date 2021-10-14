@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -51,9 +51,10 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
  public:
   CubeSample(const entry::EntryData* data)
       : data_(data),
-        Sample<CubeFrameData>(
-            data->allocator(), data, 1, 512, 1, 1,
-            sample_application::SampleOptions().EnableMultisampling()),
+        Sample<CubeFrameData>(data->allocator(), data, 1, 512, 1, 1,
+                              sample_application::SampleOptions()
+                                  .EnableMultisampling()
+                                  .SetMinSwapchainImageCount(2)),
         cube_(data->allocator(), data->logger(), cube_data),
         cube_test_fences_(data->allocator()) {}
   virtual void InitializeApplicationData(
