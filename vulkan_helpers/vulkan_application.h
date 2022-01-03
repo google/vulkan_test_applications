@@ -166,6 +166,9 @@ class VulkanGraphicsPipeline {
   // VkGraphicsPipelineCreateInfo
   void SetPipelineExtensions(const void* pipeline_extensions);
 
+  // Sets pNext in VkPipelineViewportStateCreateInfo.
+  void SetViewportExtensions(const void* viewport_extensions);
+
   // Gets the reference of the VkPipelineDepthStencilStateCreateInfo
   VkPipelineDepthStencilStateCreateInfo& DepthStencilState() {
     return depth_stencil_state_;

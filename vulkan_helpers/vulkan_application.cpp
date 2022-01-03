@@ -1574,6 +1574,10 @@ void VulkanGraphicsPipeline::SetRasterizationExtension(const void* extension) {
   rasterization_state_.pNext = extension;
 }
 
+void VulkanGraphicsPipeline::SetViewportExtensions(const void* extension) {
+  viewport_state_.pNext = extension;
+}
+
 void VulkanGraphicsPipeline::AddShader(VkShaderStageFlagBits stage,
                                        const char* entry, uint32_t* code,
                                        uint32_t numCodeWords) {
