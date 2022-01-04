@@ -14,7 +14,8 @@
 #
 
 include(CMakeParseArguments)
-find_package(PythonInterp)
+find_package(Python3 COMPONENTS Interpreter)
+
 
 list(LENGTH CMAKE_CONFIGURATION_TYPES num_elements)
 if (num_elements GREATER 1)
@@ -135,7 +136,7 @@ function(compile_glsl_using_glslc shader output_file)
       ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
     COMMAND ${CMAKE_GLSL_COMPILER} -mfmt=c -o ${output_file} -c ${input_file} -MD
       ${ADDITIONAL_ARGS}
-    COMMAND ${PYTHON_EXECUTABLE}
+    COMMAND ${Python3_EXECUTABLE}
       ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
       ${output_file}.d
     COMMAND ${CMAKE_COMMAND} -E
@@ -157,7 +158,7 @@ function(compile_hlsl_using_glslc shader output_file result)
     DEPENDS ${shader} ${FILE_DEPS}
       ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
     COMMAND ${CMAKE_GLSL_COMPILER} -mfmt=c -x hlsl -o ${glslc_hlsl_filename} -c ${input_file} -MD
-    COMMAND ${PYTHON_EXECUTABLE}
+    COMMAND ${Python3_EXECUTABLE}
       ${VulkanTestApplications_SOURCE_DIR}/cmake/generate_cmake_dep.py
       ${glslc_hlsl_filename}.d
     COMMAND ${CMAKE_COMMAND} -E
@@ -190,7 +191,7 @@ function(compile_hlsl_using_dxc shader output_file result)
     COMMENT "Compiling HLSL to SPIR-V binary using DXC: ${shader}"
     DEPENDS ${shader} ${FILE_DEPS} ${VulkanTestApplications_SOURCE_DIR}/tools/spirv_c_mfmt.py
     COMMAND ${CMAKE_DXC_COMPILER} -spirv -Fo ${dxc_hlsl_filename} -E main -T ${DXC_TARGET_ENV} ${input_file}
-    COMMAND ${PYTHON_EXECUTABLE} ${VulkanTestApplications_SOURCE_DIR}/tools/spirv_c_mfmt.py ${dxc_hlsl_filename} --output-file=${dxc_hlsl_filename}
+    COMMAND ${Python3_EXECUTABLE} ${VulkanTestApplications_SOURCE_DIR}/tools/spirv_c_mfmt.py ${dxc_hlsl_filename} --output-file=${dxc_hlsl_filename}
   )
   endif()
   set(${result} ${dxc_hlsl_filename} PARENT_SCOPE)
@@ -436,7 +437,7 @@ function(add_model_library target)
         COMMENT "Compiling Model ${model}"
         DEPENDS ${model}
           ${VulkanTestApplications_SOURCE_DIR}/cmake/convert_obj_to_c.py
-        COMMAND ${PYTHON_EXECUTABLE}
+        COMMAND ${Python3_EXECUTABLE}
           ${VulkanTestApplications_SOURCE_DIR}/cmake/convert_obj_to_c.py
             ${model} -o ${output_file}
       )
@@ -558,7 +559,7 @@ function(add_texture_library target)
         COMMENT "Compiling texture ${texture}"
         DEPENDS ${texture}
           ${VulkanTestApplications_SOURCE_DIR}/cmake/convert_img_to_c.py
-        COMMAND ${PYTHON_EXECUTABLE}
+        COMMAND ${Python3_EXECUTABLE}
           ${VulkanTestApplications_SOURCE_DIR}/cmake/convert_img_to_c.py
             ${texture} -o ${output_file}
       )
