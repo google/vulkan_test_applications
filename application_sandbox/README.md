@@ -24,6 +24,7 @@ output that demonstrates the feature.
 [cube](cube/README.md)
 [debug_utils](debug_utils/README.md)
 [depth_bounds](depth_bounds/README.md)
+[depth_clip_control](depth_clip_control/README.md)
 [depth_readback](depth_readback/README.md)
 [dispatch](dispatch/README.md)
 [dispatch_indirect](dispatch_indirect/README.md)
