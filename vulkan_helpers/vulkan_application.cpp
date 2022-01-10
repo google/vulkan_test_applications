@@ -1323,12 +1323,6 @@ VulkanArena::~VulkanArena() {
   allocator_->destroy(first_block_);
 }
 
-// The maximum value for nonCoherentAtomSize from the vulkan spec.
-// Table 31.2. Required Limits
-// See 10.2.1. Host Access to Device Memory Objects for
-// a description of why this must be used.
-static const ::VkDeviceSize kMaxNonCoherentAtomSize = 256;
-
 AllocationToken* VulkanArena::AllocateMemory(::VkDeviceSize size,
                                              ::VkDeviceSize alignment,
                                              ::VkDeviceMemory* memory,
