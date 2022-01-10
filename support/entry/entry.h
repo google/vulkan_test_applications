@@ -113,6 +113,7 @@ class EntryData {
 #elif defined _WIN32
   HWND native_window_handle() const { return native_window_handle_; }
   HINSTANCE native_hinstance() const { return native_hinstance_; }
+  void CloseWindow() { window_closing_ = true; }
 #elif defined __ggp__
 // Empty
 #elif defined __linux__
@@ -160,6 +161,7 @@ class EntryData {
 #elif defined _WIN32
   HINSTANCE native_hinstance_;
   HWND native_window_handle_;
+  bool window_closing_;
 #elif defined __ggp__
 // Empty
 #elif defined __linux__
