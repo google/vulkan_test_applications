@@ -50,6 +50,7 @@ output that demonstrates the feature.
 [simple_compute](simple_compute/README.md)
 [sparse_binding](sparse_binding/README.md)
 [stencil](stencil/README.md)
+[texel_buffer_alignment](texel_buffer_alignment/README.md)
 [textured_cube](textured_cube/README.md)
 [wait_fence_partial](wait_fence_partial/README.md)
 [wireframe](wireframe/README.md)
