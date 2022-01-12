@@ -176,7 +176,7 @@ class TexelBufferAlignmentSample
         app()->device().physical_device(), &deviceProperties2);
 
     // The single texel alignment is one for VK_FORMAT_R8_UNORM, start
-    // with this an adjust if single texel alignment is not supported.
+    // with this and adjust if single texel alignment is not supported.
     size_t uniformAlignment = 1;
     if (!texelProps.uniformTexelBufferOffsetSingleTexelAlignment) {
       uniformAlignment = texelProps.uniformTexelBufferOffsetAlignmentBytes;
@@ -186,12 +186,12 @@ class TexelBufferAlignmentSample
       storageAlignment = texelProps.storageTexelBufferOffsetAlignmentBytes;
     }
 
-    uniform_data_ = containers::make_unique<vulkan::BufferFrameData<ColorData>>(
+    uniform_data_ = containers::make_unique<vulkan::BufferFrameData<TexelData>>(
         data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
         vulkan::BufferFrameDataOptions().SetOffsetAlignment(uniformAlignment));
 
-    storage_data_ = containers::make_unique<vulkan::BufferFrameData<ColorData>>(
+    storage_data_ = containers::make_unique<vulkan::BufferFrameData<TexelData>>(
         data_->allocator(), app(), num_swapchain_images,
         VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,
         vulkan::BufferFrameDataOptions().SetOffsetAlignment(storageAlignment));
@@ -207,6 +207,8 @@ class TexelBufferAlignmentSample
             mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f}) *
         Mat44::FromRotationMatrix(Mat44::RotationX(3.14f / 8.0f));
 
+    // Offset the starting data of the two buffer so individual texels
+    // ramp at different offsets.
     uniform_data_->data().data[0] = 64;
     uniform_data_->data().data[1] = 128;
     uniform_data_->data().data[2] = 64;
@@ -435,7 +437,7 @@ class TexelBufferAlignmentSample
     Mat44 transform;
   };
 
-  struct ColorData {
+  struct TexelData {
     uint8_t data[3];
   };
 
@@ -448,8 +450,8 @@ class TexelBufferAlignmentSample
 
   containers::unique_ptr<vulkan::BufferFrameData<CameraData>> camera_data_;
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
-  containers::unique_ptr<vulkan::BufferFrameData<ColorData>> uniform_data_;
-  containers::unique_ptr<vulkan::BufferFrameData<ColorData>> storage_data_;
+  containers::unique_ptr<vulkan::BufferFrameData<TexelData>> uniform_data_;
+  containers::unique_ptr<vulkan::BufferFrameData<TexelData>> storage_data_;
 };
 
 int main_entry(const entry::EntryData* data) {
