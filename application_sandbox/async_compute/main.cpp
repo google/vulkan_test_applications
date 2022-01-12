@@ -106,7 +106,8 @@ class ASyncThreadRunner {
 
     update_time_data_ = containers::make_unique<vulkan::BufferFrameData<Mat44>>(
         allocator_, app_, num_async_compute_buffers,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 0, app_->async_compute_queue()->index());
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+        vulkan::BufferFrameDataOptions().SetQueueFamilyIndex(app_->async_compute_queue()->index()));
 
     // Both compute passes use the same set of descriptors for simplicity.
     // Technically we don't have to pass the draw_data SSBO to the velocity

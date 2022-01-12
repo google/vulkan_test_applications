@@ -27,6 +27,27 @@ size_t RoundUp(size_t to_round, size_t power_of_2_to_round) {
   return (to_round + power_of_2_to_round - 1) & ~(power_of_2_to_round - 1);
 }
 
+struct BufferFrameDataOptions {
+  uint32_t device_mask = 0;
+  uint32_t queue_family_index = 0;
+  size_t offset_alignment = kMaxOffsetAlignment;
+
+  BufferFrameDataOptions& SetDeviceMask(uint32_t value) {
+    device_mask = value;
+    return *this;
+  }
+
+  BufferFrameDataOptions& SetQueueFamilyIndex(uint32_t value) {
+    queue_family_index = value;
+    return *this;
+  }
+
+  BufferFrameDataOptions& SetOffsetAlignment(size_t value) {
+    offset_alignment = value;
+    return *this;
+  }
+};
+
 template <typename T>
 class BufferFrameData {
   // BufferFrameData is a class that wraps some amount of data for multi-frame
@@ -43,21 +64,21 @@ class BufferFrameData {
   // uniform data. Note that VK_BUFFER_USAGE_TRANSFER_DST_BIT will be added
   // along with |usage| to guarantee data can be copied to the underlying
   // VkBuffer(s).
-  BufferFrameData(VulkanApplication* application, size_t buffered_data_count,
-                  VkBufferUsageFlags usage, uint32_t device_mask = 0, uint32_t queue_family_index = 0)
+  BufferFrameData(
+      VulkanApplication* application, size_t buffered_data_count,
+      VkBufferUsageFlags usage,
+      const BufferFrameDataOptions& options = BufferFrameDataOptions())
       : application_(application),
         uninitialized_(application->GetAllocator()),
         update_commands_(application->GetAllocator()),
-        device_mask_(device_mask),
-        queue_family_index_(queue_family_index) {
-    uint32_t dm = device_mask;
+        device_mask_(options.device_mask),
+        queue_family_index_(options.queue_family_index),
+        aligned_data_size_(
+            RoundUp(sizeof(set_value_), options.offset_alignment)) {
     uninitialized_.insert(uninitialized_.begin(), buffered_data_count, true);
-    const size_t aligned_data_size =
-        RoundUp(sizeof(set_value_), kMaxOffsetAlignment);
-
-    uint32_t indices[VK_MAX_DEVICE_GROUP_SIZE];
 
     uint32_t set = 0;
+    uint32_t dm = device_mask_;
     for (uint32_t i = 0; dm != 0; ++i) {
       if (dm & 0x1) {
         // Host visible buffers can only exist on one GPU
@@ -66,7 +87,7 @@ class BufferFrameData {
       }
       dm >>= 1;
     }
-    dm = device_mask;
+    uint32_t indices[VK_MAX_DEVICE_GROUP_SIZE];
     if (set != 0) {
       for (uint32_t i = 0; i < application_->device().num_devices(); ++i) {
         indices[i] = set - 1;
@@ -77,7 +98,7 @@ class BufferFrameData {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,      // sType
         nullptr,                                   // pNext
         0,                                         // flags
-        aligned_data_size * buffered_data_count,   // size
+        aligned_data_size_ * buffered_data_count,   // size
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage,  // usage
         VK_SHARING_MODE_EXCLUSIVE,
         1,
@@ -97,12 +118,13 @@ class BufferFrameData {
     };
 
     for (size_t i = 0; i < buffered_data_count; ++i) {
-      update_commands_.push_back(application_->GetCommandBuffer(queue_family_index_));
+      update_commands_.push_back(
+          application_->GetCommandBuffer(queue_family_index_));
       update_commands_.back()->vkBeginCommandBuffer(update_commands_.back(),
                                                     &begin_info);
       if (device_mask_ != 0) {
         update_commands_.back()->vkCmdSetDeviceMask(update_commands_.back(),
-                                                      device_mask_); 
+                                                    device_mask_);
       }
       VkBufferMemoryBarrier barrier = {
           VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
@@ -112,14 +134,15 @@ class BufferFrameData {
           VK_QUEUE_FAMILY_IGNORED,                  // srcQueueFamilyIndex
           VK_QUEUE_FAMILY_IGNORED,                  // dstQueueFamilyIndex
           *host_buffer_,
-          aligned_data_size * i,
+          aligned_data_size_ * i,
           size()};
 
       update_commands_.back()->vkCmdPipelineBarrier(
           update_commands_.back(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
           VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
-      VkBufferCopy region{aligned_data_size * i, aligned_data_size * i, size()};
+      VkBufferCopy region{aligned_data_size_ * i, aligned_data_size_ * i,
+                          size()};
 
       update_commands_.back()->vkCmdCopyBuffer(
           update_commands_.back(), *host_buffer_, *buffer_, 1, &region);
@@ -191,9 +214,7 @@ class BufferFrameData {
   size_t size() const { return sizeof(set_value_); }
 
   // Returns the aligned size of the data for each frame.
-  size_t aligned_data_size() const {
-    return RoundUp(size(), kMaxOffsetAlignment);
-  }
+  size_t aligned_data_size() const { return aligned_data_size_; }
 
  private:
   VulkanApplication* application_;
@@ -210,6 +231,7 @@ class BufferFrameData {
   containers::vector<VkCommandBuffer> update_commands_;
   uint32_t device_mask_;
   uint32_t queue_family_index_;
+  size_t aligned_data_size_;
 };
 }  // namespace vulkan
 

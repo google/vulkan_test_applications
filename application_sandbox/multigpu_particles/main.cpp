@@ -235,11 +235,11 @@ int main_entry(const entry::EntryData* data) {
   auto update_time_data =
       containers::make_unique<vulkan::BufferFrameData<Mat44>>(
           allocator, &app, kNBuffers, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          kMaskGPU1);
+          vulkan::BufferFrameDataOptions().SetDeviceMask(kMaskGPU1));
   auto aspect_buffer =
       containers::make_unique<vulkan::BufferFrameData<Vector4>>(
           allocator, &app, kNBuffers, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-          kMaskGPU0);
+          vulkan::BufferFrameDataOptions().SetDeviceMask(kMaskGPU0));
 
   // Fill the buffer. Technically we probably want to use a staging buffer
   // and fill from that, since this is not really a "small" buffer.

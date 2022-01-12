@@ -75,8 +75,8 @@ class ComputeTask {
 
     update_time_data_ = containers::make_unique<vulkan::BufferFrameData<Mat44>>(
         allocator_, app_, app_->swapchain_images().size(),
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 0,
-        app_->async_compute_queue()->index());
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        vulkan::BufferFrameDataOptions().SetQueueFamilyIndex(app_->async_compute_queue()->index()));
 
     InitSimulationSSBO();
     InitRenderSSBO();
