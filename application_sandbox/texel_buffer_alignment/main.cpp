@@ -202,13 +202,17 @@ class TexelBufferAlignmentSample
         Mat44::FromScaleVector(mathfu::Vector<float, 3>{1.0f, -1.0f, 1.0f}) *
         Mat44::Perspective(1.5708f, aspect, 0.1f, 100.0f);
 
-    model_data_->data().transform = Mat44::FromTranslationVector(
-        mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
+    model_data_->data().transform =
+        Mat44::FromTranslationVector(
+            mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f}) *
+        Mat44::FromRotationMatrix(Mat44::RotationX(3.14f / 8.0f));
 
-    for (int i = 0; i < 3; i++) {
-      uniform_data_->data().data[i] = i * 64;
-      storage_data_->data().data[i] = (3-i)*64;
-    }
+    uniform_data_->data().data[0] = 64;
+    uniform_data_->data().data[1] = 128;
+    uniform_data_->data().data[2] = 64;
+    storage_data_->data().data[0] = 128;
+    storage_data_->data().data[1] = 192;
+    storage_data_->data().data[2] = 128;
   }
 
   virtual void InitializeFrameData(
@@ -387,8 +391,7 @@ class TexelBufferAlignmentSample
     model_data_->data().transform =
         model_data_->data().transform *
         Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14f * time_since_last_render) *
-            Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
+            Mat44::RotationY(3.14f * time_since_last_render * 0.25f));
 
     for (int i = 0; i < 3; i++) {
       uniform_data_->data().data[i] =
