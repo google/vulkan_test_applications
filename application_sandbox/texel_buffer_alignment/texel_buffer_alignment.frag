@@ -15,8 +15,7 @@
 
 #version 450
 
-layout (location = 0) in vec3 normal;
-layout (location = 1) in vec2 texcoord;
+layout (location = 0) in vec2 texcoord;
 
 layout (location = 0) out vec4 out_color;
 
@@ -31,8 +30,7 @@ void main() {
     } else {
         texel = imageLoad(storageData, idx).r;
     }
-    float lighting = abs(normal.z);
     vec3 color = vec3(1.0, 1.0, 1.0);
-    out_color.rgb = texel*lighting*color;
+    out_color.rgb = texel*color;
     out_color.a = 1.0;
 }
