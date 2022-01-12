@@ -76,7 +76,8 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
 #elif defined _WIN32
       ,
       native_hinstance_(0),
-      native_window_handle_(0)
+      native_window_handle_(0),
+      window_closing_(false)
 #elif defined __ggp__  // Keep this before __linux__
 // Nothing here
 #elif defined __linux__
@@ -128,8 +129,7 @@ bool EntryData::WindowClosing() const {
   }
   return false;
 #elif defined _WIN32
-  // TODO: implement this for WIN32
-  return false;
+  return window_closing_;
 #elif defined __APPLE__
   return false;
 #endif
@@ -153,6 +153,7 @@ struct CommandLineArgs {
 };
 
 void print_usage(const char** argv) {
+  // clang-format off
   std::cerr << "Usage: " << argv[0] << " [OPTIONS]" << std::endl;
   std::cerr << "Arguments: " << std::endl;
   std::cerr << "  -w=<width>                    Set the integer width of the application in pixels" << std::endl;
@@ -167,6 +168,7 @@ void print_usage(const char** argv) {
   std::cerr << "  -output-file                  Sets the output file for the output-frame argument" << std::endl;
   std::cerr << "  -wait-for-debugger            Forces the application to pause on starup until a debugger is attached" << std::endl;
   std::cerr << "  -help                         Print this help" << std::endl;
+  // clang-format on
 }
 
 void parse_args(CommandLineArgs* args, int argc, const char** argv) {
@@ -500,6 +502,28 @@ void write_error(HANDLE handle, const char* message) {
                nullptr);
 }
 
+LRESULT CALLBACK WindowProc(__in HWND hWindow, __in UINT uMsg,
+                            __in WPARAM wParam, __in LPARAM lParam) {
+  entry::EntryData* entry_data =
+      static_cast<entry::EntryData*>(GetProp(hWindow, "VTA"));
+  if (!entry_data) return DefWindowProc(hWindow, uMsg, wParam, lParam);
+
+  switch (uMsg) {
+    case WM_CLOSE:
+      entry_data->CloseWindow();
+      DestroyWindow(hWindow);
+      break;
+    case WM_DESTROY:
+      RemoveProp(hWindow, "VTA");
+      PostQuitMessage(0);
+      break;
+    default:
+      return DefWindowProc(hWindow, uMsg, wParam, lParam);
+  }
+
+  return 0;
+}
+
 // Create Win32 window
 bool entry::EntryData::CreateWindowWin32() {
   HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -515,7 +539,7 @@ bool entry::EntryData::CreateWindowWin32() {
     WNDCLASSEX window_class;
     window_class.cbSize = sizeof(WNDCLASSEX);
     window_class.style = CS_HREDRAW | CS_VREDRAW;
-    window_class.lpfnWndProc = &DefWindowProc;
+    window_class.lpfnWndProc = WindowProc;
     window_class.cbClsExtra = 0;
     window_class.cbWndExtra = 0;
     window_class.hInstance = GetModuleHandle(NULL);
@@ -532,17 +556,24 @@ bool entry::EntryData::CreateWindowWin32() {
     }
     RECT rect = {0, 0, LONG(width_), LONG(height_)};
 
-    AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
+    // NOTE: This style setup removes support for resizing and maximizing the
+    // window. These operations cause a VK_ERROR_OUT_OF_DATE that is not handled
+    // properly.
+    auto style = WS_OVERLAPPED | WS_MINIMIZEBOX | WS_SYSMENU;
+
+    AdjustWindowRect(&rect, style, FALSE);
 
     native_window_handle_ = CreateWindowEx(
-        0, "Sample application", "", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-        CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, 0, 0,
+        0, "Sample application", "", style, CW_USEDEFAULT, CW_USEDEFAULT,
+        rect.right - rect.left, rect.bottom - rect.top, 0, 0,
         GetModuleHandle(NULL), NULL);
 
     if (!native_window_handle_) {
       write_error(out_handle, "Could not create window");
       return false;
     }
+
+    SetProp(native_window_handle_, "VTA", this);
 
     native_hinstance_ = reinterpret_cast<HINSTANCE>(
         GetWindowLongPtr(native_window_handle_, GWLP_HINSTANCE));
@@ -581,33 +612,36 @@ int main(int argc, const char** argv) {
       SetEnvironmentVariableA("VK_LAYER_PATH", lp.c_str());
     }
   }
-  containers::LeakCheckAllocator root_allocator;
-  entry::EntryData entry_data(
-      &root_allocator, args.window_width, args.window_height,
-      args.fixed_timestep, args.prefer_separate_present, args.output_frame,
-      args.output_file, args.shader_compiler, args.validation,
-      args.load_pipeline_cache, args.write_pipeline_cache);
 
-  if (args.output_frame == -1) {
-    bool window_created = entry_data.CreateWindowWin32();
-    if (!window_created) {
-      entry_data.logger()->LogError("Window creation failed");
-      return -1;
-    }
-  }
   int return_value = 0;
-  std::thread main_thread([&entry_data, &return_value]() {
-    return_value = main_entry(&entry_data);
-  });
+  containers::LeakCheckAllocator root_allocator;
+  {
+    entry::EntryData entry_data(
+        &root_allocator, args.window_width, args.window_height,
+        args.fixed_timestep, args.prefer_separate_present, args.output_frame,
+        args.output_file, args.shader_compiler, args.validation,
+        args.load_pipeline_cache, args.write_pipeline_cache);
 
-  MSG msg;
-  while (entry_data.native_window_handle() &&
-         GetMessage(&msg, entry_data.native_window_handle(), 0, 0)) {
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
+    if (args.output_frame == -1) {
+      bool window_created = entry_data.CreateWindowWin32();
+      if (!window_created) {
+        entry_data.logger()->LogError("Window creation failed");
+        return -1;
+      }
+    }
+
+    std::thread main_thread([&entry_data, &return_value]() {
+      return_value = main_entry(&entry_data);
+    });
+
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0) != 0) {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+    }
+
+    main_thread.join();
   }
-
-  main_thread.join();
   assert(root_allocator.currently_allocated_bytes_.load() == 0);
   return return_value;
 }
