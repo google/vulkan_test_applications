@@ -33,6 +33,13 @@
 #include "vulkan_wrapper/sub_objects.h"
 
 namespace vulkan {
+
+// The maximum value for nonCoherentAtomSize from the vulkan spec.
+// Table 31.2. Required Limits
+// See 10.2.1. Host Access to Device Memory Objects for
+// a description of why this must be used.
+const ::VkDeviceSize kMaxNonCoherentAtomSize = 256;
+
 struct VulkanModel;
 struct AllocationToken;
 
@@ -174,7 +181,7 @@ class VulkanGraphicsPipeline {
     return depth_stencil_state_;
   }
 
-	VkPipelineCreateFlags& flags() { return flags_; }
+  VkPipelineCreateFlags& flags() { return flags_; }
 
   void Commit();
   operator ::VkPipeline() const { return pipeline_; }
@@ -259,8 +266,8 @@ class PipelineLayout {
 
     descriptor_set_layouts_.reserve(layouts.size());
     for (auto binding_list : layouts) {
-      descriptor_set_layouts_.emplace_back(
-          CreateDescriptorSetLayout(allocator, device, binding_list.bindings_, binding_list.flags_));
+      descriptor_set_layouts_.emplace_back(CreateDescriptorSetLayout(
+          allocator, device, binding_list.bindings_, binding_list.flags_));
       raw_layouts.push_back(descriptor_set_layouts_.back());
     }
 
@@ -406,8 +413,21 @@ class VulkanApplication {
     // writes are visible to the GPU
     void flush(size_t offset, size_t size) {
       if (flush_memory_range_) {
+        auto adjusted_offset = offset_ + offset;
+        auto delta = adjusted_offset % kMaxNonCoherentAtomSize;
+        // Make offset a multiple of kMaxNonCoherentAtomSize (rounding down)
+        adjusted_offset -= delta;
+        // Adjust the size up to compensate
+        auto adjusted_size = size + delta;
+        // And now make the size a multiple of kMaxNonCoherentAtomSizes
+        // (rounding up)
+        if (adjusted_size % kMaxNonCoherentAtomSize) {
+          adjusted_size +=
+              kMaxNonCoherentAtomSize - adjusted_size % kMaxNonCoherentAtomSize;
+        }
         VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-                                  nullptr, memory_, offset_ + offset, size};
+                                  nullptr, memory_, adjusted_offset,
+                                  adjusted_size};
         (*flush_memory_range_)(device_, 1, &range);
       }
     }
@@ -727,8 +747,7 @@ class VulkanApplication {
   // Creates and returns a PipelineLayout from the given
   // DescriptorSetLayoutBindings
   PipelineLayout CreatePipelineLayout(
-      std::initializer_list<DescriptorSetLayoutBinding>
-          layouts,
+      std::initializer_list<DescriptorSetLayoutBinding> layouts,
       std::initializer_list<VkPushConstantRange> ranges = {}) {
     return PipelineLayout(allocator_, &device_, layouts, ranges);
   }
