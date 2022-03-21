@@ -23,6 +23,8 @@ layout(set = 0, binding = 2) uniform samplerBuffer uniformData;
 layout(set = 0, binding = 3, r8) uniform imageBuffer storageData;
 
 void main() {
+    // The resulting texture is a 2x3, the buffers have 3 texels
+    // and the .x picks from the uniform vs storage buffer.
     int idx = int(floor(3*texcoord.y));
     float texel = 0;
     if (texcoord.x < 0.5) {
