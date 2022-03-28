@@ -39,7 +39,7 @@ git clone --recursive path/to/this/repository
 
 This will ensure that you have all of the dependencies checked out.
 
-To build for Windows.
+To build for Windows (NOTE: see [Windows Dependencies](#windows-dependencies)).
 ```
 cmake -G "Visual Studio 14 2015 Win64" /path/to/source
 open VulkanTestApplications.sln
@@ -101,3 +101,11 @@ on these flags.
 These should be checked out into `third_party`.
 - [mathfu](https://github.com/google/mathfu)
 - [vk_callback_swapchain](https://github.com/google/vk_callback_swapchain)
+
+## Windows Dependencies
+To build on Windows the following tools and libraries are required:
+
+* cmake (https://cmake.org/)
+* Vulkan SDK (https://www.lunarg.com/vulkan-sdk/)
+* Python3 (https://www.python.org/)
+* Pillow (https://pillow.readthedocs.io/)
