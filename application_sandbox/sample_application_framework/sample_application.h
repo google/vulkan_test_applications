@@ -21,6 +21,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 
 namespace sample_application {
 
@@ -45,7 +46,7 @@ struct SampleOptions {
   bool host_query_reset = false;
   bool extended_swapchain_color_space = false;
   bool shared_presentation = false;
-  bool enable_vulkan_1_1 = false;
+  uint32_t vulkan_version = VK_API_VERSION_1_0;
   bool mutable_swapchain_format = false;
   bool enable_display_timing = false;
   bool enable_10bit_hdr = false;
@@ -100,7 +101,11 @@ struct SampleOptions {
     return *this;
   }
   SampleOptions& EnableVulkan11() {
-    enable_vulkan_1_1 = true;
+    SetVulkanVersion(VK_API_VERSION_1_1);
+    return *this;
+  }
+    SampleOptions& SetVulkanVersion(uint32_t version) {
+    vulkan_version = version;
     return *this;
   }
   SampleOptions& EnableMutableSwapChainFormat() {
@@ -219,7 +224,7 @@ class Sample {
             options.shared_presentation, options.mutable_swapchain_format,
             options.mutable_swapchain_format ? &kMutableSwapchainImageFormatList
                                              : nullptr,
-            options.enable_vulkan_1_1, options.enable_10bit_hdr,
+            options.vulkan_version, options.enable_10bit_hdr,
             options.device_extension_structures,
             options.min_swapchain_image_count),
         frame_data_(allocator),

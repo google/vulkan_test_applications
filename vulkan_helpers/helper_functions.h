@@ -68,6 +68,15 @@ VkInstance Create11InstanceForApplication(
     const entry::EntryData* data,
     const std::initializer_list<const char*> extensions);
 
+// Creates an instance with vulkan version specified and with either 
+// a real or virtual swapchain based on whether or not data requests
+// an external swapchain. 
+// Otherwise identical to CreateDefaultInstance.
+VkInstance CreateVerisonedInstanceForApplicaiton(
+    containers::Allocator* allocator, LibraryWrapper* wrapper,
+    const entry::EntryData* data, uint32_t version,
+    const std::initializer_list<const char*> instance_extensions);
+
 containers::vector<VkPhysicalDevice> GetPhysicalDevices(
     containers::Allocator* allocator, VkInstance& instance);
 
