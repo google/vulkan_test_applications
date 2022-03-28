@@ -17,6 +17,7 @@
 #define VULKAN_HELPERS_VULKAN_APPLICATION
 
 #include <algorithm>
+#include <cstdint>
 
 #include "support/containers/allocator.h"
 #include "support/containers/ordered_multimap.h"
@@ -496,7 +497,7 @@ class VulkanApplication {
       VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
       bool use_shared_presentation = false,
       bool use_mutable_swapchain_format = false,
-      const void* swapchain_extensions = nullptr, bool use_vulkan_1_1 = false,
+      const void* swapchain_extensions = nullptr, uint32_t vulkan_api_version = VK_API_VERSION_1_0,
       bool use_10bit_hdr = false, void* device_next = nullptr,
       uint32_t min_swapchain_image_count = 0);
 

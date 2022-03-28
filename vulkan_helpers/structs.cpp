@@ -17,7 +17,7 @@
 
 #include <utility>
 
-static_assert(VK_VERSION_1_0 == 1 && VK_HEADER_VERSION == 203,
+static_assert(VK_VERSION_1_0 == 1 && VK_HEADER_VERSION == 204,
               "review the following to make sure that all enumerant values are "
               "covered after updating vulkan.h");
 
@@ -30,6 +30,7 @@ containers::vector<::VkFormat> AllVkFormats(containers::Allocator* allocator) {
   // 1000054000 - 1000054007: assigned
   // 1000066000 - 1000066013: assigned
   // 1000156000 - 1000156033: assigned
+  // 1000330000 - 1000330003: assigned
   // 1000340000 - 1000340001: assigned
   // These are due to BEGIN_RANGE, END_RANGE, RANGE_SIZE removed in 1.2.140
   const uint64_t VK_FORMAT_BEGIN_RANGE = VK_FORMAT_UNDEFINED;
@@ -47,6 +48,9 @@ containers::vector<::VkFormat> AllVkFormats(containers::Allocator* allocator) {
     formats.push_back(static_cast<::VkFormat>(i));
   }
   for (uint64_t i = 1000156000ul; i <= 1000156033ul; ++i) {
+    formats.push_back(static_cast<::VkFormat>(i));
+  }
+  for (uint64_t i = 1000330000ul; i <= 1000330003ul; ++i) {
     formats.push_back(static_cast<::VkFormat>(i));
   }
   for (uint64_t i = 1000340000ul; i <= 1000340001ul; ++i) {
