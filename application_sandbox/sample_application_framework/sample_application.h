@@ -17,6 +17,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 
 #include "support/entry/entry.h"
 #include "vulkan_helpers/helper_functions.h"
@@ -46,7 +47,7 @@ struct SampleOptions {
   bool host_query_reset = false;
   bool extended_swapchain_color_space = false;
   bool shared_presentation = false;
-  bool enable_vulkan_1_1 = false;
+  bool enable_vulkan_1_1 = false;   // This is deprecated, use the |vulkan_api_version| instead for new applications.
   bool mutable_swapchain_format = false;
   bool enable_display_timing = false;
   bool enable_10bit_hdr = false;
@@ -55,6 +56,8 @@ struct SampleOptions {
   // enforced minimum and the number of swapchains images
   // is defined internally (within the surface capabilities).
   int min_swapchain_image_count = 0;
+
+  uint32_t vulkan_api_version = VK_API_VERSION_1_0;
 
   SampleOptions& EnableMultisampling() {
     enable_multisampling = true;
@@ -124,6 +127,10 @@ struct SampleOptions {
     min_swapchain_image_count = value;
     return *this;
   }
+  SampleOptions& SetVulkanApiVersion(uint32_t vulkan_api_version) {
+    vulkan_api_version = vulkan_api_version;
+    return *this;
+  }
 };
 
 const VkCommandBufferBeginInfo kBeginCommandBuffer = {
@@ -180,7 +187,8 @@ vulkan::VulkanApplicationOptions buildVulkanApplicationOptions(
 
   if (options.mutable_swapchain_format)
     ret.SetSwapchainExtensions(&kMutableSwapchainImageFormatList);
-
+  if (options.vulkan_api_version != VK_API_VERSION_1_0)
+    ret.SetVulkanApiVersion(options.vulkan_api_version);
   ret.SetMinSwapchainImageCount(options.min_swapchain_image_count);
 
   ret.SetDeviceExtensions(options.device_extension_structures);

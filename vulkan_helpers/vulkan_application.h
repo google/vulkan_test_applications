@@ -17,6 +17,7 @@
 #define VULKAN_HELPERS_VULKAN_APPLICATION
 
 #include <algorithm>
+#include <cstdint>
 
 #include "support/containers/allocator.h"
 #include "support/containers/ordered_multimap.h"
@@ -57,7 +58,7 @@ struct VulkanApplicationOptions {
   bool use_host_query_reset = false;
   bool use_shared_presentation = false;
   bool use_mutable_swapchain_format = false;
-  bool use_vulkan_1_1 = false;
+  uint32_t vulkan_api_version = VK_API_VERSION_1_0;
   bool use_10bit_hdr = false;
 
   VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
@@ -115,11 +116,33 @@ struct VulkanApplicationOptions {
     return *this;
   }
   VulkanApplicationOptions& EnableVulkan11() {
-    use_vulkan_1_1 = true;
+    this->SetVulkanApiVersion(VK_API_VERSION_1_1);
     return *this;
   }
   VulkanApplicationOptions& Enable10BitHDR() {
     use_10bit_hdr = true;
+    return *this;
+  }
+  
+  VulkanApplicationOptions& SetVulkanApiVersion(uint32_t vulkan_api_version) {
+    uint32_t variant = VK_API_VERSION_VARIANT(vulkan_api_version);
+    uint32_t major = VK_API_VERSION_MAJOR(vulkan_api_version);
+    uint32_t minor = VK_API_VERSION_MINOR(vulkan_api_version);
+    uint32_t patch = VK_API_VERSION_PATCH(vulkan_api_version);
+
+    static_assert(
+        VK_API_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE) == 1,
+        "review the following to make sure that the version check is correct "
+        " after updating vulkan.h");
+
+    if (variant != 0 ||
+        major > VK_API_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE) ||
+        minor > VK_API_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE) ||
+        vulkan_api_version > VK_HEADER_VERSION_COMPLETE) {
+      exit(1);
+    }
+
+    this->vulkan_api_version = vulkan_api_version;
     return *this;
   }
 
