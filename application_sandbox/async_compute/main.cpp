@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2022 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -342,8 +342,8 @@ class ASyncThreadRunner {
       barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
       command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
+          command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+          VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
 
       command_buffer->vkEndCommandBuffer(command_buffer);
