@@ -115,10 +115,6 @@ struct VulkanApplicationOptions {
     use_mutable_swapchain_format = true;
     return *this;
   }
-  VulkanApplicationOptions& EnableVulkan11() {
-    this->SetVulkanApiVersion(VK_API_VERSION_1_1);
-    return *this;
-  }
   VulkanApplicationOptions& Enable10BitHDR() {
     use_10bit_hdr = true;
     return *this;

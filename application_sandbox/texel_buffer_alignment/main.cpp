@@ -63,7 +63,7 @@ class TexelBufferAlignmentSample
         Sample<CubeFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions()
-                .EnableVulkan11()
+                .SetVulkanApiVersion(VK_API_VERSION_1_1)
                 .AddDeviceExtensionStructure(&kFeat),
             {}, {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
             {VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME}),

@@ -47,7 +47,6 @@ struct SampleOptions {
   bool host_query_reset = false;
   bool extended_swapchain_color_space = false;
   bool shared_presentation = false;
-  bool enable_vulkan_1_1 = false;   // This is deprecated, use the |vulkan_api_version| instead for new applications.
   bool mutable_swapchain_format = false;
   bool enable_display_timing = false;
   bool enable_10bit_hdr = false;
@@ -101,10 +100,6 @@ struct SampleOptions {
   }
   SampleOptions& EnableSharedPresentation() {
     shared_presentation = true;
-    return *this;
-  }
-  SampleOptions& EnableVulkan11() {
-    enable_vulkan_1_1 = true;
     return *this;
   }
   SampleOptions& EnableMutableSwapChainFormat() {
@@ -178,7 +173,6 @@ vulkan::VulkanApplicationOptions buildVulkanApplicationOptions(
   if (options.protected_memory) ret.EnableProtectedMemory();
   if (options.host_query_reset) ret.EnableHostQueryReset();
   if (options.shared_presentation) ret.EnableSharedPresentation();
-  if (options.enable_vulkan_1_1) ret.EnableVulkan11();
   if (options.enable_10bit_hdr) ret.Enable10BitHDR();
   if (options.mutable_swapchain_format) ret.EnableMutableSwapchainFormat();
 
