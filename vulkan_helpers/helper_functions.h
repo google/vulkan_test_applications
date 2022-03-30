@@ -220,7 +220,7 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(
 // number of descriptor sets can be allocated from this pool.
 VkDescriptorPool CreateDescriptorPool(VkDevice* device, uint32_t num_pool_size,
                                       const VkDescriptorPoolSize* pool_sizes,
-                                      uint32_t max_sets);
+                                      uint32_t max_sets, void* pNext = nullptr);
 
 // Creates a descriptor set layout with |count| descriptors of the given |type|
 // bound to bining number 0. The resource behind the descriptors is set to

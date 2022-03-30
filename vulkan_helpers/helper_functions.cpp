@@ -1357,7 +1357,7 @@ VkQueryPool CreateQueryPool(VkDevice* device,
 
 VkDescriptorPool CreateDescriptorPool(VkDevice* device, uint32_t num_pool_size,
                                       const VkDescriptorPoolSize* pool_sizes,
-                                      uint32_t max_sets) {
+                                      uint32_t max_sets, void* pNext) {
   VkDescriptorPoolCreateInfo info{
       /* sType = */ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
       /* pNext = */ nullptr,

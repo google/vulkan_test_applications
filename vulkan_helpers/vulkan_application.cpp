@@ -29,7 +29,7 @@ typedef void(VKAPI_PTR* PFN_vkSetSwapchainCallback)(
 namespace vulkan {
 VkDescriptorPool DescriptorSet::CreateDescriptorPool(
     containers::Allocator* allocator, VkDevice* device,
-    std::initializer_list<VkDescriptorSetLayoutBinding> bindings) {
+    std::initializer_list<VkDescriptorSetLayoutBinding> bindings, void* pNext) {
   containers::unordered_map<uint32_t, uint32_t> counts(allocator);
   for (auto binding : bindings) {
     counts[static_cast<uint32_t>(binding.descriptorType)] +=
@@ -43,13 +43,13 @@ VkDescriptorPool DescriptorSet::CreateDescriptorPool(
   }
 
   return vulkan::CreateDescriptorPool(
-      device, static_cast<uint32_t>(pool_sizes.size()), pool_sizes.data(), 1);
+      device, static_cast<uint32_t>(pool_sizes.size()), pool_sizes.data(), 1, pNext);
 }
 
 DescriptorSet::DescriptorSet(
     containers::Allocator* allocator, VkDevice* device,
-    std::initializer_list<VkDescriptorSetLayoutBinding> bindings)
-    : pool_(CreateDescriptorPool(allocator, device, bindings)),
+    std::initializer_list<VkDescriptorSetLayoutBinding> bindings, void* pNext)
+    : pool_(CreateDescriptorPool(allocator, device, bindings, pNext)),
       layout_(CreateDescriptorSetLayout(allocator, device, bindings)),
       set_(AllocateDescriptorSet(device, pool_.get_raw_object(),
                                  layout_.get_raw_object())) {}
