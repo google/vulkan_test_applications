@@ -121,23 +121,6 @@ struct VulkanApplicationOptions {
   }
   
   VulkanApplicationOptions& SetVulkanApiVersion(uint32_t vulkan_api_version) {
-    uint32_t variant = VK_API_VERSION_VARIANT(vulkan_api_version);
-    uint32_t major = VK_API_VERSION_MAJOR(vulkan_api_version);
-    uint32_t minor = VK_API_VERSION_MINOR(vulkan_api_version);
-    uint32_t patch = VK_API_VERSION_PATCH(vulkan_api_version);
-
-    static_assert(
-        VK_API_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE) == 1,
-        "review the following to make sure that the version check is correct "
-        " after updating vulkan.h");
-
-    if (variant != 0 ||
-        major > VK_API_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE) ||
-        minor > VK_API_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE) ||
-        vulkan_api_version > VK_HEADER_VERSION_COMPLETE) {
-      exit(1);
-    }
-
     this->vulkan_api_version = vulkan_api_version;
     return *this;
   }
