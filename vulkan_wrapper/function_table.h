@@ -233,6 +233,7 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetEvent),
         CONSTRUCT_LAZY_FUNCTION(vkCmdResetEvent),
         CONSTRUCT_LAZY_FUNCTION(vkCmdWaitEvents),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdWaitEvents2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetDeviceMask),
         CONSTRUCT_LAZY_FUNCTION(vkCmdDrawIndexedIndirectCountKHR),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT),
@@ -311,6 +312,7 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdSetEvent);
   LAZY_FUNCTION(vkCmdResetEvent);
   LAZY_FUNCTION(vkCmdWaitEvents);
+  LAZY_FUNCTION(vkCmdWaitEvents2KHR);
   LAZY_FUNCTION(vkCmdSetDeviceMask);
   LAZY_FUNCTION(vkCmdDrawIndexedIndirectCountKHR);
   LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT);

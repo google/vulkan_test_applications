@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_shader_library(set_event_shaders
+add_shader_library(synchronization2_set_event_shaders
   SOURCES
     set_event.frag
     set_event.vert
@@ -20,12 +20,12 @@ add_shader_library(set_event_shaders
     shader_library
 )
 
-add_vulkan_sample_application(set_event
+add_vulkan_sample_application(synchronization2_set_event
   SOURCES main.cpp
   LIBS
     vulkan_helpers
   MODELS
     standard_models
   SHADERS
-    set_event_shaders
+    synchronization2_set_event_shaders
 )

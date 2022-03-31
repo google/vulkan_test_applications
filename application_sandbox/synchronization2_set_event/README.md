@@ -1,4 +1,4 @@
-# Set Event
+# Set Event (VK_KHR_synchronization2 version)
 
-This sample uses `VkEvent` and calls `vkSetEvent` and `vkCmdWaitEvents` to
-synchronize between host and device, to pass RGBA data for rendering.
+This is based on the set_event sample, using the VK_KHR_synchronization2
+extension. Specifically, this uses the

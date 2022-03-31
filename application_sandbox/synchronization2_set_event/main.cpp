@@ -12,18 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+#include <thread>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include <thread>
-
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -50,14 +49,22 @@ struct CubeFrameData {
   containers::unique_ptr<vulkan::VkEvent> color_data_update_event_;
 };
 
+VkPhysicalDeviceSynchronization2FeaturesKHR kSynchronization2Features = {
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, nullptr,
+    VK_TRUE};
+
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
 class SetEventSample : public sample_application::Sample<CubeFrameData> {
  public:
   SetEventSample(const entry::EntryData* data)
       : data_(data),
-        Sample<CubeFrameData>(data->allocator(), data, 1, 512, 1, 1,
-                              sample_application::SampleOptions()),
+        Sample<CubeFrameData>(
+            data->allocator(), data, 1, 512, 1, 1,
+            sample_application::SampleOptions()
+                .EnableVulkan11()
+                .AddDeviceExtensionStructure(&kSynchronization2Features),
+            {}, {}, {VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
@@ -87,11 +94,11 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->allocator(),
-        app()->CreatePipelineLayout({{
-            cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
-            cube_descriptor_set_layouts_[2],
-        }}));
+        data_->allocator(), app()->CreatePipelineLayout({{
+                                cube_descriptor_set_layouts_[0],
+                                cube_descriptor_set_layouts_[1],
+                                cube_descriptor_set_layouts_[2],
+                            }}));
 
     VkAttachmentReference color_attachment = {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -126,9 +133,8 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -184,16 +190,19 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
 
     // The buffer memory barrier for the color data buffer, transition from
     // host write to read in fragment shader
-    VkBufferMemoryBarrier color_data_buffer_barrier{
-        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-        nullptr,
-        VK_ACCESS_HOST_WRITE_BIT,
-        VK_ACCESS_SHADER_READ_BIT,
-        VK_QUEUE_FAMILY_IGNORED,
-        VK_QUEUE_FAMILY_IGNORED,
-        *frame_data->color_data_buffer_,
-        0,
-        sizeof(AlphaData)};
+    VkBufferMemoryBarrier2KHR color_data_buffer_barrier{
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR,  // sType
+        nullptr,                                        // pNext
+        VK_PIPELINE_STAGE_2_HOST_BIT_KHR,               // srcStageMask
+        VK_ACCESS_2_HOST_WRITE_BIT_KHR,                 // srcAccessMask
+        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR,    // dstStageMask
+        VK_ACCESS_2_SHADER_READ_BIT_KHR,                // dstAccessMask
+        VK_QUEUE_FAMILY_IGNORED,                        // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                        // dstQueueFamilyIndex
+        *frame_data->color_data_buffer_,                // buffer
+        0,                                              // offset
+        sizeof(AlphaData),                              // size
+    };
 
     VkBufferViewCreateInfo color_data_buffer_view_create_info{
         VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,  // sType
@@ -216,12 +225,11 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
 
     frame_data->cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
-            data_->allocator(),
-            app()->AllocateDescriptorSet({
-                cube_descriptor_set_layouts_[0],
-                cube_descriptor_set_layouts_[1],
-                cube_descriptor_set_layouts_[2],
-            }));
+            data_->allocator(), app()->AllocateDescriptorSet({
+                                    cube_descriptor_set_layouts_[0],
+                                    cube_descriptor_set_layouts_[1],
+                                    cube_descriptor_set_layouts_[2],
+                                }));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -308,10 +316,21 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
         &clear                            // clears
     };
 
-    cmdBuffer->vkCmdWaitEvents(
+    VkDependencyInfoKHR color_data_buffer = {
+        VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,  // sType
+        nullptr,                                // pNext
+        0,                                      // dependencyFlags
+        0,                                      // memoryBarrierCount
+        nullptr,                                // pMemoryBarriers
+        1,                                      // bufferMemoryBarrierCount
+        &color_data_buffer_barrier,             // pBufferMemoryBarriers
+        0,                                      // imageMemoryBarrierCount
+        nullptr                                 // pImageMemoryBarriers
+    };
+
+    cmdBuffer->vkCmdWaitEvents2KHR(
         cmdBuffer, 1, &frame_data->color_data_update_event_->get_raw_object(),
-        VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-        nullptr, 1, &color_data_buffer_barrier, 0, nullptr);
+        &color_data_buffer);
     cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);
 
@@ -344,21 +363,27 @@ class SetEventSample : public sample_application::Sample<CubeFrameData> {
         app()->device(),
         frame_data->color_data_update_event_->get_raw_object());
 
-    VkSubmitInfo init_submit_info{
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-        nullptr,                        // pNext
-        0,                              // waitSemaphoreCount
-        nullptr,                        // pWaitSemaphores
-        nullptr,                        // pWaitDstStageMask,
-        1,                              // commandBufferCount
-        &(frame_data->command_buffer_->get_command_buffer()),
-        0,       // signalSemaphoreCount
-        nullptr  // pSignalSemaphores
+    VkCommandBufferSubmitInfoKHR init_cb_info = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,   // sType
+        nullptr,                                            // pNext
+        frame_data->command_buffer_->get_command_buffer(),  // commandBuffer
+        0                                                   // deviceMask
+    };
+    VkSubmitInfo2KHR init_submit_info{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,  // sType
+        nullptr,                              // pNext
+        0,                                    // flags
+        0,                                    // waitSemaphoreInfoCount
+        nullptr,                              // pWaitSemaphoreInfos
+        1,                                    // commandBufferInfoCount
+        &init_cb_info,                        // pCommandBufferInfos
+        0,                                    // signalSemaphoreInfoCount
+        nullptr                               // pSignalSemaphoreInfos
     };
 
-    app()->render_queue()->vkQueueSubmit(app()->render_queue(), 1,
-                                         &init_submit_info,
-                                         static_cast<VkFence>(VK_NULL_HANDLE));
+    app()->render_queue()->vkQueueSubmit2KHR(
+        app()->render_queue(), 1, &init_submit_info,
+        static_cast<VkFence>(VK_NULL_HANDLE));
     std::thread wait_idle([&]() {
       app()->render_queue()->vkQueueWaitIdle(app()->render_queue());
     });
