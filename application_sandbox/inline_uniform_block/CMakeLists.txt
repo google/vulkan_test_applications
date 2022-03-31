@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_shader_library(vk_inline_uniform_block_shaders
+add_shader_library(inline_uniform_block_shaders
   SOURCES
     cube.frag
     cube.vert
@@ -20,7 +20,7 @@ add_shader_library(vk_inline_uniform_block_shaders
     shader_library
 )
 
-add_vulkan_sample_application(vk_inline_uniform_block
+add_vulkan_sample_application(inline_uniform_block
   SOURCES main.cpp
   LIBS
     vulkan_helpers
@@ -29,5 +29,5 @@ add_vulkan_sample_application(vk_inline_uniform_block
   TEXTURES
     standard_images
   SHADERS
-    vk_inline_uniform_block_shaders
+    inline_uniform_block_shaders
 )

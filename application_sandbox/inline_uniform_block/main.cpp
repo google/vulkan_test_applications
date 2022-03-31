@@ -140,6 +140,13 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         "maxDescriptorSetUpdateAfterBindInlineUniformBlocks: ",
         dev_properties.maxDescriptorSetUpdateAfterBindInlineUniformBlocks);
 
+    // Check if the size is enough to store the data we want to update.
+    if(dev_properties.maxInlineUniformBlockSize < sizeof(float) * num_swapchain_images )
+    {
+        data_->logger()->LogError(
+            "maxInlineUniformBlockSize is too small (" ,dev_properties.maxInlineUniformBlockSize, ") for this sample.");
+        exit(1);
+    }
     cube_descriptor_set_layouts_[0] = {
         0,                                  // binding
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  // descriptorType
@@ -431,7 +438,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
   }
 
-  void UpdateDscriptorSet(size_t frame_index, CubeFrameData* frame_data) {
+  void UpdateInlineUniformBlock(size_t frame_index, CubeFrameData* frame_data) {
     frame_data->alpha_ =  static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
     VkWriteDescriptorSetInlineUniformBlockEXT inline_uniform_block_write = {
@@ -462,7 +469,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     // Update our uniform buffers.
     camera_data_->UpdateBuffer(queue, frame_index);
     model_data_->UpdateBuffer(queue, frame_index);
-    UpdateDscriptorSet(frame_index, frame_data);
+    UpdateInlineUniformBlock(frame_index, frame_data);
     PrepareCommandBuffer(frame_index, frame_data);
 
     VkSubmitInfo init_submit_info{
