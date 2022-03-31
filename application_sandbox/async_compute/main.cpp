@@ -281,12 +281,12 @@ class ASyncThreadRunner {
       VkBufferMemoryBarrier barrier = {
           VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
           nullptr,                                  // pNext
-          VK_ACCESS_SHADER_READ_BIT,                // srcAccessMask
+          0,                                        // srcAccessMask
           VK_ACCESS_SHADER_WRITE_BIT,               // dstAccessMask
           app_->render_queue().index(),             // srcQueueFamilyIndex
           app_->async_compute_queue()->index(),     // dstQueueFamilyIndex
           *dat.render_ssbo_,                        // buffer
-          0,                                        //  offset
+          0,                                        // offset
           dat.render_ssbo_->size(),                 // size
       };
 
@@ -296,7 +296,7 @@ class ASyncThreadRunner {
 
       // Transfer the ownership from the render_queue to this queue.
       command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+          command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
 
@@ -317,7 +317,7 @@ class ASyncThreadRunner {
           VK_QUEUE_FAMILY_IGNORED,                  // srcQueueFamilyIndex
           VK_QUEUE_FAMILY_IGNORED,                  // dstQueueFamilyIndex
           *simulation_ssbo_,                        // buffer
-          0,                                        //  offset
+          0,                                        // offset
           simulation_ssbo_->size(),                 // size
       };
       // Wait for all of the updates to velocity to be done before
@@ -339,11 +339,11 @@ class ASyncThreadRunner {
       barrier.srcQueueFamilyIndex = app_->async_compute_queue()->index();
       barrier.dstQueueFamilyIndex = app_->render_queue().index();
       barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-      barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+      barrier.dstAccessMask = 0;
 
       command_buffer->vkCmdPipelineBarrier(
           command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-          VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
+          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 1, &barrier, 0,
           nullptr);
 
       command_buffer->vkEndCommandBuffer(command_buffer);
@@ -357,16 +357,16 @@ class ASyncThreadRunner {
           VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
           nullptr,                                  // pNext
           VK_ACCESS_SHADER_READ_BIT,                // srcAccessMask
-          VK_ACCESS_SHADER_WRITE_BIT,               //  dstAccessMask
+          0,                                        // dstAccessMask
           app_->render_queue().index(),             // srcQueueFamilyIndex
           app_->async_compute_queue()->index(),     // dstQueueFamilyIndex
           *dat.render_ssbo_,                        // buffer
-          0,                                        //  offset
+          0,                                        // offset
           dat.render_ssbo_->size(),                 // size
       };
       wake_command_buffer->vkCmdPipelineBarrier(
           wake_command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &wake_barrier,
+          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 1, &wake_barrier,
           0, nullptr);
 
       wake_command_buffer->vkEndCommandBuffer(wake_command_buffer);
@@ -977,16 +977,16 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
       VkBufferMemoryBarrier barrier = {
           VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
           nullptr,                                  // pNext
-          VK_ACCESS_SHADER_WRITE_BIT,               // srcAccessMask
-          VK_ACCESS_SHADER_READ_BIT,                //  dstAccessMask
+          0,                                        // srcAccessMask
+          VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
           app()->async_compute_queue()->index(),    // srcQueueFamilyIndex
           app()->render_queue().index(),            // dstQueueFamilyIndex
           *buffer,                                  // bufferdraw_data
-          0,                                        //  offset
+          0,                                        // offset
           buffer->size(),                           // size
       };
       cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
-                                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                       VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0,
                                       nullptr, 1, &barrier, 0, nullptr);
     }
