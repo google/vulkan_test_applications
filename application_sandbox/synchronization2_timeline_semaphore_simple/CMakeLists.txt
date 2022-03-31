@@ -1,4 +1,4 @@
-# Copyright 2019 Google Inc.
+# Copyright 2022 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_shader_library(timeline_semaphore_simple_shaders
+add_shader_library(synchronization2_timeline_semaphore_simple_shaders
   SOURCES
     cube.frag
     cube.vert
@@ -20,12 +20,12 @@ add_shader_library(timeline_semaphore_simple_shaders
     shader_library
 )
 
-add_vulkan_sample_application(timeline_semaphore_simple
+add_vulkan_sample_application(synchronization2_timeline_semaphore_simple
   SOURCES main.cpp
   LIBS
     vulkan_helpers
   MODELS
     standard_models
   SHADERS
-    timeline_semaphore_simple_shaders
+    synchronization2_timeline_semaphore_simple_shaders
 )

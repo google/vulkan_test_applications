@@ -1,6 +1,4 @@
-# Timeline Semaphore Simple
+# Timeline Semaphore Simple (VK_KHR_synchronization2 version)
 
-Draws a simple cube on the screen. Inserts a timeline semaphore between
-the VkAcquireNextImage and main Submission, and uses the same timeline
-semaphore between the main submission and a dummy submission to signal
-VkQueuePresentKHR.
+This is based on the timeline_semaphore_simple sample, using the VK_KHR_synchronization2
+extension. Specifically, this uses the vkQueueSubmit2KHR and VkSemaphoreSubmitInfoKHR.
