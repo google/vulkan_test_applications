@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_shader_library(write_timestamp_shader
+add_shader_library(synchronization2_write_timestamp_shader
   SOURCES
     write_timestamp.frag
     write_timestamp.vert
@@ -20,12 +20,12 @@ add_shader_library(write_timestamp_shader
     shader_library
 )
 
-add_vulkan_sample_application(write_timestamp
+add_vulkan_sample_application(synchronization2_write_timestamp
   SOURCES main.cpp
   LIBS
     vulkan_helpers
   MODELS
     standard_models
   SHADERS
-    write_timestamp_shader
+    synchronization2_write_timestamp_shader
 )

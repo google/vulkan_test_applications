@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -46,6 +46,10 @@ struct WriteTimestampFrameData {
   containers::unique_ptr<vulkan::VkBufferView> timestamp_buf_view_;
 };
 
+VkPhysicalDeviceSynchronization2FeaturesKHR kSynchronization2Features = {
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, nullptr,
+    VK_TRUE};
+
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
 class WriteTimestampSample
@@ -54,19 +58,22 @@ class WriteTimestampSample
   WriteTimestampSample(const entry::EntryData* data,
                        const VkPhysicalDeviceFeatures& requested_features)
       : data_(data),
-        Sample<WriteTimestampFrameData>(data->allocator(), data, 1, 512, 1,
-                                        1, sample_application::SampleOptions()
-                                               .EnableDepthBuffer()
-                                               .EnableMultisampling(),
-                                        requested_features),
+        Sample<WriteTimestampFrameData>(
+            data->allocator(), data, 1, 512, 1, 1,
+            sample_application::SampleOptions()
+                .EnableDepthBuffer()
+                .EnableMultisampling()
+                .EnableVulkan11()
+                .AddDeviceExtensionStructure(&kSynchronization2Features),
+            requested_features, {}, {VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME}),
         torus_(data->allocator(), data->logger(), torus_data),
         grey_scale_(0u),
         num_frames_(0u) {
     // Check the timestamp valid bits for the render queue
     uint32_t queue_family_index = app()->render_queue().index();
-    auto queue_family_properties = vulkan::GetQueueFamilyProperties(
-        data->allocator(), app()->instance(),
-        app()->device().physical_device());
+    auto queue_family_properties =
+        vulkan::GetQueueFamilyProperties(data->allocator(), app()->instance(),
+                                         app()->device().physical_device());
     timestamp_valid_bits_ =
         queue_family_properties[queue_family_index].timestampValidBits;
   }
@@ -111,11 +118,11 @@ class WriteTimestampSample
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
-        data_->allocator(),
-        app()->CreatePipelineLayout({{
-            torus_descriptor_set_layouts_[0], torus_descriptor_set_layouts_[1],
-            torus_descriptor_set_layouts_[2],
-        }}));
+        data_->allocator(), app()->CreatePipelineLayout({{
+                                torus_descriptor_set_layouts_[0],
+                                torus_descriptor_set_layouts_[1],
+                                torus_descriptor_set_layouts_[2],
+                            }}));
 
     VkAttachmentReference depth_attachment = {
         0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
@@ -163,9 +170,8 @@ class WriteTimestampSample
             ));
 
     torus_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     torus_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                                torus_vertex_shader);
     torus_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -219,16 +225,29 @@ class WriteTimestampSample
         timestamp_data_->aligned_data_size());
 
     // Buffer memory barriers for the query/descriptor buffer.
-    VkBufferMemoryBarrier to_use_query_results{
-        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
-        nullptr,                                  // pNext
-        VK_ACCESS_TRANSFER_WRITE_BIT,             // srcAccessMask
-        VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
-        VK_QUEUE_FAMILY_IGNORED,                  // srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,                  // dstQueueFamilyIndex
-        timestamp_data_->get_buffer(),            // buffer
+    VkBufferMemoryBarrier2KHR to_use_query_results_barrier{
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR,  // sType
+        nullptr,                                        // pNext
+        VK_PIPELINE_STAGE_TRANSFER_BIT,                 // srcStageMask
+        VK_ACCESS_TRANSFER_WRITE_BIT,                   // srcAccessMask
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // dstStageMask
+        VK_ACCESS_SHADER_READ_BIT,                      // dstAccessMask
+        VK_QUEUE_FAMILY_IGNORED,                        // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                        // dstQueueFamilyIndex
+        timestamp_data_->get_buffer(),                  // buffer
         timestamp_data_->get_offset_for_frame(frame_index),  // offset
         timestamp_data_->aligned_data_size(),                // size
+    };
+    VkDependencyInfoKHR to_use_query_results = {
+        VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,  // sType
+        nullptr,                                // pNext
+        0,                                      // dependencyFlags
+        0,                                      // memoryBarrierCount
+        nullptr,                                // pMemoryBarriers
+        1,                                      // bufferMemoryBarrierCount
+        &to_use_query_results_barrier,          // pBufferMemoryBarriers
+        0,                                      // imageMemoryBarrierCount
+        nullptr                                 // pImageMemoryBarriers
     };
 
     // Populate the command buffer
@@ -239,10 +258,10 @@ class WriteTimestampSample
     frame_data->torus_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
             data_->allocator(), app()->AllocateDescriptorSet({
-                                       torus_descriptor_set_layouts_[0],
-                                       torus_descriptor_set_layouts_[1],
-                                       torus_descriptor_set_layouts_[2],
-                                   }));
+                                    torus_descriptor_set_layouts_[0],
+                                    torus_descriptor_set_layouts_[1],
+                                    torus_descriptor_set_layouts_[2],
+                                }));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -334,16 +353,13 @@ class WriteTimestampSample
     // Reset the query for this frame in the query pool and then begin query,
     // and so the vkGetQueryPoolResults called before submitting rendering
     // commands won't hang.
-    cmdBuffer->vkCmdPipelineBarrier(
-        cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 1,
-        &to_use_query_results, 0, nullptr);
+    cmdBuffer->vkCmdPipelineBarrier2KHR(cmdBuffer, &to_use_query_results);
     cmdBuffer->vkCmdResetQueryPool(cmdBuffer, *query_pool_,
                                    static_cast<uint32_t>(frame_index), 1);
 
-    cmdBuffer->vkCmdWriteTimestamp(cmdBuffer,
-                                   VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-                                   *query_pool_, frame_index);
+    cmdBuffer->vkCmdWriteTimestamp2KHR(
+        cmdBuffer, VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR, *query_pool_,
+        frame_index);
 
     cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);
@@ -385,21 +401,27 @@ class WriteTimestampSample
     timestamp_data_->data().value = uint32_t(time_stamp);
     timestamp_data_->UpdateBuffer(queue, frame_index);
 
-    VkSubmitInfo init_submit_info{
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-        nullptr,                        // pNext
-        0,                              // waitSemaphoreCount
-        nullptr,                        // pWaitSemaphores
-        nullptr,                        // pWaitDstStageMask,
-        1,                              // commandBufferCount
-        &(frame_data->command_buffer_->get_command_buffer()),
-        0,       // signalSemaphoreCount
-        nullptr  // pSignalSemaphores
+    VkCommandBufferSubmitInfoKHR init_cb_info = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,   // sType
+        nullptr,                                            // pNext
+        frame_data->command_buffer_->get_command_buffer(),  // commandBuffer
+        0                                                   // deviceMask
+    };
+    VkSubmitInfo2KHR init_submit_info{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,  // sType
+        nullptr,                              // pNext
+        0,                                    // flags
+        0,                                    // waitSemaphoreInfoCount
+        nullptr,                              // pWaitSemaphoreInfos
+        1,                                    // commandBufferInfoCount
+        &init_cb_info,                        // pCommandBufferInfos
+        0,                                    // signalSemaphoreInfoCount
+        nullptr                               // pSignalSemaphoreInfos
     };
 
-    app()->render_queue()->vkQueueSubmit(app()->render_queue(), 1,
-                                         &init_submit_info,
-                                         static_cast<VkFence>(VK_NULL_HANDLE));
+    app()->render_queue()->vkQueueSubmit2KHR(
+        app()->render_queue(), 1, &init_submit_info,
+        static_cast<VkFence>(VK_NULL_HANDLE));
   }
 
   // Return true if the sample for quering timestamp

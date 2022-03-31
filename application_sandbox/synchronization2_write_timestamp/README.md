@@ -1,4 +1,5 @@
-# Write Timestamp
+# Write Timestamp (VK_KHR_synchronization2 version)
 
-This sample renders a wireframe torus that is shaded based on the pipeline
-timestamp value in the previous frame.
+This is based on the async_compute sample, using the VK_KHR_synchronization2
+extension. Specifically, this uses the vkQueueSubmit2KHR,
+vkCmdPipelineBarrier2KHR, vkCmdWriteTimestamp2KHR.
