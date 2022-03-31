@@ -868,8 +868,8 @@ class VulkanApplication {
   // Allocates a descriptor set with one descriptor according to the given
   // |binding|.
   DescriptorSet AllocateDescriptorSet(
-      std::initializer_list<VkDescriptorSetLayoutBinding> bindings) {
-    return DescriptorSet(allocator_, &device_, bindings);
+      std::initializer_list<VkDescriptorSetLayoutBinding> bindings, void* pNext = nullptr) {
+    return DescriptorSet(allocator_, &device_, bindings, pNext);
   }
 
   VkSwapchainKHR& swapchain() { return swapchain_; }

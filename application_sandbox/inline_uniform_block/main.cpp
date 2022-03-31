@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2022 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 
 #include "application_sandbox/sample_application_framework/sample_application.h"
 #include "mathfu/matrix.h"
@@ -23,6 +25,7 @@
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
+#include "vulkan_helpers/vulkan_texture.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -40,18 +43,18 @@ uint32_t cube_fragment_shader[] =
 #include "cube.frag.spv"
     ;
 
+namespace simple_texture {
+#include "star.png.h"
+}
+
+const auto& texture_data = simple_texture::texture;
+
 struct CubeFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
   containers::unique_ptr<vulkan::DescriptorSet> cube_descriptor_set_;
+  float alpha_ = 0.0f;
 };
-
-// typedef struct VkPhysicalDeviceInlineUniformBlockFeatures {
-//     VkStructureType    sType;
-//     void*              pNext;
-//     VkBool32           inlineUniformBlock;
-//     VkBool32           descriptorBindingInlineUniformBlockUpdateAfterBind;
-// } VkPhysicalDeviceInlineUniformBlockFeatures;
 
 VkPhysicalDeviceInlineUniformBlockFeaturesEXT kFeat{
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT,
@@ -59,6 +62,7 @@ VkPhysicalDeviceInlineUniformBlockFeaturesEXT kFeat{
     VK_TRUE,
     VK_TRUE,
 };
+
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
 class CubeSample : public sample_application::Sample<CubeFrameData> {
@@ -74,11 +78,13 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             {}, {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
             {VK_KHR_MAINTENANCE1_EXTENSION_NAME,
              VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME}),
-        cube_(data->allocator(), data->logger(), cube_data) {}
+        cube_(data->allocator(), data->logger(), cube_data),
+        texture_(data->allocator(), data->logger(), texture_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
       size_t num_swapchain_images) override {
     cube_.InitializeData(app(), initialization_buffer);
+    texture_.InitializeData(app(), initialization_buffer);
 
     // Query device features for inline_uniform_block.
     VkPhysicalDeviceInlineUniformBlockFeaturesEXT ext_features{
@@ -98,13 +104,15 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
           "inlineUniformBlock not supported on this device.");
       exit(1);
     }
-    if (ext_features.descriptorBindingInlineUniformBlockUpdateAfterBind == VK_FALSE) {
+    if (ext_features.descriptorBindingInlineUniformBlockUpdateAfterBind ==
+        VK_FALSE) {
       data_->logger()->LogError(
-          "descriptorBindingInlineUniformBlockUpdateAfterBind not supported on this device.");
+          "descriptorBindingInlineUniformBlockUpdateAfterBind not supported on "
+          "this device.");
       exit(1);
     }
 
-    //Query device properties for inline_uniform_block.
+    // Query device properties for inline_uniform_block.
     VkPhysicalDeviceInlineUniformBlockPropertiesEXT dev_properties{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT,
     };
@@ -117,7 +125,8 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     app()->instance()->GetLogger()->LogInfo(
         "VkPhysicalDeviceInlineUniformBlockPropertiesEXT properties:");
     app()->instance()->GetLogger()->LogInfo(
-        "maxInlineUniformBlockSize: ", dev_properties.maxInlineUniformBlockSize);
+        "maxInlineUniformBlockSize: ",
+        dev_properties.maxInlineUniformBlockSize);
     app()->instance()->GetLogger()->LogInfo(
         "maxPerStageDescriptorInlineUniformBlocks: ",
         dev_properties.maxPerStageDescriptorInlineUniformBlocks);
@@ -145,11 +154,34 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         VK_SHADER_STAGE_VERTEX_BIT,         // stageFlags
         nullptr                             // pImmutableSamplers
     };
+    cube_descriptor_set_layouts_[2] = {
+        2,                             // binding
+        VK_DESCRIPTOR_TYPE_SAMPLER,    // descriptorType
+        1,                             // descriptorCount
+        VK_SHADER_STAGE_FRAGMENT_BIT,  // stageFlags
+        nullptr                        // pImmutableSamplers
+    };
+    cube_descriptor_set_layouts_[3] = {
+        3,                                 // binding
+        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  // descriptorType
+        1,                                 // descriptorCount
+        VK_SHADER_STAGE_FRAGMENT_BIT,      // stageFlags
+        nullptr                            // pImmutableSamplers
+    };
+    cube_descriptor_set_layouts_[4] = {
+        4,                                            // binding
+        VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT,  // descriptorType
+        sizeof(float),                                // descriptorCount
+        VK_SHADER_STAGE_FRAGMENT_BIT,                 // stageFlags
+        nullptr                                       // pImmutableSamplers
+    };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
         data_->allocator(),
-        app()->CreatePipelineLayout({{cube_descriptor_set_layouts_[0],
-                                      cube_descriptor_set_layouts_[1]}}));
+        app()->CreatePipelineLayout(
+            {{cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
+              cube_descriptor_set_layouts_[2], cube_descriptor_set_layouts_[3],
+              cube_descriptor_set_layouts_[4]}}));
 
     VkAttachmentReference color_attachment = {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -182,6 +214,11 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             }},                                   // SubpassDescriptions
             {}                                    // SubpassDependencies
             ));
+
+    sampler_ = containers::make_unique<vulkan::VkSampler>(
+        data_->allocator(),
+        vulkan::CreateSampler(&app()->device(), VK_FILTER_LINEAR,
+                              VK_FILTER_LINEAR));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
         data_->allocator(), app()->CreateGraphicsPipeline(
@@ -216,6 +253,10 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
   }
 
+  virtual void InitializationComplete() override {
+    texture_.InitializationComplete();
+  }
+  
   virtual void InitializeFrameData(
       CubeFrameData* frame_data, vulkan::VkCommandBuffer* initialization_buffer,
       size_t frame_index) override {
@@ -223,11 +264,20 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         containers::make_unique<vulkan::VkCommandBuffer>(
             data_->allocator(), app()->GetCommandBuffer());
 
+    VkDescriptorPoolInlineUniformBlockCreateInfoEXT
+        inline_uniform_block_create_info = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO_EXT,
+            nullptr, sizeof(frame_data->alpha_)};
+
     frame_data->cube_descriptor_set_ =
         containers::make_unique<vulkan::DescriptorSet>(
             data_->allocator(),
             app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
-                                          cube_descriptor_set_layouts_[1]}));
+                                          cube_descriptor_set_layouts_[1],
+                                          cube_descriptor_set_layouts_[2],
+                                          cube_descriptor_set_layouts_[3],
+                                          cube_descriptor_set_layouts_[4]},
+                                         &inline_uniform_block_create_info));
 
     VkDescriptorBufferInfo buffer_infos[2] = {
         {
@@ -241,20 +291,76 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             model_data_->size(),                             // range
         }};
 
-    VkWriteDescriptorSet write{
-        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
-        nullptr,                                 // pNext
-        *frame_data->cube_descriptor_set_,       // dstSet
-        0,                                       // dstbinding
-        0,                                       // dstArrayElement
-        2,                                       // descriptorCount
-        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       // descriptorType
-        nullptr,                                 // pImageInfo
-        buffer_infos,                            // pBufferInfo
-        nullptr,                                 // pTexelBufferView
+    VkDescriptorImageInfo sampler_info = {
+        *sampler_,                 // sampler
+        VK_NULL_HANDLE,            // imageView
+        VK_IMAGE_LAYOUT_UNDEFINED  //  imageLayout
+    };
+    VkDescriptorImageInfo texture_info = {
+        VK_NULL_HANDLE,                            // sampler
+        texture_.view(),                           // imageView
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // imageLayout
+    };
+    frame_data->alpha_ = 0.0f;
+
+    VkWriteDescriptorSetInlineUniformBlockEXT inline_uniform_block_write = {
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
+        nullptr,
+        sizeof(frame_data->alpha_),
+        &frame_data->alpha_,
     };
 
-    app()->device()->vkUpdateDescriptorSets(app()->device(), 1, &write, 0,
+    VkWriteDescriptorSet write[4] = {
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
+            nullptr,                                 // pNext
+            *frame_data->cube_descriptor_set_,       // dstSet
+            0,                                       // dstbinding
+            0,                                       // dstArrayElement
+            2,                                       // descriptorCount
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       // descriptorType
+            nullptr,                                 // pImageInfo
+            buffer_infos,                            // pBufferInfo
+            nullptr,                                 // pTexelBufferView
+        },
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
+            nullptr,                                 // pNext
+            *frame_data->cube_descriptor_set_,       // dstSet
+            2,                                       // dstbinding
+            0,                                       // dstArrayElement
+            1,                                       // descriptorCount
+            VK_DESCRIPTOR_TYPE_SAMPLER,              // descriptorType
+            &sampler_info,                           // pImageInfo
+            nullptr,                                 // pBufferInfo
+            nullptr,                                 // pTexelBufferView
+        },
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
+            nullptr,                                 // pNext
+            *frame_data->cube_descriptor_set_,       // dstSet
+            3,                                       // dstbinding
+            0,                                       // dstArrayElement
+            1,                                       // descriptorCount
+            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,        // descriptorType
+            &texture_info,                           // pImageInfo
+            nullptr,                                 // pBufferInfo
+            nullptr,                                 // pTexelBufferView
+        },
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,       // sType
+            &inline_uniform_block_write,                  // pNext
+            *frame_data->cube_descriptor_set_,            // dstSet
+            4,                                            // dstbinding
+            0,                                            // dstArrayElement
+            sizeof(frame_data->alpha_),                   // descriptorCount
+            VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT,  // descriptorType
+            nullptr,                                      // pImageInfo
+            nullptr,                                      // pBufferInfo
+            nullptr,                                      // pTexelBufferView
+        }};
+
+    app()->device()->vkUpdateDescriptorSets(app()->device(), 4, write, 0,
                                             nullptr);
 
     ::VkImageView raw_view = color_view(frame_data);
@@ -278,7 +384,17 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     frame_data->framebuffer_ = containers::make_unique<vulkan::VkFramebuffer>(
         data_->allocator(),
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
+  }
 
+  virtual void Update(float time_since_last_render) override {
+    model_data_->data().transform =
+        model_data_->data().transform *
+        Mat44::FromRotationMatrix(
+            Mat44::RotationX(3.14f * time_since_last_render) *
+            Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
+  }
+
+  void PrepareCommandBuffer(size_t frame_index, CubeFrameData* frame_data) {
     (*frame_data->command_buffer_)
         ->vkBeginCommandBuffer((*frame_data->command_buffer_),
                                &sample_application::kBeginCommandBuffer);
@@ -315,18 +431,39 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
   }
 
-  virtual void Update(float time_since_last_render) override {
-    model_data_->data().transform =
-        model_data_->data().transform *
-        Mat44::FromRotationMatrix(
-            Mat44::RotationX(3.14f * time_since_last_render) *
-            Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
+  void UpdateDscriptorSet(size_t frame_index, CubeFrameData* frame_data) {
+    frame_data->alpha_ =  static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
+    VkWriteDescriptorSetInlineUniformBlockEXT inline_uniform_block_write = {
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
+        nullptr,
+        sizeof(frame_data->alpha_),
+        &frame_data->alpha_,
+    };
+
+    VkWriteDescriptorSet write{
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,       // sType
+        &inline_uniform_block_write,                  // pNext
+        *frame_data->cube_descriptor_set_,            // dstSet
+        4,                                            // dstbinding
+        0,                                            // dstArrayElement
+        sizeof(frame_data->alpha_),                   // descriptorCount
+        VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT,  // descriptorType
+        nullptr,                                      // pImageInfo
+        nullptr,                                      // pBufferInfo
+        nullptr,                                      // pTexelBufferView
+    };
+    app()->device()->vkUpdateDescriptorSets(app()->device(), 1, &write, 0,
+                                            nullptr);
   }
+
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       CubeFrameData* frame_data) override {
     // Update our uniform buffers.
     camera_data_->UpdateBuffer(queue, frame_index);
     model_data_->UpdateBuffer(queue, frame_index);
+    UpdateDscriptorSet(frame_index, frame_data);
+    PrepareCommandBuffer(frame_index, frame_data);
 
     VkSubmitInfo init_submit_info{
         VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
@@ -358,8 +495,10 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> cube_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
-  VkDescriptorSetLayoutBinding cube_descriptor_set_layouts_[2];
+  VkDescriptorSetLayoutBinding cube_descriptor_set_layouts_[5];
   vulkan::VulkanModel cube_;
+  vulkan::VulkanTexture texture_;
+  containers::unique_ptr<vulkan::VkSampler> sampler_;
 
   containers::unique_ptr<vulkan::BufferFrameData<CameraData>> camera_data_;
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;

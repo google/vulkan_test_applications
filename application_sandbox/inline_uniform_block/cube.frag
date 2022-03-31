@@ -1,4 +1,4 @@
-/* Copyright 2017 Google Inc.
+/* Copyright 2022 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,17 @@
 layout(location = 0) out vec4 out_color;
 layout (location = 1) in vec2 texcoord;
 
+layout(set = 0, binding = 2) uniform sampler default_sampler;
+layout(set = 0, binding = 3) uniform texture2D default_texture;
 
+layout (set = 0, binding = 4 ) uniform uiniform_inline {
+ float alpha;
+} inline_data;
 
 void main() {
-    out_color = vec4(texcoord, 0.0, 1.0);
+    float a = inline_data.alpha;
+    vec4 color = vec4(texcoord, 0.0, 1.0);
+    vec4 tex_color = texture(sampler2D(default_texture, default_sampler), texcoord);
+
+    out_color =tex_color * a + color*(1.0-a);
 }

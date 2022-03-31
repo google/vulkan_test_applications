@@ -1,4 +1,4 @@
-# Copyright 2017 Google Inc.
+# Copyright 2022 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ add_vulkan_sample_application(vk_inline_uniform_block
     vulkan_helpers
   MODELS
     standard_models
+  TEXTURES
+    standard_images
   SHADERS
     vk_inline_uniform_block_shaders
 )
