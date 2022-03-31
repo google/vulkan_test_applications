@@ -1,4 +1,4 @@
-# Copyright 2017 Google Inc.
+# Copyright 2022 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_shader_library(async_compute_shaders
+add_shader_library(synchronization2_async_compute_shaders
   SOURCES
     particle_update.comp
     particle_velocity_update.comp
@@ -24,7 +24,7 @@ add_shader_library(async_compute_shaders
     math_common_glsl
 )
 
-add_vulkan_sample_application(async_compute
+add_vulkan_sample_application(synchronization2_async_compute
   SOURCES main.cpp
   particle_data_shared.h
   LIBS
@@ -33,7 +33,7 @@ add_vulkan_sample_application(async_compute
   MODELS
     standard_models
   SHADERS
-    async_compute_shaders
+    synchronization2_async_compute_shaders
   TEXTURES
     standard_images
 )
