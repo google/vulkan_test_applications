@@ -141,11 +141,12 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         dev_properties.maxDescriptorSetUpdateAfterBindInlineUniformBlocks);
 
     // Check if the size is enough to store the data we want to update.
-    if(dev_properties.maxInlineUniformBlockSize < sizeof(float) * num_swapchain_images )
-    {
-        data_->logger()->LogError(
-            "maxInlineUniformBlockSize is too small (" ,dev_properties.maxInlineUniformBlockSize, ") for this sample.");
-        exit(1);
+    if (dev_properties.maxInlineUniformBlockSize <
+        sizeof(float) * num_swapchain_images) {
+      data_->logger()->LogError("maxInlineUniformBlockSize is too small (",
+                                dev_properties.maxInlineUniformBlockSize,
+                                ") for this sample.");
+      exit(1);
     }
     cube_descriptor_set_layouts_[0] = {
         0,                                  // binding
@@ -263,7 +264,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
   virtual void InitializationComplete() override {
     texture_.InitializationComplete();
   }
-  
+
   virtual void InitializeFrameData(
       CubeFrameData* frame_data, vulkan::VkCommandBuffer* initialization_buffer,
       size_t frame_index) override {
@@ -439,8 +440,9 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
   }
 
   void UpdateInlineUniformBlock(size_t frame_index, CubeFrameData* frame_data) {
-    frame_data->alpha_ =  static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-
+    frame_data->alpha_ =
+        static_cast<float>(std::abs(((frame_count_ + 30) % 60) - 30)) / 30.0f;
+    frame_count_++;
     VkWriteDescriptorSetInlineUniformBlockEXT inline_uniform_block_write = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
         nullptr,
@@ -506,6 +508,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
   vulkan::VulkanModel cube_;
   vulkan::VulkanTexture texture_;
   containers::unique_ptr<vulkan::VkSampler> sampler_;
+  int frame_count_ = 0;
 
   containers::unique_ptr<vulkan::BufferFrameData<CameraData>> camera_data_;
   containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
