@@ -281,7 +281,7 @@ class ASyncThreadRunner {
       VkBufferMemoryBarrier barrier = {
           VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
           nullptr,                                  // pNext
-          VK_ACCESS_SHADER_READ_BIT,                // srcAccessMask
+          0,                                        // srcAccessMask
           VK_ACCESS_SHADER_WRITE_BIT,               // dstAccessMask
           app_->render_queue().index(),             // srcQueueFamilyIndex
           app_->async_compute_queue()->index(),     // dstQueueFamilyIndex
@@ -296,9 +296,8 @@ class ASyncThreadRunner {
 
       // Transfer the ownership from the render_queue to this queue.
       command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
-          nullptr);
+          command_buffer, 0, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0,
+          nullptr, 1, &barrier, 0, nullptr);
 
       command_buffer->vkCmdBindDescriptorSets(
           command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -339,12 +338,11 @@ class ASyncThreadRunner {
       barrier.srcQueueFamilyIndex = app_->async_compute_queue()->index();
       barrier.dstQueueFamilyIndex = app_->render_queue().index();
       barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-      barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+      barrier.dstAccessMask = 0;
 
       command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-          VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
-          nullptr);
+          command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, 0,
+          nullptr, 1, &barrier, 0, nullptr);
 
       command_buffer->vkEndCommandBuffer(command_buffer);
       ready_buffers_.push_back(static_cast<uint32_t>(i));
@@ -357,7 +355,7 @@ class ASyncThreadRunner {
           VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
           nullptr,                                  // pNext
           VK_ACCESS_SHADER_READ_BIT,                // srcAccessMask
-          VK_ACCESS_SHADER_WRITE_BIT,               //  dstAccessMask
+          0,                                        //  dstAccessMask
           app_->render_queue().index(),             // srcQueueFamilyIndex
           app_->async_compute_queue()->index(),     // dstQueueFamilyIndex
           *dat.render_ssbo_,                        // buffer
@@ -365,9 +363,8 @@ class ASyncThreadRunner {
           dat.render_ssbo_->size(),                 // size
       };
       wake_command_buffer->vkCmdPipelineBarrier(
-          wake_command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &wake_barrier,
-          0, nullptr);
+          wake_command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, 0,
+          nullptr, 1, &wake_barrier, 0, nullptr);
 
       wake_command_buffer->vkEndCommandBuffer(wake_command_buffer);
     }
@@ -977,16 +974,15 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
       VkBufferMemoryBarrier barrier = {
           VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
           nullptr,                                  // pNext
-          VK_ACCESS_SHADER_WRITE_BIT,               // srcAccessMask
-          VK_ACCESS_SHADER_READ_BIT,                //  dstAccessMask
+          0,                                        // srcAccessMask
+          VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
           app()->async_compute_queue()->index(),    // srcQueueFamilyIndex
           app()->render_queue().index(),            // dstQueueFamilyIndex
           *buffer,                                  // bufferdraw_data
-          0,                                        //  offset
+          0,                                        // offset
           buffer->size(),                           // size
       };
-      cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
-                                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      cmdBuffer->vkCmdPipelineBarrier(cmdBuffer, 0,
                                       VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0,
                                       nullptr, 1, &barrier, 0, nullptr);
     }
