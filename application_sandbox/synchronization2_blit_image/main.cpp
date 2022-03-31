@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -47,14 +47,22 @@ struct CubeFrameData {
   containers::unique_ptr<vulkan::VkImageView> blit_src_view_;
 };
 
+VkPhysicalDeviceSynchronization2FeaturesKHR kSynchronization2Features = {
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, nullptr,
+    VK_TRUE};
+
 // This creates an application with 16MB of image memory, and defaults
 // for host, and device buffer sizes.
 class BlitImageSample : public sample_application::Sample<CubeFrameData> {
  public:
   BlitImageSample(const entry::EntryData* data)
       : data_(data),
-        Sample<CubeFrameData>(data->allocator(), data, 1, 512, 1, 1,
-                              sample_application::SampleOptions()),
+        Sample<CubeFrameData>(
+            data->allocator(), data, 1, 512, 1, 1,
+            sample_application::SampleOptions()
+                .EnableVulkan11()
+                .AddDeviceExtensionStructure(&kSynchronization2Features),
+            {}, {}, {VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data) {}
   virtual void InitializeApplicationData(
       vulkan::VkCommandBuffer* initialization_buffer,
@@ -114,9 +122,8 @@ class BlitImageSample : public sample_application::Sample<CubeFrameData> {
             ));
 
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
                               cube_vertex_shader);
     cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
@@ -252,37 +259,59 @@ class BlitImageSample : public sample_application::Sample<CubeFrameData> {
     // Image barriers for the blit source image, UNDEFINED ->
     // COLOR_ATTACHMENT_OPTIMAL COLOR_ATTACHMENT_OPTIMAL ->
     // TRANSFER_SRC_OPTIMAL
-    VkImageMemoryBarrier undef_to_attach{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,    // sType
-        nullptr,                                   // pNext
-        0,                                         // srcAccessMask
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,      // dstAccessMask
-        VK_IMAGE_LAYOUT_UNDEFINED,                 // oldLayout
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // newLayout
-        VK_QUEUE_FAMILY_IGNORED,                   // srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,                   // dstQueueFamilyIndex
-        *frame_data->blit_src_,                    // image
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
+    VkImageMemoryBarrier2KHR undef_to_attach_barrier{
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR,         // sType
+        nullptr,                                              // pNext
+        VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,                 // srcStageMask
+        0,                                                    // srcAccessMask
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,  // dstStageMask
+        0,                                                    // dstAccessMask
+        VK_IMAGE_LAYOUT_UNDEFINED,                            // oldLayout
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,             // newLayout
+        VK_QUEUE_FAMILY_IGNORED,                 // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                 // dstQueueFamilyIndex
+        *frame_data->blit_src_,                  // image
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}  // subresourceRange
+    };
+    VkDependencyInfoKHR undef_to_attach = {
+        VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,  // sType
+        nullptr,                                // pNext
+        0,                                      // dependencyFlags
+        0,                                      // memoryBarrierCount
+        nullptr,                                // pMemoryBarriers
+        0,                                      // bufferMemoryBarrierCount
+        nullptr,                                // pBufferMemoryBarriers
+        1,                                      // imageMemoryBarrierCount
+        &undef_to_attach_barrier                // pImageMemoryBarriers
+    };
 
-    VkImageMemoryBarrier attach_to_src{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,    // sType
-        nullptr,                                   // pNext
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,      // srcAccessMask
-        VK_ACCESS_TRANSFER_READ_BIT,               // dstAccessMask
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // oldLayout
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,      // newLayout
-        VK_QUEUE_FAMILY_IGNORED,                   // srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,                   // dstQueueFamilyIndex
-        *frame_data->blit_src_,                    // image
+    VkImageMemoryBarrier2KHR attach_to_src_barrier{
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR,         // sType
+        nullptr,                                              // pNext
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,  // srcStageMask
+        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,           // srcAccessMask
+        VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,                 // dstStageMask
+        VK_ACCESS_2_TRANSFER_READ_BIT_KHR,                    // dstAccessMask
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,             // oldLayout
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                 // newLayout
+        VK_QUEUE_FAMILY_IGNORED,  // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,  // dstQueueFamilyIndex
+        *frame_data->blit_src_,   // image
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
+    VkDependencyInfoKHR attach_to_src = {
+        VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,  // sType
+        nullptr,                                // pNext
+        0,                                      // dependencyFlags
+        0,                                      // memoryBarrierCount
+        nullptr,                                // pMemoryBarriers
+        0,                                      // bufferMemoryBarrierCount
+        nullptr,                                // pBufferMemoryBarriers
+        1,                                      // imageMemoryBarrierCount
+        &attach_to_src_barrier                  // pImageMemoryBarriers
+    };
 
     // Change the layout of blit source image to COLOR_ATTACHMENT_OPTIMAL
-    cmdBuffer->vkCmdPipelineBarrier(
-        cmdBuffer,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,                 // srcStageMask
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // dstStageMask
-        0,                                              // dependencyFlags
-        0, nullptr, 0, nullptr, 1, &undef_to_attach);
+    cmdBuffer->vkCmdPipelineBarrier2KHR(cmdBuffer, &undef_to_attach);
 
     VkRenderPassBeginInfo pass_begin = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // sType
@@ -309,47 +338,63 @@ class BlitImageSample : public sample_application::Sample<CubeFrameData> {
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
 
     // Change the layout of blit source image to TRANSFER_SRC_OPTIMAL
-    cmdBuffer->vkCmdPipelineBarrier(
-        cmdBuffer,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // srcStageMask
-        VK_PIPELINE_STAGE_TRANSFER_BIT,                 // dstStageMask
-        0,                                              // dependencyFlags
-        0, nullptr, 0, nullptr, 1, &attach_to_src);
+    cmdBuffer->vkCmdPipelineBarrier2KHR(cmdBuffer, &attach_to_src);
 
     // Image barriers for swapchain image, COLOR_ATTACHMENT_OPTIMAL ->
     // TRANSFER_DST_OPTIMAL and TRANSFER_DST_OPTIMAL ->
     // COLOR_ATTACHMENT_OPTIMAL
-    VkImageMemoryBarrier attach_to_dst{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,    // sType
-        nullptr,                                   // pNext
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,      // srcAccessMask
-        VK_ACCESS_TRANSFER_WRITE_BIT,              // dstAccessMask
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // oldLayout
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,      // newLayout
-        VK_QUEUE_FAMILY_IGNORED,                   // srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,                   // dstQueueFamilyIndex
-        swapchain_image(frame_data),               // image
+    VkImageMemoryBarrier2KHR attach_to_dst_barrier{
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR,         // sType
+        nullptr,                                              // pNext
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,  // srcStageMask
+        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,           // srcAccessMask
+        VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,                 // dstStageMask
+        VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,                   // dstAccessMask
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,             // oldLayout
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                 // newLayout
+        VK_QUEUE_FAMILY_IGNORED,      // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,      // dstQueueFamilyIndex
+        swapchain_image(frame_data),  // image
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
+    VkDependencyInfoKHR attach_to_dst = {
+        VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,  // sType
+        nullptr,                                // pNext
+        0,                                      // dependencyFlags
+        0,                                      // memoryBarrierCount
+        nullptr,                                // pMemoryBarriers
+        0,                                      // bufferMemoryBarrierCount
+        nullptr,                                // pBufferMemoryBarriers
+        1,                                      // imageMemoryBarrierCount
+        &attach_to_dst_barrier                  // pImageMemoryBarriers
+    };
 
-    VkImageMemoryBarrier dst_to_attach{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,    // sType
-        nullptr,                                   // pNext
-        VK_ACCESS_TRANSFER_WRITE_BIT,              // srcAccessMask
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,      // dstAccessMask
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,      // oldLayout
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,  // newLayout
-        VK_QUEUE_FAMILY_IGNORED,                   // srcQueueFamilyIndex
-        VK_QUEUE_FAMILY_IGNORED,                   // dstQueueFamilyIndex
-        swapchain_image(frame_data),               // image
+    VkImageMemoryBarrier2KHR dst_to_attach_barrier{
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR,         // sType
+        nullptr,                                              // pNext
+        VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,                 // srcStageMask
+        VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,                   // srcAccessMask
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,  // dstStageMask
+        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,           // dstAccessMask
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                 // oldLayout
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,             // newLayout
+        VK_QUEUE_FAMILY_IGNORED,      // srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,      // dstQueueFamilyIndex
+        swapchain_image(frame_data),  // image
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
+    VkDependencyInfoKHR dst_to_attach = {
+        VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,  // sType
+        nullptr,                                // pNext
+        0,                                      // dependencyFlags
+        0,                                      // memoryBarrierCount
+        nullptr,                                // pMemoryBarriers
+        0,                                      // bufferMemoryBarrierCount
+        nullptr,                                // pBufferMemoryBarriers
+        1,                                      // imageMemoryBarrierCount
+        &dst_to_attach_barrier                  // pImageMemoryBarriers
+    };
 
     // Change the layout of swapchain image to TRANSFER_DST_OPTIMAL
-    cmdBuffer->vkCmdPipelineBarrier(
-        cmdBuffer,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // srcStageMask
-        VK_PIPELINE_STAGE_TRANSFER_BIT,                 // dstStageMask
-        0,                                              // dependencyFlags
-        0, nullptr, 0, nullptr, 1, &attach_to_dst);
+    cmdBuffer->vkCmdPipelineBarrier2KHR(cmdBuffer, &attach_to_dst);
 
     // Blit the blit source image to the swapchain image
     VkImageBlit blit_region{
@@ -368,12 +413,7 @@ class BlitImageSample : public sample_application::Sample<CubeFrameData> {
         &blit_region, VK_FILTER_NEAREST);
 
     // Change the layout of swapchain image to COLOR_ATTACHMENT_OPTIMAL
-    cmdBuffer->vkCmdPipelineBarrier(
-        cmdBuffer,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,                 // srcStageMask
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // dstStageMask
-        0,                                              // dependencyFlags
-        0, nullptr, 0, nullptr, 1, &dst_to_attach);
+    cmdBuffer->vkCmdPipelineBarrier2KHR(cmdBuffer, &dst_to_attach);
 
     (*frame_data->command_buffer_)
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
@@ -392,21 +432,27 @@ class BlitImageSample : public sample_application::Sample<CubeFrameData> {
     camera_data->UpdateBuffer(queue, frame_index);
     model_data->UpdateBuffer(queue, frame_index);
 
-    VkSubmitInfo init_submit_info{
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-        nullptr,                        // pNext
-        0,                              // waitSemaphoreCount
-        nullptr,                        // pWaitSemaphores
-        nullptr,                        // pWaitDstStageMask,
-        1,                              // commandBufferCount
-        &(frame_data->command_buffer_->get_command_buffer()),
-        0,       // signalSemaphoreCount
-        nullptr  // pSignalSemaphores
+    VkCommandBufferSubmitInfoKHR cb_info = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,   // sType
+        nullptr,                                            // pNext
+        frame_data->command_buffer_->get_command_buffer(),  // commandBuffer
+        0                                                   // deviceMask
+    };
+    VkSubmitInfo2KHR init_submit_info{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,  // sType
+        nullptr,                              // pNext
+        0,                                    // flags
+        0,                                    // waitSemaphoreInfoCount
+        nullptr,                              // pWaitSemaphoreInfos
+        1,                                    // commandBufferInfoCount
+        &cb_info,                             // pCommandBufferInfos
+        0,                                    // signalSemaphoreInfoCount
+        nullptr                               // pSignalSemaphoreInfos
     };
 
-    app()->render_queue()->vkQueueSubmit(app()->render_queue(), 1,
-                                         &init_submit_info,
-                                         static_cast<VkFence>(VK_NULL_HANDLE));
+    app()->render_queue()->vkQueueSubmit2KHR(
+        app()->render_queue(), 1, &init_submit_info,
+        static_cast<VkFence>(VK_NULL_HANDLE));
   }
 
  private:

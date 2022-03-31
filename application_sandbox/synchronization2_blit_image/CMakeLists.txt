@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_shader_library(blit_image_shaders
+add_shader_library(synchronization2_blit_image_shaders
   SOURCES
     cube.frag
     cube.vert
@@ -20,12 +20,12 @@ add_shader_library(blit_image_shaders
     shader_library
 )
 
-add_vulkan_sample_application(blit_image
+add_vulkan_sample_application(synchronization2_blit_image
   SOURCES main.cpp
   LIBS
     vulkan_helpers
   MODELS
     standard_models
   SHADERS
-    blit_image_shaders
+    synchronization2_blit_image_shaders
 )
