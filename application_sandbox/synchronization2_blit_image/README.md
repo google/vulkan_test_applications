@@ -1,4 +1,5 @@
-# Blit Image
+# Blit Image (VK_KHR_synchronization2 version)
 
-This sample renders a rotating cube, and then blits it upside down
-into the framebuffer.
+This is based on the blit_image sample, using the VK_KHR_synchronization2
+extension. Specifically, this uses the vkQueueSubmit2KHR and
+vkCmdPipelineBarrier2KHR commands.
