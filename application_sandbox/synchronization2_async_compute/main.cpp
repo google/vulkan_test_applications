@@ -278,16 +278,29 @@ class ASyncThreadRunner {
       app_->device()->vkUpdateDescriptorSets(app_->device(), 1, &write, 0,
                                              nullptr);
 
-      VkBufferMemoryBarrier barrier = {
-          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
-          nullptr,                                  // pNext
-          0,                                        // srcAccessMask
-          VK_ACCESS_SHADER_WRITE_BIT,               // dstAccessMask
-          app_->render_queue().index(),             // srcQueueFamilyIndex
-          app_->async_compute_queue()->index(),     // dstQueueFamilyIndex
-          *dat.render_ssbo_,                        // buffer
-          0,                                        //  offset
-          dat.render_ssbo_->size(),                 // size
+      VkBufferMemoryBarrier2KHR barrier = {
+          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR,  // sType
+          nullptr,                                        // pNext
+          0,                                              // srcStageMask
+          0,                                              // srcAccessMask
+          VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR,     // dstStageMask
+          VK_ACCESS_2_SHADER_WRITE_BIT_KHR,               // dstAccessMask
+          app_->render_queue().index(),                   // srcQueueFamilyIndex
+          app_->async_compute_queue()->index(),           // dstQueueFamilyIndex
+          *dat.render_ssbo_,                              // buffer
+          0,                                              // offset
+          dat.render_ssbo_->size(),                       // size
+      };
+      VkDependencyInfoKHR dependency_info = {
+          VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,  // sType
+          nullptr,                                // pNext
+          0,                                      // dependencyFlags
+          0,                                      // memoryBarrierCount
+          nullptr,                                // pMemoryBarriers
+          1,                                      // bufferMemoryBarrierCount
+          &barrier,                               // pBufferMemoryBarriers
+          0,                                      // imageMemoryBarrierCount
+          nullptr                                 // pImageMemoryBarriers
       };
 
       auto& command_buffer = dat.command_buffer_;
@@ -295,9 +308,8 @@ class ASyncThreadRunner {
           command_buffer, &sample_application::kBeginCommandBuffer);
 
       // Transfer the ownership from the render_queue to this queue.
-      command_buffer->vkCmdPipelineBarrier(
-          command_buffer, 0, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0,
-          nullptr, 1, &barrier, 0, nullptr);
+      command_buffer->vkCmdPipelineBarrier2KHR(command_buffer,
+                                               &dependency_info);
 
       command_buffer->vkCmdBindDescriptorSets(
           command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -308,25 +320,38 @@ class ASyncThreadRunner {
       // Run the first half of the simulation.
       command_buffer->vkCmdDispatch(
           command_buffer, TOTAL_PARTICLES / COMPUTE_SHADER_LOCAL_SIZE, 1, 1);
-      VkBufferMemoryBarrier simulation_barrier = {
-          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
-          nullptr,                                  // pNext
-          VK_ACCESS_SHADER_WRITE_BIT,               // srcAccessMask
-          VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
-          VK_QUEUE_FAMILY_IGNORED,                  // srcQueueFamilyIndex
-          VK_QUEUE_FAMILY_IGNORED,                  // dstQueueFamilyIndex
-          *simulation_ssbo_,                        // buffer
-          0,                                        //  offset
-          simulation_ssbo_->size(),                 // size
+      VkBufferMemoryBarrier2KHR simulation_barrier = {
+          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR,  // sType
+          nullptr,                                        // pNext
+          VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR,     // srcStageMask
+          VK_ACCESS_2_SHADER_WRITE_BIT_KHR,               // srcAccessMask
+          VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR,     // dstStageMask
+          VK_ACCESS_2_SHADER_READ_BIT_KHR,                // dstAccessMask
+          VK_QUEUE_FAMILY_IGNORED,                        // srcQueueFamilyIndex
+          VK_QUEUE_FAMILY_IGNORED,                        // dstQueueFamilyIndex
+          *simulation_ssbo_,                              // buffer
+          0,                                              // offset
+          simulation_ssbo_->size(),                       // size
       };
+
+      VkDependencyInfoKHR simulation_dependency_info = {
+          VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,  // sType
+          nullptr,                                // pNext
+          0,                                      // dependencyFlags
+          0,                                      // memoryBarrierCount
+          nullptr,                                // pMemoryBarriers
+          1,                                      // bufferMemoryBarrierCount
+          &simulation_barrier,                    // pBufferMemoryBarriers
+          0,                                      // imageMemoryBarrierCount
+          nullptr                                 // pImageMemoryBarriers
+      };
+
       // Wait for all of the updates to velocity to be done before
       // moving on to the position updates. This is because the velocity
       // for a single particle is dependent on the positions of all other
       // particles, so avoid race conditions.
-      command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1,
-          &simulation_barrier, 0, nullptr);
+      command_buffer->vkCmdPipelineBarrier2KHR(command_buffer,
+                                               &simulation_dependency_info);
       command_buffer->vkCmdBindPipeline(command_buffer,
                                         VK_PIPELINE_BIND_POINT_COMPUTE,
                                         *position_update_pipeline_);
@@ -337,12 +362,13 @@ class ASyncThreadRunner {
       // Transition the old buffer back.
       barrier.srcQueueFamilyIndex = app_->async_compute_queue()->index();
       barrier.dstQueueFamilyIndex = app_->render_queue().index();
+      barrier.srcStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
       barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
       barrier.dstAccessMask = 0;
+      barrier.dstAccessMask = 0;
 
-      command_buffer->vkCmdPipelineBarrier(
-          command_buffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, 0,
-          nullptr, 1, &barrier, 0, nullptr);
+      command_buffer->vkCmdPipelineBarrier2KHR(command_buffer,
+                                               &dependency_info);
 
       command_buffer->vkEndCommandBuffer(command_buffer);
       ready_buffers_.push_back(static_cast<uint32_t>(i));
@@ -351,42 +377,62 @@ class ASyncThreadRunner {
       auto& wake_command_buffer = dat.wake_command_buffer_;
       wake_command_buffer->vkBeginCommandBuffer(
           wake_command_buffer, &sample_application::kBeginCommandBuffer);
-      VkBufferMemoryBarrier wake_barrier = {
-          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
-          nullptr,                                  // pNext
-          VK_ACCESS_SHADER_READ_BIT,                // srcAccessMask
-          0,                                        //  dstAccessMask
-          app_->render_queue().index(),             // srcQueueFamilyIndex
-          app_->async_compute_queue()->index(),     // dstQueueFamilyIndex
-          *dat.render_ssbo_,                        // buffer
-          0,                                        //  offset
-          dat.render_ssbo_->size(),                 // size
+      VkBufferMemoryBarrier2KHR wake_barrier = {
+          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR,  // sType
+          nullptr,                                        // pNext
+          VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR,      // srcStageMask
+          VK_ACCESS_2_SHADER_READ_BIT_KHR,                // srcAccessMask
+          0,                                              // dstStageMask
+          0,                                              // dstAccessMask
+          app_->render_queue().index(),                   // srcQueueFamilyIndex
+          app_->async_compute_queue()->index(),           // dstQueueFamilyIndex
+          *dat.render_ssbo_,                              // buffer
+          0,                                              // offset
+          dat.render_ssbo_->size(),                       // size
       };
-      wake_command_buffer->vkCmdPipelineBarrier(
-          wake_command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, 0,
-          nullptr, 1, &wake_barrier, 0, nullptr);
+      VkDependencyInfoKHR wake_dependency_info = {
+          VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,  // sType
+          nullptr,                                // pNext
+          0,                                      // dependencyFlags
+          0,                                      // memoryBarrierCount
+          nullptr,                                // pMemoryBarriers
+          1,                                      // bufferMemoryBarrierCount
+          &wake_barrier,                          // pBufferMemoryBarriers
+          0,                                      // imageMemoryBarrierCount
+          nullptr                                 // pImageMemoryBarriers
+      };
+      wake_command_buffer->vkCmdPipelineBarrier2KHR(wake_command_buffer,
+                                                    &wake_dependency_info);
 
       wake_command_buffer->vkEndCommandBuffer(wake_command_buffer);
     }
 
     (*initial_data_buffer)->vkEndCommandBuffer(*initial_data_buffer);
-    VkSubmitInfo setup_submit_info{
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-        nullptr,                        // pNext
-        0,                              // waitSemaphoreCount
-        nullptr,                        // pWaitSemaphores
-        nullptr,                        // pWaitDstStageMask,
-        1,                              // commandBufferCount
-        &(initial_data_buffer->get_command_buffer()),
-        0,       // signalSemaphoreCount
-        nullptr  // pSignalSemaphores
+
+    VkCommandBufferSubmitInfoKHR cb_info = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,  // sType
+        nullptr,                                           // pNext
+        initial_data_buffer->get_command_buffer(),         // commandBuffer
+        0                                                  // deviceMask
+    };
+
+    VkSubmitInfo2KHR setup_submit_info{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,  // sType
+        nullptr,                              // pNext
+        0,                                    // flags
+        0,                                    // waitSemaphoreInfoCount
+        nullptr,                              // pWaitSemaphoreInfos
+        1,                                    // commandBufferInfoCount
+        &cb_info,                             // pCommandBufferInfos
+        0,                                    // signalSemaphoreInfoCount
+        nullptr                               // pSignalSemaphoreInfos
     };
 
     // Actually finish filling the initial data, and transfer to the
     // GPU.
     (*app_->async_compute_queue())
-        ->vkQueueSubmit(*app_->async_compute_queue(), 1, &setup_submit_info,
-                        ::VkFence(VK_NULL_HANDLE));
+        ->vkQueueSubmit2KHR(*app_->async_compute_queue(), 1, &setup_submit_info,
+                            ::VkFence(VK_NULL_HANDLE));
 
     // Wait for it all to be done.
     (*app_->async_compute_queue())
@@ -428,19 +474,27 @@ class ASyncThreadRunner {
       // the compute queue. It also sets the fence that we can wait on
       // in the future.
       auto& data = data_[index];
-      VkSubmitInfo wake_submit_info{
-          VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-          nullptr,                        // pNext
-          0,                              // waitSemaphoreCount
-          nullptr,                        // pWaitSemaphores
-          nullptr,                        // pWaitDstStageMask,
-          1,                              // commandBufferCount
-          &(data.wake_command_buffer_.get_command_buffer()),
-          0,       // signalSemaphoreCount
-          nullptr  // pSignalSemaphores
+
+      VkCommandBufferSubmitInfoKHR cb_info = {
+          VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,  // sType
+          nullptr,                                           // pNext
+          data.wake_command_buffer_.get_command_buffer(),    // commandBuffer
+          0                                                  // deviceMask
       };
 
-      app_->render_queue()->vkQueueSubmit(
+      VkSubmitInfo2KHR wake_submit_info{
+          VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,  // sType
+          nullptr,                              // pNext
+          0,                                    // flags
+          0,                                    // waitSemaphoreInfoCount
+          nullptr,                              // pWaitSemaphoreInfos
+          1,                                    // commandBufferInfoCount
+          &cb_info,                             // pCommandBufferInfos
+          0,                                    // signalSemaphoreInfoCount
+          nullptr                               // pSignalSemaphoreInfos
+      };
+
+      app_->render_queue()->vkQueueSubmit2KHR(
           app_->render_queue(), 1, &wake_submit_info, data.return_fence_);
       returned_buffers_.push_back(index);
     }
@@ -536,22 +590,29 @@ class ASyncThreadRunner {
 
       auto& dat = data_[buffer];
       // This is where the computation actually happens
-      VkSubmitInfo computation_submit_info{
-          VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-          nullptr,                        // pNext
-          0,                              // waitSemaphoreCount
-          nullptr,                        // pWaitSemaphores
-          nullptr,                        // pWaitDstStageMask,
-          1,                              // commandBufferCount
-          &(dat.command_buffer_.get_command_buffer()),
-          0,       // signalSemaphoreCount
-          nullptr  // pSignalSemaphores
+      VkCommandBufferSubmitInfoKHR cb_info = {
+          VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,  // sType
+          nullptr,                                           // pNext
+          dat.command_buffer_.get_command_buffer(),          // commandBuffer
+          0                                                  // deviceMask
+      };
+
+      VkSubmitInfo2KHR computation_submit_info{
+          VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,  // sType
+          nullptr,                              // pNext
+          0,                                    // flags
+          0,                                    // waitSemaphoreInfoCount
+          nullptr,                              // pWaitSemaphoreInfos
+          1,                                    // commandBufferInfoCount
+          &cb_info,                             // pCommandBufferInfos
+          0,                                    // signalSemaphoreInfoCount
+          nullptr                               // pSignalSemaphoreInfos
       };
 
       // 5)
       (*app_->async_compute_queue())
-          ->vkQueueSubmit(*app_->async_compute_queue(), 1,
-                          &computation_submit_info, computation_fence);
+          ->vkQueueSubmit2KHR(*app_->async_compute_queue(), 1,
+                              &computation_submit_info, computation_fence);
 
       last_buffer = buffer;
     }
@@ -675,14 +736,22 @@ struct AsyncFrameData {
   containers::unique_ptr<vulkan::DescriptorSet> particle_descriptor_set_;
 };
 
+VkPhysicalDeviceSynchronization2FeaturesKHR kSynchronization2Features = {
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, nullptr,
+    VK_TRUE};
+
 class AsyncSample : public sample_application::Sample<AsyncFrameData> {
  public:
   AsyncSample(const entry::EntryData* data)
       : data_(data),
-        Sample<AsyncFrameData>(data->allocator(), data, 1, 512, 32, 1,
-                               sample_application::SampleOptions()
-                                   .EnableAsyncCompute()
-                                   .EnableMultisampling()),
+        Sample<AsyncFrameData>(
+            data->allocator(), data, 1, 512, 32, 1,
+            sample_application::SampleOptions()
+                .EnableAsyncCompute()
+                .EnableMultisampling()
+                .EnableVulkan11()
+                .AddDeviceExtensionStructure(&kSynchronization2Features),
+            {}, {}, {VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME}),
         quad_model_(data->allocator(), data->logger(), quad_data),
         particle_texture_(data->allocator(), data->logger(), texture_data),
         thread_runner_(data->allocator(), app(), kNumAsyncComputeBuffers) {
@@ -971,20 +1040,31 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
     if (swapped_buffer) {
       // If we have not transitioned this buffer yet, then move it from
       // the compute queue over to this queue.
-      VkBufferMemoryBarrier barrier = {
-          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
-          nullptr,                                  // pNext
-          0,                                        // srcAccessMask
-          VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
-          app()->async_compute_queue()->index(),    // srcQueueFamilyIndex
-          app()->render_queue().index(),            // dstQueueFamilyIndex
-          *buffer,                                  // bufferdraw_data
-          0,                                        // offset
-          buffer->size(),                           // size
+      VkBufferMemoryBarrier2KHR barrier = {
+          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR,  // sType
+          nullptr,                                        // pNext
+          0,                                              // srcStageMask
+          0,                                              // srcAccessMask
+          VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR,      // dstStageMask
+          VK_ACCESS_2_SHADER_READ_BIT_KHR,                // dstAccessMask
+          app()->async_compute_queue()->index(),          // srcQueueFamilyIndex
+          app()->render_queue().index(),                  // dstQueueFamilyIndex
+          *buffer,                                        // bufferdraw_data
+          0,                                              // offset
+          buffer->size(),                                 // size
       };
-      cmdBuffer->vkCmdPipelineBarrier(cmdBuffer, 0,
-                                      VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0,
-                                      nullptr, 1, &barrier, 0, nullptr);
+      VkDependencyInfoKHR dependency_info = {
+          VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,  // sType
+          nullptr,                                // pNext
+          0,                                      // dependencyFlags
+          0,                                      // memoryBarrierCount
+          nullptr,                                // pMemoryBarriers
+          1,                                      // bufferMemoryBarrierCount
+          &barrier,                               // pBufferMemoryBarriers
+          0,                                      // imageMemoryBarrierCount
+          nullptr                                 // pImageMemoryBarriers
+      };
+      cmdBuffer->vkCmdPipelineBarrier2KHR(cmdBuffer, &dependency_info);
     }
 
     // The rest of the normal drawing.
@@ -1016,21 +1096,27 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
 
     (*data->command_buffer_)->vkEndCommandBuffer(*data->command_buffer_);
 
-    VkSubmitInfo init_submit_info{
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-        nullptr,                        // pNext
-        0,                              // waitSemaphoreCount
-        nullptr,                        // pWaitSemaphores
-        nullptr,                        // pWaitDstStageMask,
-        1,                              // commandBufferCount
-        &(data->command_buffer_->get_command_buffer()),
-        0,       // signalSemaphoreCount
-        nullptr  // pSignalSemaphores
+    VkCommandBufferSubmitInfoKHR cb_info = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,  // sType
+        nullptr,                                           // pNext
+        data->command_buffer_->get_command_buffer(),       // commandBuffer
+        0                                                  // deviceMask
+    };
+    VkSubmitInfo2KHR init_submit_info{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,  // sType
+        nullptr,                              // pNext
+        0,                                    // flags
+        0,                                    // waitSemaphoreInfoCount
+        nullptr,                              // pWaitSemaphoreInfos
+        1,                                    // commandBufferInfoCount
+        &cb_info,                             // pCommandBufferInfos
+        0,                                    // signalSemaphoreInfoCount
+        nullptr                               // pSignalSemaphoreInfos
     };
 
-    app()->render_queue()->vkQueueSubmit(app()->render_queue(), 1,
-                                         &init_submit_info,
-                                         static_cast<VkFence>(VK_NULL_HANDLE));
+    app()->render_queue()->vkQueueSubmit2KHR(
+        app()->render_queue(), 1, &init_submit_info,
+        static_cast<VkFence>(VK_NULL_HANDLE));
   }
 
  private:

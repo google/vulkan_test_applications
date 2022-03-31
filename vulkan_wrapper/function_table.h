@@ -145,9 +145,9 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkDestroyDebugUtilsMessengerEXT);
   LAZY_FUNCTION(vkSubmitDebugUtilsMessageEXT);
   LAZY_FUNCTION(vkGetPhysicalDeviceDisplayProperties2KHR);
-	LAZY_FUNCTION(vkGetPhysicalDeviceDisplayPlaneProperties2KHR);
-	LAZY_FUNCTION(vkGetDisplayModeProperties2KHR);
-	LAZY_FUNCTION(vkGetDisplayPlaneCapabilities2KHR);
+  LAZY_FUNCTION(vkGetPhysicalDeviceDisplayPlaneProperties2KHR);
+  LAZY_FUNCTION(vkGetDisplayModeProperties2KHR);
+  LAZY_FUNCTION(vkGetDisplayPlaneCapabilities2KHR);
 #if defined __ANDROID__
   LAZY_FUNCTION(vkCreateAndroidSurfaceKHR);
 #elif defined __ggp__
@@ -183,6 +183,7 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkEndCommandBuffer),
         CONSTRUCT_LAZY_FUNCTION(vkResetCommandBuffer),
         CONSTRUCT_LAZY_FUNCTION(vkCmdPipelineBarrier),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdPipelineBarrier2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkCmdCopyBufferToImage),
         CONSTRUCT_LAZY_FUNCTION(vkCmdCopyImageToBuffer),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginRenderPass),
@@ -259,6 +260,7 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkEndCommandBuffer);
   LAZY_FUNCTION(vkResetCommandBuffer);
   LAZY_FUNCTION(vkCmdPipelineBarrier);
+  LAZY_FUNCTION(vkCmdPipelineBarrier2KHR);
   LAZY_FUNCTION(vkCmdCopyBufferToImage);
   LAZY_FUNCTION(vkCmdCopyImageToBuffer);
   LAZY_FUNCTION(vkCmdBeginRenderPass);
@@ -335,6 +337,7 @@ struct QueueFunctions {
 #define CONSTRUCT_LAZY_FUNCTION(function) \
   function(device, #function, device_functions)
         CONSTRUCT_LAZY_FUNCTION(vkQueueSubmit),
+        CONSTRUCT_LAZY_FUNCTION(vkQueueSubmit2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkQueueWaitIdle),
         CONSTRUCT_LAZY_FUNCTION(vkQueuePresentKHR),
         CONSTRUCT_LAZY_FUNCTION(vkQueueBindSparse),
@@ -348,6 +351,7 @@ struct QueueFunctions {
  public:
 #define LAZY_FUNCTION(function) LazyDeviceFunction<PFN_##function> function;
   LAZY_FUNCTION(vkQueueSubmit);
+  LAZY_FUNCTION(vkQueueSubmit2KHR);
   LAZY_FUNCTION(vkQueueWaitIdle);
   LAZY_FUNCTION(vkQueuePresentKHR);
   LAZY_FUNCTION(vkQueueBindSparse);
