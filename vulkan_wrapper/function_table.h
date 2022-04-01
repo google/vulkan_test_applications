@@ -57,6 +57,7 @@ class InstanceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceProperties2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceQueueFamilyProperties),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceFormatProperties),
+        CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceFormatProperties2),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceImageFormatProperties),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceImageFormatProperties2),
         CONSTRUCT_LAZY_FUNCTION(vkGetPhysicalDeviceMultisamplePropertiesEXT),
@@ -128,6 +129,7 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkGetPhysicalDeviceProperties2KHR);
   LAZY_FUNCTION(vkGetPhysicalDeviceQueueFamilyProperties);
   LAZY_FUNCTION(vkGetPhysicalDeviceFormatProperties);
+  LAZY_FUNCTION(vkGetPhysicalDeviceFormatProperties2);
   LAZY_FUNCTION(vkGetPhysicalDeviceImageFormatProperties);
   LAZY_FUNCTION(vkGetPhysicalDeviceImageFormatProperties2);
   LAZY_FUNCTION(vkGetPhysicalDeviceMultisamplePropertiesEXT);
