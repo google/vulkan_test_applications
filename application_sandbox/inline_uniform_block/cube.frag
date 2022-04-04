@@ -21,7 +21,7 @@ layout (location = 1) in vec2 texcoord;
 layout(set = 0, binding = 2) uniform sampler default_sampler;
 layout(set = 0, binding = 3) uniform texture2D default_texture;
 
-layout (set = 0, binding = 4 ) uniform uiniform_inline {
+layout (set = 0, binding = 4 ) uniform uniform_inline {
  float alpha;
 } inline_data;
 
