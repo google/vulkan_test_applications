@@ -73,7 +73,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
             data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions()
                 .EnableMultisampling()
-                .EnableVulkan11()
+                .SetVulkanApiVersion(VK_API_VERSION_1_1)
                 .AddDeviceExtensionStructure(&kFeat),
             {}, {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
             {VK_KHR_MAINTENANCE1_EXTENSION_NAME,
