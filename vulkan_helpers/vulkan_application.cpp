@@ -83,7 +83,8 @@ VulkanApplicationOptions FromLegacyVulkanApplicationOptions(
   options.use_shared_presentation = use_shared_presentation;
   options.use_mutable_swapchain_format = use_mutable_swapchain_format;
   options.swapchain_extensions = swapchain_extensions;
-  options.use_vulkan_1_1 = use_vulkan_1_1;
+  options.vulkan_api_version =
+      use_vulkan_1_1 ? VK_API_VERSION_1_1 : VK_API_VERSION_1_0;
   options.use_10bit_hdr = use_10bit_hdr;
   options.device_next = device_next;
   options.min_swapchain_image_count = min_swapchain_image_count;
@@ -132,13 +133,9 @@ VulkanApplication::VulkanApplication(
       present_queue_index_(0u),
       use_protected_memory_(options.use_protected_memory),
       library_wrapper_(allocator_, log_),
-      instance_(
-          !options.use_vulkan_1_1
-              ? CreateInstanceForApplication(allocator_, &library_wrapper_,
-                                             entry_data_, instance_extensions)
-              : Create11InstanceForApplication(allocator_, &library_wrapper_,
-                                               entry_data_,
-                                               instance_extensions)),
+      instance_(CreateVerisonedInstanceForApplicaiton(
+          allocator_, &library_wrapper_, entry_data_,
+          options.vulkan_api_version, instance_extensions)),
       surface_(CreateDefaultSurface(&instance_, entry_data_)),
       device_(!options.use_device_groups
                   ? CreateDevice(device_extensions, features,

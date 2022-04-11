@@ -80,7 +80,7 @@ class DepthClipControlSample : public sample_application::Sample<FrameData> {
             sample_application::SampleOptions()
                 .EnableMultisampling()
                 .EnableDepthBuffer()
-                .EnableVulkan11()
+                .SetVulkanApiVersion(VK_API_VERSION_1_1)
                 .AddDeviceExtensionStructure(&kDepthClipControlFeature),
             {}, {}, {VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data),

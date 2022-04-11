@@ -83,7 +83,7 @@ class SeparateStencilUsageSample
       : data_(data),
         Sample<SeparateStencilUsageFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
-            sample_application::SampleOptions().EnableVulkan11(), {0}, {},
+            sample_application::SampleOptions().SetVulkanApiVersion(VK_API_VERSION_1_1), {0}, {},
             {VK_EXT_SEPARATE_STENCIL_USAGE_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data),
         floor_(data->allocator(), data->logger(), floor_data),
