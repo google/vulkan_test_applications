@@ -237,7 +237,7 @@ class ASyncThreadRunner {
           vulkan::CreateFence(&app_->device()),
           app_->CreateAndBindDeviceBuffer(&create_info),
           app_->GetCommandBuffer(app_->async_compute_queue()->index()),
-          app_->GetCommandBuffer(),
+          app_->GetCommandBuffer(), app_->GetCommandBuffer(),
           containers::make_unique<vulkan::DescriptorSet>(
               allocator_, app_->AllocateDescriptorSet(
                               {compute_descriptor_set_layouts_[0],
@@ -349,28 +349,74 @@ class ASyncThreadRunner {
       command_buffer->vkEndCommandBuffer(command_buffer);
       ready_buffers_.push_back(static_cast<uint32_t>(i));
 
-      // Wake command buffer
-      auto& wake_command_buffer = dat.wake_command_buffer_;
-      wake_command_buffer->vkBeginCommandBuffer(
-          wake_command_buffer, &sample_application::kBeginCommandBuffer);
-      VkBufferMemoryBarrier wake_barrier = {
-          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
-          nullptr,                                  // pNext
-          VK_ACCESS_SHADER_READ_BIT,                // srcAccessMask
-          0,                                        // dstAccessMask
-          app_->render_queue().index(),             // srcQueueFamilyIndex
-          app_->async_compute_queue()->index(),     // dstQueueFamilyIndex
-          *dat.render_ssbo_,                        // buffer
-          0,                                        // offset
-          dat.render_ssbo_->size(),                 // size
-      };
-      wake_command_buffer->vkCmdPipelineBarrier(
-          wake_command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 1, &wake_barrier,
-          0, nullptr);
+      {
+        // Acquire command buffer
+        auto& acquire_command_buffer = dat.acquire_command_buffer_;
+        acquire_command_buffer->vkBeginCommandBuffer(
+            acquire_command_buffer, &sample_application::kBeginCommandBuffer);
 
-      wake_command_buffer->vkEndCommandBuffer(wake_command_buffer);
+        VkBufferMemoryBarrier barrier = {
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
+            nullptr,                                  // pNext
+            0,                                        // srcAccessMask
+            VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
+            app_->async_compute_queue()->index(),     // srcQueueFamilyIndex
+            app_->render_queue().index(),             // dstQueueFamilyIndex
+            *dat.render_ssbo_,                        // bufferdraw_data
+            0,                                        // offset
+            dat.render_ssbo_->size(),                 // size
+        };
+        acquire_command_buffer->vkCmdPipelineBarrier(
+            acquire_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &barrier, 0,
+            nullptr);
+        acquire_command_buffer->vkEndCommandBuffer(acquire_command_buffer);
+      }
+
+      {
+        // Wake command buffer
+        auto& wake_command_buffer = dat.wake_command_buffer_;
+        wake_command_buffer->vkBeginCommandBuffer(
+            wake_command_buffer, &sample_application::kBeginCommandBuffer);
+        VkBufferMemoryBarrier wake_barrier = {
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
+            nullptr,                                  // pNext
+            VK_ACCESS_SHADER_READ_BIT,                // srcAccessMask
+            0,                                        // dstAccessMask
+            app_->render_queue().index(),             // srcQueueFamilyIndex
+            app_->async_compute_queue()->index(),     // dstQueueFamilyIndex
+            *dat.render_ssbo_,                        // buffer
+            0,                                        // offset
+            dat.render_ssbo_->size(),                 // size
+        };
+        wake_command_buffer->vkCmdPipelineBarrier(
+            wake_command_buffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 1,
+            &wake_barrier, 0, nullptr);
+
+        wake_command_buffer->vkEndCommandBuffer(wake_command_buffer);
+      }
     }
+
+    std::vector<VkCommandBuffer> all_wake_command_buffers;
+    for (const auto& dat : data_) {
+      all_wake_command_buffers.push_back(dat.wake_command_buffer_);
+    }
+
+    VkSubmitInfo wake_all_submit_info{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
+        nullptr,                        // pNext
+        0,                              // waitSemaphoreCount
+        nullptr,                        // pWaitSemaphores
+        nullptr,                        // pWaitDstStageMask,
+        static_cast<uint32_t>(all_wake_command_buffers.size()),
+        all_wake_command_buffers.data(),
+        0,       // signalSemaphoreCount
+        nullptr  // pSignalSemaphores
+    };
+    app_->render_queue()->vkQueueSubmit(app_->render_queue(), 1,
+                                        &wake_all_submit_info,
+                                        ::VkFence(VK_NULL_HANDLE));
 
     (*initial_data_buffer)->vkEndCommandBuffer(*initial_data_buffer);
     VkSubmitInfo setup_submit_info{
@@ -426,28 +472,23 @@ class ASyncThreadRunner {
 
     int32_t mb = mailbox_buffer_;
     mailbox_buffer_ = -1;
-    if (index != -1) {
-      // Enqueues a command-buffer that transitions the buffer back to
-      // the compute queue. It also sets the fence that we can wait on
-      // in the future.
-      auto& data = data_[index];
-      VkSubmitInfo wake_submit_info{
-          VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-          nullptr,                        // pNext
-          0,                              // waitSemaphoreCount
-          nullptr,                        // pWaitSemaphores
-          nullptr,                        // pWaitDstStageMask,
-          1,                              // commandBufferCount
-          &(data.wake_command_buffer_.get_command_buffer()),
-          0,       // signalSemaphoreCount
-          nullptr  // pSignalSemaphores
-      };
 
-      app_->render_queue()->vkQueueSubmit(
-          app_->render_queue(), 1, &wake_submit_info, data.return_fence_);
-      returned_buffers_.push_back(index);
+    // Acquire the mailbox buffer to the gfx queue for rendering
+    TransferBuffer(mb, true, false);
+
+    if (index != -1) {
+      // Release the previously rendered buffer back to async compute
+      TransferBuffer(index, false, true);
     }
 
+    for (int32_t released : released_buffers_) {
+      if (released != mb) {
+        // Acquire and immediately release any other buffers that have been
+        // released by async compute.
+        TransferBuffer(released, true, true);
+      }
+    }
+    released_buffers_.clear();
     return mb;
   }
 
@@ -597,12 +638,38 @@ class ASyncThreadRunner {
   // already in the mailbox, moves it to the ready_buffers_.
   void PutBufferInMailbox(int32_t buffer) {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    if (mailbox_buffer_ != -1) {
-      ready_buffers_.push_back(mailbox_buffer_);
-    }
     mailbox_buffer_ = buffer;
+    released_buffers_.push_back(buffer);
   }
 
+  // Acquires and/or releases a buffer *on the graphics queue*
+  void TransferBuffer(int32_t index, bool acquire_to_gfx,
+                      bool release_from_gfx) {
+    std::vector<VkCommandBuffer> command_buffers;
+    auto& data = data_[index];
+    VkFence fence = VK_NULL_HANDLE;
+    if (acquire_to_gfx) {
+      command_buffers.push_back(data.acquire_command_buffer_);
+    }
+    if (release_from_gfx) {
+      command_buffers.push_back(data.wake_command_buffer_);
+      fence = data.return_fence_;
+      returned_buffers_.push_back(index);
+    }
+    VkSubmitInfo submit_info{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO,                  // sType
+        nullptr,                                        // pNext
+        0,                                              // waitSemaphoreCount
+        nullptr,                                        // pWaitSemaphores
+        nullptr,                                        // pWaitDstStageMask,
+        static_cast<uint32_t>(command_buffers.size()),  // commandBufferCount
+        command_buffers.data(),
+        0,       // signalSemaphoreCount
+        nullptr  // pSignalSemaphores
+    };
+    app_->render_queue()->vkQueueSubmit(app_->render_queue(), 1, &submit_info,
+                                        fence);
+  }
   struct PrivateAsyncData {
     // Fence that is signalled once a buffer is returned.
     vulkan::VkFence return_fence_;
@@ -612,6 +679,8 @@ class ASyncThreadRunner {
     vulkan::VkCommandBuffer command_buffer_;
     // The command buffer for transferring this back to the simulation thread.
     vulkan::VkCommandBuffer wake_command_buffer_;
+    // The command buffer for acquiring this from the simulation thread.
+    vulkan::VkCommandBuffer acquire_command_buffer_;
     // The descriptor set needed for simulating.
     containers::unique_ptr<vulkan::DescriptorSet> compute_descriptor_set_;
   };
@@ -651,6 +720,8 @@ class ASyncThreadRunner {
 
   // The current buffer sitting in the output mailbox.
   int32_t mailbox_buffer_;
+  // Buffers that have been released by async and need to be acquired by gfx
+  std::vector<int32_t> released_buffers_;
   bool first = true;
   int current_frame = 0;
 
@@ -878,7 +949,6 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
     current_computation_result_buffer_ =
         thread_runner_.TryToReturnAndGetNextBuffer(
             current_computation_result_buffer_);
-    bool swapped_buffer = old_buffer != current_computation_result_buffer_;
     auto* buffer =
         thread_runner_.GetBufferForIndex(current_computation_result_buffer_);
     aspect_buffer_->UpdateBuffer(&app()->render_queue(), frame_index);
@@ -970,26 +1040,6 @@ class AsyncSample : public sample_application::Sample<AsyncFrameData> {
     VkClearValue clear;
     vulkan::MemoryClear(&clear);
     clear.color.float32[3] = 1.0f;
-
-    if (swapped_buffer) {
-      // If we have not transitioned this buffer yet, then move it from
-      // the compute queue over to this queue.
-      VkBufferMemoryBarrier barrier = {
-          VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  // sType
-          nullptr,                                  // pNext
-          0,                                        // srcAccessMask
-          VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
-          app()->async_compute_queue()->index(),    // srcQueueFamilyIndex
-          app()->render_queue().index(),            // dstQueueFamilyIndex
-          *buffer,                                  // bufferdraw_data
-          0,                                        // offset
-          buffer->size(),                           // size
-      };
-      cmdBuffer->vkCmdPipelineBarrier(cmdBuffer,
-                                      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                      VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0,
-                                      nullptr, 1, &barrier, 0, nullptr);
-    }
 
     // The rest of the normal drawing.
     VkRenderPassBeginInfo pass_begin = {
