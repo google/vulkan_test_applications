@@ -615,16 +615,22 @@ VkDevice CreateDeviceForSwapchain(
     VkPhysicalDeviceHostQueryResetFeaturesEXT host_query_reset_feature{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT,
         device_next, use_host_query_reset};
+    if (use_host_query_reset) {
+      device_next = &host_query_reset_feature;
+    }
 
     VkPhysicalDeviceProtectedMemoryFeatures protected_memory_feature{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,
-        &host_query_reset_feature, use_protected_memory};
+        device_next, use_protected_memory};
+    if (use_protected_memory) {
+      device_next = &protected_memory_feature;
+    }
 
     VkPhysicalDeviceFeatures empty_features = {0};
 
     VkDeviceCreateInfo info{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // stype
-        &protected_memory_feature,                      // pNext
+        device_next,                                    // pNext
         0,                                              // flags
         static_cast<uint32_t>(raw_queue_infos.size()),  // queueCreateInfoCount
         raw_queue_infos.data(),                         // pQueueCreateInfos
