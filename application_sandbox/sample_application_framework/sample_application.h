@@ -122,8 +122,8 @@ struct SampleOptions {
     min_swapchain_image_count = value;
     return *this;
   }
-  SampleOptions& SetVulkanApiVersion(uint32_t vulkan_api_version) {
-    vulkan_api_version = vulkan_api_version;
+  SampleOptions& SetVulkanApiVersion(uint32_t value) {
+    vulkan_api_version = value;
     return *this;
   }
 };
