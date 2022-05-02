@@ -55,7 +55,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         Sample<CubeFrameData>(data->allocator(), data, 1, 512, 1, 1,
                               sample_application::SampleOptions()
                                   .EnableMultisampling()
-                                  .EnableVulkan11(),
+                                  .SetVulkanApiVersion(VK_API_VERSION_1_1),
                               {0}, {},
                               {VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data) {}
