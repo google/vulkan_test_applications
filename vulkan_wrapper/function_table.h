@@ -1,4 +1,4 @@
-/* Copyright 2017 Google Inc.
+/* Copyright 2022 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,9 +147,9 @@ class InstanceFunctions {
   LAZY_FUNCTION(vkDestroyDebugUtilsMessengerEXT);
   LAZY_FUNCTION(vkSubmitDebugUtilsMessageEXT);
   LAZY_FUNCTION(vkGetPhysicalDeviceDisplayProperties2KHR);
-	LAZY_FUNCTION(vkGetPhysicalDeviceDisplayPlaneProperties2KHR);
-	LAZY_FUNCTION(vkGetDisplayModeProperties2KHR);
-	LAZY_FUNCTION(vkGetDisplayPlaneCapabilities2KHR);
+  LAZY_FUNCTION(vkGetPhysicalDeviceDisplayPlaneProperties2KHR);
+  LAZY_FUNCTION(vkGetDisplayModeProperties2KHR);
+  LAZY_FUNCTION(vkGetDisplayPlaneCapabilities2KHR);
 #if defined __ANDROID__
   LAZY_FUNCTION(vkCreateAndroidSurfaceKHR);
 #elif defined __ggp__
@@ -185,6 +185,7 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkEndCommandBuffer),
         CONSTRUCT_LAZY_FUNCTION(vkResetCommandBuffer),
         CONSTRUCT_LAZY_FUNCTION(vkCmdPipelineBarrier),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdPipelineBarrier2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkCmdCopyBufferToImage),
         CONSTRUCT_LAZY_FUNCTION(vkCmdCopyImageToBuffer),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginRenderPass),
@@ -230,9 +231,11 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdEndQuery),
         CONSTRUCT_LAZY_FUNCTION(vkCmdCopyQueryPoolResults),
         CONSTRUCT_LAZY_FUNCTION(vkCmdWriteTimestamp),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdWriteTimestamp2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetEvent),
         CONSTRUCT_LAZY_FUNCTION(vkCmdResetEvent),
         CONSTRUCT_LAZY_FUNCTION(vkCmdWaitEvents),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdWaitEvents2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetDeviceMask),
         CONSTRUCT_LAZY_FUNCTION(vkCmdDrawIndexedIndirectCountKHR),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT),
@@ -261,6 +264,7 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkEndCommandBuffer);
   LAZY_FUNCTION(vkResetCommandBuffer);
   LAZY_FUNCTION(vkCmdPipelineBarrier);
+  LAZY_FUNCTION(vkCmdPipelineBarrier2KHR);
   LAZY_FUNCTION(vkCmdCopyBufferToImage);
   LAZY_FUNCTION(vkCmdCopyImageToBuffer);
   LAZY_FUNCTION(vkCmdBeginRenderPass);
@@ -306,9 +310,11 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdEndQuery);
   LAZY_FUNCTION(vkCmdCopyQueryPoolResults);
   LAZY_FUNCTION(vkCmdWriteTimestamp);
+  LAZY_FUNCTION(vkCmdWriteTimestamp2KHR);
   LAZY_FUNCTION(vkCmdSetEvent);
   LAZY_FUNCTION(vkCmdResetEvent);
   LAZY_FUNCTION(vkCmdWaitEvents);
+  LAZY_FUNCTION(vkCmdWaitEvents2KHR);
   LAZY_FUNCTION(vkCmdSetDeviceMask);
   LAZY_FUNCTION(vkCmdDrawIndexedIndirectCountKHR);
   LAZY_FUNCTION(vkCmdBeginDebugUtilsLabelEXT);
@@ -337,6 +343,7 @@ struct QueueFunctions {
 #define CONSTRUCT_LAZY_FUNCTION(function) \
   function(device, #function, device_functions)
         CONSTRUCT_LAZY_FUNCTION(vkQueueSubmit),
+        CONSTRUCT_LAZY_FUNCTION(vkQueueSubmit2KHR),
         CONSTRUCT_LAZY_FUNCTION(vkQueueWaitIdle),
         CONSTRUCT_LAZY_FUNCTION(vkQueuePresentKHR),
         CONSTRUCT_LAZY_FUNCTION(vkQueueBindSparse),
@@ -350,6 +357,7 @@ struct QueueFunctions {
  public:
 #define LAZY_FUNCTION(function) LazyDeviceFunction<PFN_##function> function;
   LAZY_FUNCTION(vkQueueSubmit);
+  LAZY_FUNCTION(vkQueueSubmit2KHR);
   LAZY_FUNCTION(vkQueueWaitIdle);
   LAZY_FUNCTION(vkQueuePresentKHR);
   LAZY_FUNCTION(vkQueueBindSparse);
