@@ -18,7 +18,7 @@
 layout(location = 0) out vec4 out_color;
 layout(location = 2) in vec4 normal;
 
-layout(set = 0, binding = 2) uniform isamplerBuffer query_data;
+layout(set = 0, binding = 2) uniform usamplerBuffer query_data;
 
 void main() {
     uint limit = 0x0FFFFFFF;

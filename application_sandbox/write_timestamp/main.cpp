@@ -333,10 +333,10 @@ class WriteTimestampSample
     // Reset the query for this frame in the query pool and then begin query,
     // and so the vkGetQueryPoolResults called before submitting rendering
     // commands won't hang.
-    cmdBuffer->vkCmdPipelineBarrier(
-        cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 1,
-        &to_use_query_results, 0, nullptr);
+    cmdBuffer->vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
+                                    nullptr, 1, &to_use_query_results, 0,
+                                    nullptr);
     cmdBuffer->vkCmdResetQueryPool(cmdBuffer, *query_pool_,
                                    static_cast<uint32_t>(frame_index), 1);
 
