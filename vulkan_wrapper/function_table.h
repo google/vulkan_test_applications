@@ -253,7 +253,9 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetScissorWithCountEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetStencilOpEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetStencilTestEnableEXT),
-        CONSTRUCT_LAZY_FUNCTION(vkCmdSetViewportWithCountEXT)
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetViewportWithCountEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdBeginRenderingKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdEndRenderingKHR)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -333,6 +335,8 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdSetStencilOpEXT);
   LAZY_FUNCTION(vkCmdSetStencilTestEnableEXT);
   LAZY_FUNCTION(vkCmdSetViewportWithCountEXT);
+  LAZY_FUNCTION(vkCmdBeginRenderingKHR);
+  LAZY_FUNCTION(vkCmdEndRenderingKHR);
 #undef LAZY_FUNCTION
 };
 
