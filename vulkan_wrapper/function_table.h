@@ -255,7 +255,9 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetStencilTestEnableEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetViewportWithCountEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdBeginRenderingKHR),
-        CONSTRUCT_LAZY_FUNCTION(vkCmdEndRenderingKHR)
+        CONSTRUCT_LAZY_FUNCTION(vkCmdEndRenderingKHR),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdPushConstantsIndexedEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdPushAddressIndexedEXT)
 #undef CONSTRUCT_LAZY_FUNCTION
   {
   }
@@ -337,6 +339,8 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdSetViewportWithCountEXT);
   LAZY_FUNCTION(vkCmdBeginRenderingKHR);
   LAZY_FUNCTION(vkCmdEndRenderingKHR);
+  LAZY_FUNCTION(vkCmdPushConstantsIndexedEXT);
+  LAZY_FUNCTION(vkCmdPushAddressIndexedEXT);
 #undef LAZY_FUNCTION
 };
 
@@ -494,7 +498,9 @@ class DeviceFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCreatePrivateDataSlotEXT),
         CONSTRUCT_LAZY_FUNCTION(vkDestroyPrivateDataSlotEXT),
         CONSTRUCT_LAZY_FUNCTION(vkGetPrivateDataEXT),
-        CONSTRUCT_LAZY_FUNCTION(vkSetPrivateDataEXT)
+        CONSTRUCT_LAZY_FUNCTION(vkSetPrivateDataEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdPushConstantsIndexedEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdPushAddressIndexedEXT)
 #if defined _WIN32
         ,
         CONSTRUCT_LAZY_FUNCTION(vkGetMemoryWin32HandleKHR),
@@ -636,6 +642,8 @@ class DeviceFunctions {
   LAZY_FUNCTION(vkDestroyPrivateDataSlotEXT);
   LAZY_FUNCTION(vkGetPrivateDataEXT);
   LAZY_FUNCTION(vkSetPrivateDataEXT);
+  LAZY_FUNCTION(vkCmdPushConstantsIndexedEXT);
+  LAZY_FUNCTION(vkCmdPushAddressIndexedEXT);
 #if defined _WIN32
   LAZY_FUNCTION(vkGetMemoryWin32HandleKHR);
   LAZY_FUNCTION(vkGetFenceWin32HandleKHR);

@@ -1273,7 +1273,7 @@ VkSampler CreateSampler(VkDevice* device, VkFilter minFilter,
 VkDescriptorSetLayout CreateDescriptorSetLayout(
     containers::Allocator* allocator, VkDevice* device,
     std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
-    VkDescriptorSetLayoutCreateFlags flags) {
+    VkDescriptorSetLayoutCreateFlags flags , void* pNext ) {
   containers::vector<VkDescriptorSetLayoutBinding> contiguous_bindings(
       allocator);
   contiguous_bindings.resize(bindings.size());
@@ -1283,10 +1283,14 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(
   }
 
   VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info{
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, flags,
+      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, pNext, flags,
       static_cast<uint32_t>(contiguous_bindings.size()),
       contiguous_bindings.data()};
-
+  if (contiguous_bindings.size() == 0)
+  {
+    descriptor_set_layout_create_info.bindingCount = 0;
+    descriptor_set_layout_create_info.pBindings = nullptr;
+  }
   ::VkDescriptorSetLayout layout;
   LOG_ASSERT(
       ==, device->GetLogger(), VK_SUCCESS,
@@ -1380,9 +1384,12 @@ VkDescriptorPool CreateDescriptorPool(VkDevice* device, uint32_t num_pool_size,
   return vulkan::VkDescriptorPool(raw_pool, nullptr, device);
 }
 
-VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice* device,
-                                                ::VkDescriptorType type,
-                                                uint32_t count) {
+VkDescriptorSetLayout CreateDescriptorSetLayout(
+    VkDevice* device, ::VkDescriptorType type, uint32_t count,
+    VkDescriptorSetLayoutCreateFlags flags , void* pNext ) {
+  uint32_t bindingCount = 0;
+  VkDescriptorSetLayoutBinding* pBindings = nullptr;
+
   VkDescriptorSetLayoutBinding binding{
       /* binding = */ 0,
       /* descriptorType = */ type,
@@ -1390,12 +1397,16 @@ VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice* device,
       /* stageFlags = */ VK_SHADER_STAGE_ALL,
       /* pImmutableSamplers = */ nullptr,
   };
+  if (count) {
+    bindingCount = 1;
+    pBindings = &binding;
+  }
   VkDescriptorSetLayoutCreateInfo info{
       /* sType = */ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-      /* pNext = */ nullptr,
-      /* flags = */ 0,
-      /* bindingCount = */ 1,
-      /* pBindings = */ &binding,
+      /* pNext = */ pNext,
+      /* flags = */ flags,
+      /* bindingCount = */ bindingCount,
+      /* pBindings = */ pBindings,
   };
 
   ::VkDescriptorSetLayout raw_layout;

@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
 
 #include "application_sandbox/sample_application_framework/sample_application.h"
 #include "mathfu/matrix.h"
@@ -35,14 +36,6 @@ namespace cube_model {
 }
 const auto& cube_data = cube_model::model;
 
-uint32_t cube_vertex_shader[] =
-#include "cube.vert.spv"
-    ;
-
-uint32_t cube_fragment_shader[] =
-#include "cube.frag.spv"
-    ;
-
 namespace simple_texture {
 #include "star.png.h"
 }
@@ -52,14 +45,11 @@ const auto& texture_data = simple_texture::texture;
 struct CubeFrameData {
   containers::unique_ptr<vulkan::VkCommandBuffer> command_buffer_;
   containers::unique_ptr<vulkan::VkFramebuffer> framebuffer_;
-  containers::unique_ptr<vulkan::DescriptorSet> cube_descriptor_set_;
-  float alpha_ = 0.0f;
 };
 
-VkPhysicalDeviceInlineUniformBlockFeaturesEXT kFeat{
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT,
+VkPhysicalDeviceHlslBindingSemanticsFeaturesEXT kFeat{
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HLSL_BINDING_SEMANTICS_FEATURES_EXT,
     nullptr,
-    VK_TRUE,
     VK_TRUE,
 };
 
@@ -76,8 +66,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
                 .SetVulkanApiVersion(VK_API_VERSION_1_1)
                 .AddDeviceExtensionStructure(&kFeat),
             {}, {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
-            {VK_KHR_MAINTENANCE1_EXTENSION_NAME,
-             VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME}),
+            {VK_EXT_HLSL_BINDING_SEMANTICS_EXTENSION_NAME}),
         cube_(data->allocator(), data->logger(), cube_data),
         texture_(data->allocator(), data->logger(), texture_data) {}
   virtual void InitializeApplicationData(
@@ -87,10 +76,9 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     texture_.InitializeData(app(), initialization_buffer);
 
     // Query device features for inline_uniform_block.
-    VkPhysicalDeviceInlineUniformBlockFeaturesEXT ext_features{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT,
+    VkPhysicalDeviceHlslBindingSemanticsFeaturesEXT ext_features{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HLSL_BINDING_SEMANTICS_FEATURES_EXT,
         nullptr,
-        VK_FALSE,
         VK_FALSE,
     };
     VkPhysicalDeviceFeatures2 features = {
@@ -99,22 +87,14 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     app()->instance()->vkGetPhysicalDeviceFeatures2KHR(
         app()->device().physical_device(), &features);
 
-    if (ext_features.inlineUniformBlock == VK_FALSE) {
+    if (ext_features.hlslBindingSemantics == VK_FALSE) {
       data_->logger()->LogError(
-          "inlineUniformBlock not supported on this device.");
-      exit(1);
-    }
-    if (ext_features.descriptorBindingInlineUniformBlockUpdateAfterBind ==
-        VK_FALSE) {
-      data_->logger()->LogError(
-          "descriptorBindingInlineUniformBlockUpdateAfterBind not supported on "
-          "this device.");
+          "hlslBindingSemantics not supported on this device.");
       exit(1);
     }
 
-    // Query device properties for inline_uniform_block.
-    VkPhysicalDeviceInlineUniformBlockPropertiesEXT dev_properties{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT,
+    VkPhysicalDeviceHlslBindingSemanticsPropertiesEXT dev_properties{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HLSL_BINDING_SEMANTICS_PROPERTIES_EXT,
     };
     VkPhysicalDeviceProperties2 properties = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &dev_properties};
@@ -123,73 +103,85 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         app()->device().physical_device(), &properties);
 
     app()->instance()->GetLogger()->LogInfo(
-        "VkPhysicalDeviceInlineUniformBlockPropertiesEXT properties:");
+        "VkPhysicalDeviceHlslBindingSemanticsPropertiesEXT properties:");
     app()->instance()->GetLogger()->LogInfo(
-        "maxInlineUniformBlockSize: ",
-        dev_properties.maxInlineUniformBlockSize);
-    app()->instance()->GetLogger()->LogInfo(
-        "maxPerStageDescriptorInlineUniformBlocks: ",
-        dev_properties.maxPerStageDescriptorInlineUniformBlocks);
-    app()->instance()->GetLogger()->LogInfo(
-        "maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks: ",
-        dev_properties.maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks);
-    app()->instance()->GetLogger()->LogInfo(
-        "maxDescriptorSetInlineUniformBlocks: ",
-        dev_properties.maxDescriptorSetInlineUniformBlocks);
-    app()->instance()->GetLogger()->LogInfo(
-        "maxDescriptorSetUpdateAfterBindInlineUniformBlocks: ",
-        dev_properties.maxDescriptorSetUpdateAfterBindInlineUniformBlocks);
+        "maxCombinedPipelineLayoutEntries: ",
+        dev_properties.maxCombinedPipelineLayoutEntries);
 
-    // Check if the size is enough to store the data we want to update.
-    if (dev_properties.maxInlineUniformBlockSize <
-        sizeof(float) * num_swapchain_images) {
-      data_->logger()->LogError("maxInlineUniformBlockSize is too small (",
-                                dev_properties.maxInlineUniformBlockSize,
-                                ") for this sample.");
-      exit(1);
-    }
-    cube_descriptor_set_layouts_[0] = {
-        0,                                  // binding
-        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  // descriptorType
-        1,                                  // descriptorCount
-        VK_SHADER_STAGE_VERTEX_BIT,         // stageFlags
-        nullptr                             // pImmutableSamplers
+    VkDescriptorHlslBindingInfoEXT pushConstantBindingInfo = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_HLSL_BINDING_INFO_EXT,
+        .pNext = nullptr,
+        .registerValue = 0,
+        .space = 0,
+        .resourceType = VK_HLSL_RESOURCE_TYPE_CONSTANT_BUFFER_VIEW_EXT,
+
     };
-    cube_descriptor_set_layouts_[1] = {
-        1,                                  // binding
-        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  // descriptorType
-        1,                                  // descriptorCount
-        VK_SHADER_STAGE_VERTEX_BIT,         // stageFlags
-        nullptr                             // pImmutableSamplers
+
+    // VkDescriptorHlslBindingInfoEXT pushAddressBindingInfo = {
+    //     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_HLSL_BINDING_INFO_EXT,
+    //     .pNext = nullptr,
+    //     .registerValue = 3,
+    //     .space = 2,
+    //     .resourceType = VK_HLSL_RESOURCE_TYPE_SHADER_RESOURCE_VIEW_EXT,
+    // };
+
+    VkPipelineLayoutPushBindingCreateInfoEXT pipelineLayoutBindingCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_PUSH_BINDING_CREATE_INFO_EXT,
+        .pNext = nullptr,
+        .pushConstantBindingInfoCount = 1,
+        .pPushConstantBindingInfos = &pushConstantBindingInfo,
+        .pushAddressBindingInfoCount = 0,
+        .pPushAddressBindingInfos = nullptr,
+        // .pushAddressBindingInfoCount = 1,
+        // .pPushAddressBindingInfos = &pushAddressBindingInfo,
     };
-    cube_descriptor_set_layouts_[2] = {
-        2,                             // binding
-        VK_DESCRIPTOR_TYPE_SAMPLER,    // descriptorType
-        1,                             // descriptorCount
-        VK_SHADER_STAGE_FRAGMENT_BIT,  // stageFlags
-        nullptr                        // pImmutableSamplers
+
+    VkPushConstantRange pushConstantRange = {
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+        .offset = 0,
+        .size = static_cast<uint32_t>(sizeof(MVPData)),
     };
-    cube_descriptor_set_layouts_[3] = {
-        3,                                 // binding
-        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  // descriptorType
-        1,                                 // descriptorCount
-        VK_SHADER_STAGE_FRAGMENT_BIT,      // stageFlags
-        nullptr                            // pImmutableSamplers
+
+    VkDescriptorSetLayoutHlslBindingCreateInfoEXT DescriptorSetlayoutCreateInfo = {
+        .sType =
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HLSL_BINDING_CREATE_INFO_EXT,
+        .pNext = nullptr,
+        .bindingCount = 1,
+        .pHlslBindingInfos = &pushConstantBindingInfo,
     };
-    cube_descriptor_set_layouts_[4] = {
-        4,                                            // binding
-        VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT,  // descriptorType
-        sizeof(float),                                // descriptorCount
-        VK_SHADER_STAGE_FRAGMENT_BIT,                 // stageFlags
-        nullptr                                       // pImmutableSamplers
+
+    VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .pNext = &DescriptorSetlayoutCreateInfo,
+        .flags = VkDescriptorSetLayoutCreateFlags(
+            VK_DESCRIPTOR_SET_LAYOUT_CREATE_HLSL_BINDINGS_BIT_EXT),
+        .bindingCount = 0,
+        .pBindings = nullptr};
+
+    ::VkDescriptorSetLayout ds_layout;
+    LOG_ASSERT(==, app()->device()->GetLogger(), VK_SUCCESS,
+               app()->device()->vkCreateDescriptorSetLayout(
+                   app()->device(), &descriptor_set_layout_create_info, nullptr,
+                   &ds_layout));
+
+    descriptor_layout_ = containers::make_unique<vulkan::VkDescriptorSetLayout>(
+        data_->allocator(),
+        vulkan::VkDescriptorSetLayout(ds_layout, nullptr, &app()->device()));
+
+    VkPipelineLayoutCreateInfo pineline_layout_create_info = {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,  // sType
+        &pipelineLayoutBindingCreateInfo,               // pNext
+        VkPipelineLayoutCreateFlags(
+            VK_PIPELINE_LAYOUT_CREATE_HLSL_BINDINGS_BIT_EXT),  // flags
+        1,                                                     // setLayoutCount
+        &ds_layout,                                            // pSetLayouts
+        1,                   // pushConstantRangeCount
+        &pushConstantRange,  // pPushConstantRanges
     };
 
     pipeline_layout_ = containers::make_unique<vulkan::PipelineLayout>(
         data_->allocator(),
-        app()->CreatePipelineLayout(
-            {{cube_descriptor_set_layouts_[0], cube_descriptor_set_layouts_[1],
-              cube_descriptor_set_layouts_[2], cube_descriptor_set_layouts_[3],
-              cube_descriptor_set_layouts_[4]}}));
+        app()->CreatePipelineLayout(pineline_layout_create_info));
 
     VkAttachmentReference color_attachment = {
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
@@ -231,10 +223,17 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     cube_pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
         data_->allocator(), app()->CreateGraphicsPipeline(
                                 pipeline_layout_.get(), render_pass_.get(), 0));
-    cube_pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main",
-                              cube_vertex_shader);
-    cube_pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main",
-                              cube_fragment_shader);
+
+    auto cube_vertex_shader = LoadShaderFile("cube_vs.spv");
+    auto cube_fragment_shader = LoadShaderFile("cube_ps.spv");
+    cube_pipeline_->AddShader(
+        VK_SHADER_STAGE_VERTEX_BIT, "VSMain",
+        reinterpret_cast<uint32_t*>(cube_vertex_shader.data()),
+        cube_vertex_shader.size() / 4);
+    cube_pipeline_->AddShader(
+        VK_SHADER_STAGE_FRAGMENT_BIT, "PSMain",
+        reinterpret_cast<uint32_t*>(cube_fragment_shader.data()),
+        cube_fragment_shader.size() / 4);
     cube_pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     cube_pipeline_->SetInputStreams(&cube_);
     cube_pipeline_->SetViewport(viewport());
@@ -243,22 +242,16 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     cube_pipeline_->AddAttachment();
     cube_pipeline_->Commit();
 
-    camera_data_ = containers::make_unique<vulkan::BufferFrameData<CameraData>>(
-        data_->allocator(), app(), num_swapchain_images,
-        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-
-    model_data_ = containers::make_unique<vulkan::BufferFrameData<ModelData>>(
-        data_->allocator(), app(), num_swapchain_images,
-        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-
     float aspect =
         (float)app()->swapchain().width() / (float)app()->swapchain().height();
-    camera_data_->data().projection_matrix =
+    Mat44 projection_matrix =
         Mat44::FromScaleVector(mathfu::Vector<float, 3>{1.0f, -1.0f, 1.0f}) *
         Mat44::Perspective(1.5708f, aspect, 0.1f, 100.0f);
 
-    model_data_->data().transform = Mat44::FromTranslationVector(
+    Mat44 transform = Mat44::FromTranslationVector(
         mathfu::Vector<float, 3>{0.0f, 0.0f, -3.0f});
+    mvp_matrices.projection = projection_matrix;
+    mvp_matrices.transform = transform;
   }
 
   virtual void InitializationComplete() override {
@@ -271,105 +264,6 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     frame_data->command_buffer_ =
         containers::make_unique<vulkan::VkCommandBuffer>(
             data_->allocator(), app()->GetCommandBuffer());
-
-    VkDescriptorPoolInlineUniformBlockCreateInfoEXT
-        inline_uniform_block_create_info = {
-            VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO_EXT,
-            nullptr, sizeof(frame_data->alpha_)};
-
-    frame_data->cube_descriptor_set_ =
-        containers::make_unique<vulkan::DescriptorSet>(
-            data_->allocator(),
-            app()->AllocateDescriptorSet({cube_descriptor_set_layouts_[0],
-                                          cube_descriptor_set_layouts_[1],
-                                          cube_descriptor_set_layouts_[2],
-                                          cube_descriptor_set_layouts_[3],
-                                          cube_descriptor_set_layouts_[4]},
-                                         &inline_uniform_block_create_info));
-
-    VkDescriptorBufferInfo buffer_infos[2] = {
-        {
-            camera_data_->get_buffer(),                       // buffer
-            camera_data_->get_offset_for_frame(frame_index),  // offset
-            camera_data_->size(),                             // range
-        },
-        {
-            model_data_->get_buffer(),                       // buffer
-            model_data_->get_offset_for_frame(frame_index),  // offset
-            model_data_->size(),                             // range
-        }};
-
-    VkDescriptorImageInfo sampler_info = {
-        *sampler_,                 // sampler
-        VK_NULL_HANDLE,            // imageView
-        VK_IMAGE_LAYOUT_UNDEFINED  //  imageLayout
-    };
-    VkDescriptorImageInfo texture_info = {
-        VK_NULL_HANDLE,                            // sampler
-        texture_.view(),                           // imageView
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,  // imageLayout
-    };
-    frame_data->alpha_ = 0.0f;
-
-    VkWriteDescriptorSetInlineUniformBlockEXT inline_uniform_block_write = {
-        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
-        nullptr,
-        sizeof(frame_data->alpha_),
-        &frame_data->alpha_,
-    };
-
-    VkWriteDescriptorSet write[4] = {
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
-            nullptr,                                 // pNext
-            *frame_data->cube_descriptor_set_,       // dstSet
-            0,                                       // dstbinding
-            0,                                       // dstArrayElement
-            2,                                       // descriptorCount
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,       // descriptorType
-            nullptr,                                 // pImageInfo
-            buffer_infos,                            // pBufferInfo
-            nullptr,                                 // pTexelBufferView
-        },
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
-            nullptr,                                 // pNext
-            *frame_data->cube_descriptor_set_,       // dstSet
-            2,                                       // dstbinding
-            0,                                       // dstArrayElement
-            1,                                       // descriptorCount
-            VK_DESCRIPTOR_TYPE_SAMPLER,              // descriptorType
-            &sampler_info,                           // pImageInfo
-            nullptr,                                 // pBufferInfo
-            nullptr,                                 // pTexelBufferView
-        },
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // sType
-            nullptr,                                 // pNext
-            *frame_data->cube_descriptor_set_,       // dstSet
-            3,                                       // dstbinding
-            0,                                       // dstArrayElement
-            1,                                       // descriptorCount
-            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,        // descriptorType
-            &texture_info,                           // pImageInfo
-            nullptr,                                 // pBufferInfo
-            nullptr,                                 // pTexelBufferView
-        },
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,       // sType
-            &inline_uniform_block_write,                  // pNext
-            *frame_data->cube_descriptor_set_,            // dstSet
-            4,                                            // dstbinding
-            0,                                            // dstArrayElement
-            sizeof(frame_data->alpha_),                   // descriptorCount
-            VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT,  // descriptorType
-            nullptr,                                      // pImageInfo
-            nullptr,                                      // pBufferInfo
-            nullptr,                                      // pTexelBufferView
-        }};
-
-    app()->device()->vkUpdateDescriptorSets(app()->device(), 4, write, 0,
-                                            nullptr);
 
     ::VkImageView raw_view = color_view(frame_data);
 
@@ -394,9 +288,25 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         vulkan::VkFramebuffer(raw_framebuffer, nullptr, &app()->device()));
   }
 
+  std::vector<uint8_t> LoadShaderFile(std::string fileName) {
+    std::ifstream is(fileName, std::ios::binary | std::ios::in | std::ios::ate);
+    std::vector<uint8_t> shader_code;
+    if (is.is_open()) {
+      auto size = is.tellg();
+      is.seekg(0, std::ios::beg);
+      shader_code.resize(size);
+      is.read(reinterpret_cast<char*>(shader_code.data()), size);
+      is.close();
+    } else {
+      data_->logger()->LogError("Error: Could not open shader file \"",
+                                fileName);
+    }
+    return shader_code;
+  }
+
   virtual void Update(float time_since_last_render) override {
-    model_data_->data().transform =
-        model_data_->data().transform *
+    mvp_matrices.transform =
+        mvp_matrices.transform *
         Mat44::FromRotationMatrix(
             Mat44::RotationX(3.14f * time_since_last_render) *
             Mat44::RotationY(3.14f * time_since_last_render * 0.5f));
@@ -426,12 +336,13 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);
 
+    cmdBuffer->vkCmdPushConstantsIndexedEXT(cmdBuffer, *pipeline_layout_.get(),
+                                            VK_SHADER_STAGE_ALL_GRAPHICS, 0, 0,
+                                            sizeof(MVPData), &mvp_matrices);
+
     cmdBuffer->vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                  *cube_pipeline_);
-    cmdBuffer->vkCmdBindDescriptorSets(
-        cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        ::VkPipelineLayout(*pipeline_layout_), 0, 1,
-        &frame_data->cube_descriptor_set_->raw_set(), 0, nullptr);
+
     cube_.Draw(&cmdBuffer);
     cmdBuffer->vkCmdEndRenderPass(cmdBuffer);
 
@@ -439,39 +350,8 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
         ->vkEndCommandBuffer(*frame_data->command_buffer_);
   }
 
-  void UpdateInlineUniformBlock(size_t frame_index, CubeFrameData* frame_data) {
-    frame_data->alpha_ =
-        static_cast<float>(std::abs(((frame_count_ + 30) % 60) - 30)) / 30.0f;
-    frame_count_++;
-    VkWriteDescriptorSetInlineUniformBlockEXT inline_uniform_block_write = {
-        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
-        nullptr,
-        sizeof(frame_data->alpha_),
-        &frame_data->alpha_,
-    };
-
-    VkWriteDescriptorSet write{
-        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,       // sType
-        &inline_uniform_block_write,                  // pNext
-        *frame_data->cube_descriptor_set_,            // dstSet
-        4,                                            // dstbinding
-        0,                                            // dstArrayElement
-        sizeof(frame_data->alpha_),                   // descriptorCount
-        VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT,  // descriptorType
-        nullptr,                                      // pImageInfo
-        nullptr,                                      // pBufferInfo
-        nullptr,                                      // pTexelBufferView
-    };
-    app()->device()->vkUpdateDescriptorSets(app()->device(), 1, &write, 0,
-                                            nullptr);
-  }
-
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       CubeFrameData* frame_data) override {
-    // Update our uniform buffers.
-    camera_data_->UpdateBuffer(queue, frame_index);
-    model_data_->UpdateBuffer(queue, frame_index);
-    UpdateInlineUniformBlock(frame_index, frame_data);
     PrepareCommandBuffer(frame_index, frame_data);
 
     VkSubmitInfo init_submit_info{
@@ -492,26 +372,22 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
   }
 
  private:
-  struct CameraData {
-    Mat44 projection_matrix;
-  };
-
-  struct ModelData {
+  struct MVPData {
+    Mat44 projection;
     Mat44 transform;
   };
 
   const entry::EntryData* data_;
   containers::unique_ptr<vulkan::PipelineLayout> pipeline_layout_;
+  containers::unique_ptr<vulkan::VkDescriptorSetLayout> descriptor_layout_;
   containers::unique_ptr<vulkan::VulkanGraphicsPipeline> cube_pipeline_;
   containers::unique_ptr<vulkan::VkRenderPass> render_pass_;
-  VkDescriptorSetLayoutBinding cube_descriptor_set_layouts_[5];
   vulkan::VulkanModel cube_;
   vulkan::VulkanTexture texture_;
   containers::unique_ptr<vulkan::VkSampler> sampler_;
   int frame_count_ = 0;
 
-  containers::unique_ptr<vulkan::BufferFrameData<CameraData>> camera_data_;
-  containers::unique_ptr<vulkan::BufferFrameData<ModelData>> model_data_;
+  MVPData mvp_matrices;
 };
 
 int main_entry(const entry::EntryData* data) {

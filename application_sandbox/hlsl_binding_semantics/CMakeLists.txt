@@ -12,14 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_shader_library(hlsl_binding_semantics_shaders
-  SOURCES
-    cube.frag
-    cube.vert
-  SHADER_DEPS
-    shader_library
-)
-
 add_vulkan_sample_application(hlsl_binding_semantics
   SOURCES main.cpp
   LIBS
@@ -28,6 +20,4 @@ add_vulkan_sample_application(hlsl_binding_semantics
     standard_models
   TEXTURES
     standard_images
-  SHADERS
-  hlsl_binding_semantics_shaders
 )

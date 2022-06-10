@@ -119,7 +119,7 @@ struct VulkanApplicationOptions {
     use_10bit_hdr = true;
     return *this;
   }
-  
+
   VulkanApplicationOptions& SetVulkanApiVersion(uint32_t vulkan_api_version) {
     this->vulkan_api_version = vulkan_api_version;
     return *this;
@@ -359,10 +359,17 @@ class PipelineLayout {
   operator VkPipelineLayout&() { return pipeline_layout_; }
   operator ::VkPipelineLayout() const { return pipeline_layout_; }
 
+  PipelineLayout(containers::Allocator* allocator, VkDevice* device,
+                 ::VkPipelineLayout layout)
+      : pipeline_layout_(layout, nullptr, device) {
+    // pipeline_layout_.initialize(layout);
+  }
+
  private:
   PipelineLayout(containers::Allocator* allocator, VkDevice* device,
                  std::initializer_list<DescriptorSetLayoutBinding> layouts,
-                 std::initializer_list<VkPushConstantRange> ranges = {})
+                 std::initializer_list<VkPushConstantRange> ranges = {},
+                 VkPipelineLayoutCreateFlags flags = 0, void* pNext = nullptr)
       : pipeline_layout_(VK_NULL_HANDLE, nullptr, device),
         descriptor_set_layouts_(allocator) {
     containers::vector<::VkDescriptorSetLayout> raw_layouts(allocator);
@@ -380,8 +387,8 @@ class PipelineLayout {
 
     VkPipelineLayoutCreateInfo create_info = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,  // sType
-        nullptr,                                        // pNext
-        0,                                              // flags
+        pNext,                                          // pNext
+        flags,                                          // flags
         static_cast<uint32_t>(raw_layouts.size()),      // setLayoutCount
         raw_layouts.data(),                             // pSetLayouts
         static_cast<uint32_t>(
@@ -415,12 +422,14 @@ class DescriptorSet {
 
   static VkDescriptorPool CreateDescriptorPool(
       containers::Allocator* allocator, VkDevice* device,
-      std::initializer_list<VkDescriptorSetLayoutBinding> bindings, void* pNext = nullptr);
+      std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
+      void* pNext = nullptr);
 
   // Creates a descriptor set with one descriptor according to the given
   // |binding|.
   DescriptorSet(containers::Allocator* allocator, VkDevice* device,
-                std::initializer_list<VkDescriptorSetLayoutBinding> bindings, void* pNext = nullptr);
+                std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
+                void* pNext = nullptr);
 
   // Pools is designed to amortize the cost of descriptor set allocation.
   // But here we create a dedicated pool for each descriptor set. It suffers
@@ -863,14 +872,31 @@ class VulkanApplication {
   // DescriptorSetLayoutBindings
   PipelineLayout CreatePipelineLayout(
       std::initializer_list<DescriptorSetLayoutBinding> layouts,
-      std::initializer_list<VkPushConstantRange> ranges = {}) {
-    return PipelineLayout(allocator_, &device_, layouts, ranges);
+      std::initializer_list<VkPushConstantRange> ranges = {},
+      VkPipelineLayoutCreateFlags flags = 0, void* pNext = nullptr) {
+    return PipelineLayout(allocator_, &device_, layouts, ranges, flags, pNext);
+  }
+
+  //   PipelineLayout CreatePipelineLayout(::VkPipelineLayout layout) {
+  //   return PipelineLayout(allocator_, &device_, layout);
+  // }
+
+  PipelineLayout CreatePipelineLayout(
+      const VkPipelineLayoutCreateInfo& create_info) {
+    ::VkPipelineLayout raw_layout;
+
+    LOG_ASSERT(==, log_, VK_SUCCESS,
+               device_->vkCreatePipelineLayout(device_, &create_info, nullptr,
+                                               &raw_layout));
+
+    return PipelineLayout(allocator_, &device_, raw_layout);
   }
 
   // Allocates a descriptor set with one descriptor according to the given
   // |binding|.
   DescriptorSet AllocateDescriptorSet(
-      std::initializer_list<VkDescriptorSetLayoutBinding> bindings, void* pNext = nullptr) {
+      std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
+      void* pNext = nullptr) {
     return DescriptorSet(allocator_, &device_, bindings, pNext);
   }
 

@@ -222,7 +222,7 @@ VkSampler CreateSampler(
 VkDescriptorSetLayout CreateDescriptorSetLayout(
     containers::Allocator* allocator, VkDevice* device,
     std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
-    VkDescriptorSetLayoutCreateFlags flags = 0);
+    VkDescriptorSetLayoutCreateFlags flags = 0, void* pNext = nullptr);
 
 // Creates a descriptor pool with the given pool sizes. At maximum, |max_sets|
 // number of descriptor sets can be allocated from this pool.
@@ -235,7 +235,8 @@ VkDescriptorPool CreateDescriptorPool(VkDevice* device, uint32_t num_pool_size,
 // available to all shader stages.
 VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice* device,
                                                 ::VkDescriptorType type,
-                                                uint32_t count);
+                                                uint32_t count,
+    VkDescriptorSetLayoutCreateFlags flags = 0, void* pNext = nullptr);
 
 // Allocates a descriptor set with the given |layout| from the given |pool|.
 VkDescriptorSet AllocateDescriptorSet(VkDevice* device, ::VkDescriptorPool pool,
