@@ -1,6 +1,9 @@
 # Vulkan Test Applications
 
-[![Linux Native/Android Build Status](https://travis-ci.org/google/vulkan_test_applications.svg)](https://travis-ci.org/google/vulkan_test_applications "Linux Native/Android Build Status")
+[![License]](LICENSE)
+[![C++ Version][C++ Version]][C++ Reference]
+[![CMake Version][CMake Version]][CMake Reference]
+[![Build][Build Badge]][Build Workflow]
 
 `Vulkan Test Applications` is a repository that contains several sets of
 Vulkan applications.
@@ -109,3 +112,13 @@ To build on Windows the following tools and libraries are required:
 * Vulkan SDK (https://www.lunarg.com/vulkan-sdk/)
 * Python3 (https://www.python.org/)
 * Pillow (https://pillow.readthedocs.io/)
+
+
+<!-- external links -->
+[License]: https://img.shields.io/github/license/google/vulkan_test_applications?label=License
+[C++ Version]: https://img.shields.io/badge/C%2B%2B-11-blue
+[C++ Reference]: https://en.cppreference.com/w/cpp/17
+[CMake Version]: https://img.shields.io/badge/CMake-3.1-blue
+[CMake Reference]: https://cmake.org/cmake/help/v3.1
+[CI Badge]: https://github.com/google/vulkan_test_applications/actions/workflows/build.yml/badge.svg?branch=master
+[CI Workflow]: https://github.com/google/vulkan_test_applications/actions/workflows/build.yml?query=branch%3Amaster
