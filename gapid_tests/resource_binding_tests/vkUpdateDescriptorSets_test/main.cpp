@@ -26,7 +26,8 @@ int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
   auto allocator = data->allocator();
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
 
   {  // 1. Zero writes and zero copies.
@@ -180,8 +181,7 @@ int main_entry(const entry::EntryData* data) {
     ::VkImageView raw_image_view;
     device->vkCreateImageView(device, &image_view_create_info, nullptr,
                               &raw_image_view);
-    vulkan::VkImageView image_view(raw_image_view, nullptr,
-                                         &device);
+    vulkan::VkImageView image_view(raw_image_view, nullptr, &device);
 
     const VkDescriptorImageInfo imginfo[3] = {
         // One image info for the first descriptor set

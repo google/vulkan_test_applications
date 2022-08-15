@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+#include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <thread>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "particle_data_shared.h"
 #include "support/containers/deque.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
@@ -20,15 +27,6 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
 #include "vulkan_helpers/vulkan_texture.h"
-
-#include "particle_data_shared.h"
-
-#include <chrono>
-
-#include <condition_variable>
-#include <functional>
-#include <mutex>
-#include <thread>
 
 namespace quad_model {
 #include "fullscreen_quad.obj.h"
@@ -76,7 +74,8 @@ class ComputeTask {
     update_time_data_ = containers::make_unique<vulkan::BufferFrameData<Mat44>>(
         allocator_, app_, app_->swapchain_images().size(),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        vulkan::BufferFrameDataOptions().SetQueueFamilyIndex(app_->async_compute_queue()->index()));
+        vulkan::BufferFrameDataOptions().SetQueueFamilyIndex(
+            app_->async_compute_queue()->index()));
 
     InitSimulationSSBO();
     InitRenderSSBO();
@@ -126,9 +125,9 @@ class ComputeTask {
         &waitStageMask,                 // pWaitDstStageMask,
         1,                              // commandBufferCount
         &(dat.command_buffer_.get_command_buffer()),
-        1,                              // signalSemaphoreCount
+        1,  // signalSemaphoreCount
         &GetSemaphoreForIndex(frame_index)
-             ->get_raw_object()         // pSignalSemaphores
+             ->get_raw_object()  // pSignalSemaphores
     };
 
     (*app_->async_compute_queue())
@@ -153,10 +152,10 @@ class ComputeTask {
         0,                                          // createFlags
         sizeof(simulation_data) * TOTAL_PARTICLES,  // size
         VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,    // usageFlags
-        VK_SHARING_MODE_EXCLUSIVE,                 // sharingMode
-        0,                                         // queueFamilyIndexCount
-        nullptr                                    // pQueueFamilyIndices
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,  // usageFlags
+        VK_SHARING_MODE_EXCLUSIVE,               // sharingMode
+        0,                                       // queueFamilyIndexCount
+        nullptr                                  // pQueueFamilyIndices
     };
 
     simulation_ssbo_ = app_->CreateAndBindDeviceBuffer(&create_info);
@@ -200,8 +199,8 @@ class ComputeTask {
         nullptr,                        // pWaitDstStageMask,
         1,                              // commandBufferCount
         &(initial_data_buffer->get_command_buffer()),
-        0,                             // signalSemaphoreCount
-        nullptr                        // pSignalSemaphores
+        0,       // signalSemaphoreCount
+        nullptr  // pSignalSemaphores
     };
 
     // Actually finish filling the initial data, and transfer to the
@@ -631,7 +630,7 @@ class ComputeParticlesSample
         nullptr,                        // pWaitDstStageMask,
         0,                              // commandBufferCount
         nullptr,
-        1,                              // signalSemaphoreCount
+        1,  // signalSemaphoreCount
         &frame_data->render_semaphore_->get_raw_object()  // pSignalSemaphores
     };
 

@@ -27,7 +27,8 @@ int main_entry(const entry::EntryData* data) {
 
   auto allocator = data->allocator();
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                vulkan::VulkanApplicationOptions());
   {  // 1. Sampler using normalized coordinates
     vulkan::VkDevice& device = app.device();
     VkSamplerCreateInfo create_info{

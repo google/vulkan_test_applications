@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+#include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <thread>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "particle_data_shared.h"
 #include "support/containers/deque.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
@@ -20,15 +27,6 @@
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
 #include "vulkan_helpers/vulkan_texture.h"
-
-#include "particle_data_shared.h"
-
-#include <chrono>
-
-#include <condition_variable>
-#include <functional>
-#include <mutex>
-#include <thread>
 
 const VkCommandBufferBeginInfo kBeginCommandBuffer = {
     VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // sType
@@ -96,11 +94,15 @@ const VkCommandBufferBeginInfo kBeginCommandBufferOn0 = {
 int main_entry(const entry::EntryData* data) {
   auto* allocator = data->allocator();
   data->logger()->LogInfo("Application Startup");
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {}, {},
-                                VkPhysicalDeviceFeatures{}, 1024 * 1024 * 256,
-                                1024 * 1024 * 256, 1024 * 1024 * 512,
-                                1024 * 1024 * 256, false, false, true,
-                                1024 * 1024 * 256, false, true);
+
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                vulkan::VulkanApplicationOptions()
+                                    .SetHostBufferSize(1024 * 1024 * 256)
+                                    .SetDeviceImageSize(1024 * 1024 * 256)
+                                    .SetDeviceBufferSize(1024 * 1024 * 512)
+                                    .EnableDeviceGroups()
+                                    .SetDevicePeerMemorySize(1024 * 1024 * 256)
+                                    .EnableHostQueryReset());
   // So we don't have to type app.device every time.
   vulkan::VkDevice& device = app.device();
   vulkan::VkQueue& render_queue = app.render_queue();

@@ -25,13 +25,13 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
   VkDescriptorSetLayoutBinding binding{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
                                        VK_SHADER_STAGE_VERTEX_BIT, nullptr};
   vulkan::VkDescriptorSetLayout descriptor_set_layout =
-      vulkan::CreateDescriptorSetLayout(data->allocator(), &device,
-                                        {binding});
+      vulkan::CreateDescriptorSetLayout(data->allocator(), &device, {binding});
 
   // The size of the data must be a multiple of 4
   containers::vector<char> constants(100, 0xab, data->allocator());

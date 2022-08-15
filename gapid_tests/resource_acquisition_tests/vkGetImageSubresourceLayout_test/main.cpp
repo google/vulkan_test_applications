@@ -21,7 +21,8 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
 
   const VkImageType type = VK_IMAGE_TYPE_2D;
@@ -32,7 +33,7 @@ int main_entry(const entry::EntryData* data) {
       VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   uint32_t width = 32;
   uint32_t height = 32;
-  uint32_t depth = 1; // becaue of 2D image
+  uint32_t depth = 1;  // becaue of 2D image
   uint32_t mip_level = 6;
   uint32_t array_layer = 3;
 
@@ -121,8 +122,10 @@ int main_entry(const entry::EntryData* data) {
     data->logger()->LogInfo("\tSubresourceLayout.offset: ", layout.offset);
     data->logger()->LogInfo("\tSubresourceLayout.size: ", layout.size);
     data->logger()->LogInfo("\tSubresourceLayout.rowPitch: ", layout.rowPitch);
-    data->logger()->LogInfo("\tSubresourceLayout.arrayPitch: ", layout.arrayPitch);
-    data->logger()->LogInfo("\tSubresourceLayout.depthPitch: ", layout.depthPitch);
+    data->logger()->LogInfo("\tSubresourceLayout.arrayPitch: ",
+                            layout.arrayPitch);
+    data->logger()->LogInfo("\tSubresourceLayout.depthPitch: ",
+                            layout.depthPitch);
 
     // offset, must be within the valid range.
     LOG_EXPECT(<=, data->logger(), layout.offset + layout.size, req.size);

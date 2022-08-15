@@ -56,18 +56,23 @@ int main_entry(const entry::EntryData* data) {
   logging::Logger* log = data->logger();
   log->LogInfo("Application Startup");
 
-  VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline_semaphore_features {
+  VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline_semaphore_features{
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR,
       nullptr,
       VK_TRUE,
   };
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data, {
-      VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
-  }, {
-      VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME
-  }, {}, 131072, 131072, 131072, 131072, false, false,  false, 0, false, false, VK_COLORSPACE_SRGB_NONLINEAR_KHR, 
-    false, false, nullptr, true, false, &timeline_semaphore_features);
+  vulkan::VulkanApplication app(
+      data->allocator(), data->logger(), data,
+      vulkan::VulkanApplicationOptions()
+          .SetHostBufferSize(131072)
+          .SetDeviceImageSize(131072)
+          .SetDeviceBufferSize(131072)
+          .SetCoherentBufferSize(131072)
+          .SetVulkanApiVersion(VK_API_VERSION_1_1)
+          .SetDeviceExtensions(&timeline_semaphore_features),
+      {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
+      {VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME});
 
   vulkan::VkDevice& device = app.device();
 
@@ -328,69 +333,68 @@ int main_entry(const entry::EntryData* data) {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
   VkTimelineSemaphoreSubmitInfoKHR timelineSubmitInfos[] = {
       VkTimelineSemaphoreSubmitInfoKHR{
-          VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR, // sType
-          nullptr,  // pNext 
-          1, // waitSemaphoreValueCount
-          &zero, // waitSemaphoreValues,
-          1, // signalSemaphoreValueCount
-          &signal_from_swap // signalSemaphoreValues
-      }, 
-      VkTimelineSemaphoreSubmitInfoKHR{
-          VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR, // sType
-          nullptr,  // pNext 
-          1, // waitSemaphoreValueCount
-          &signal_from_swap, // waitSemaphoreValues,
-          1, // signalSemaphoreValueCount
-          &signal_to_swap // signalSemaphoreValues
+          VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,  // sType
+          nullptr,                                               // pNext
+          1,                 // waitSemaphoreValueCount
+          &zero,             // waitSemaphoreValues,
+          1,                 // signalSemaphoreValueCount
+          &signal_from_swap  // signalSemaphoreValues
       },
       VkTimelineSemaphoreSubmitInfoKHR{
-          VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR, // sType
-          nullptr,  // pNext 
-          1, // waitSemaphoreValueCount
-          &signal_to_swap, // waitSemaphoreValues,
-          1, // signalSemaphoreValueCount
-          &zero // signalSemaphoreValues
+          VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,  // sType
+          nullptr,                                               // pNext
+          1,                  // waitSemaphoreValueCount
+          &signal_from_swap,  // waitSemaphoreValues,
+          1,                  // signalSemaphoreValueCount
+          &signal_to_swap     // signalSemaphoreValues
+      },
+      VkTimelineSemaphoreSubmitInfoKHR{
+          VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,  // sType
+          nullptr,                                               // pNext
+          1,                // waitSemaphoreValueCount
+          &signal_to_swap,  // waitSemaphoreValues,
+          1,                // signalSemaphoreValueCount
+          &zero             // signalSemaphoreValues
       },
   };
 
-  VkSubmitInfo submit_infos[] = {
-    VkSubmitInfo{
-      VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-      &timelineSubmitInfos[0],        // pNext
-      1,                              // waitSemaphoreCount
-      nullptr,                        // pWaitSemaphores
-      &waitStageMask,                 // pWaitDstStageMask,
-      0,                              // commandBufferCount
-      nullptr,                        // pCommandBuffers
-      1,                              // signalSemaphoreCount
-      nullptr                         // pSignalSemaphores
-    }, VkSubmitInfo {
-      VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-      &timelineSubmitInfos[1],        // pNext
-      1,                              // waitSemaphoreCount
-      nullptr,                        // pWaitSemaphores
-      &waitStageMask,                 // pWaitDstStageMask,
-      1,                              // commandBufferCount
-      nullptr,                        //
-      1,                              // signalSemaphoreCount
-      nullptr                         // pSignalSemaphores
-    },
-    VkSubmitInfo {
-      VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
-      &timelineSubmitInfos[2],        // pNext
-      1,                              // waitSemaphoreCount
-      nullptr,                        // pWaitSemaphores
-      &waitStageMask,                 // pWaitDstStageMask,
-      0,                              // commandBufferCount
-      nullptr,                        // pCommandBuffers
-      1,                              // signalSemaphoreCount
-      nullptr                         // pSignalSemaphores
-    }
-  };
+  VkSubmitInfo submit_infos[] = {VkSubmitInfo{
+                                     VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
+                                     &timelineSubmitInfos[0],        // pNext
+                                     1,               // waitSemaphoreCount
+                                     nullptr,         // pWaitSemaphores
+                                     &waitStageMask,  // pWaitDstStageMask,
+                                     0,               // commandBufferCount
+                                     nullptr,         // pCommandBuffers
+                                     1,               // signalSemaphoreCount
+                                     nullptr          // pSignalSemaphores
+                                 },
+                                 VkSubmitInfo{
+                                     VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
+                                     &timelineSubmitInfos[1],        // pNext
+                                     1,               // waitSemaphoreCount
+                                     nullptr,         // pWaitSemaphores
+                                     &waitStageMask,  // pWaitDstStageMask,
+                                     1,               // commandBufferCount
+                                     nullptr,         //
+                                     1,               // signalSemaphoreCount
+                                     nullptr          // pSignalSemaphores
+                                 },
+                                 VkSubmitInfo{
+                                     VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
+                                     &timelineSubmitInfos[2],        // pNext
+                                     1,               // waitSemaphoreCount
+                                     nullptr,         // pWaitSemaphores
+                                     &waitStageMask,  // pWaitDstStageMask,
+                                     0,               // commandBufferCount
+                                     nullptr,         // pCommandBuffers
+                                     1,               // signalSemaphoreCount
+                                     nullptr          // pSignalSemaphores
+                                 }};
 
   // TimelineSemaphore
   auto timelineSemaphore = vulkan::CreateTimelineSemaphore(&device, 0);
-    
+
   uint32_t i = 0;
   auto last_frame_time = std::chrono::high_resolution_clock::now();
   while (true) {
@@ -427,19 +431,14 @@ int main_entry(const entry::EntryData* data) {
 
     submit_infos[0].pWaitSemaphores =
         &frame_data[i].swapchain_sema->get_raw_object();
-    submit_infos[0].pSignalSemaphores =
-        &timelineSemaphore.get_raw_object();
-
+    submit_infos[0].pSignalSemaphores = &timelineSemaphore.get_raw_object();
 
     submit_infos[1].pCommandBuffers =
         &frame_data_i.command_buffer_->get_command_buffer();
-    submit_infos[1].pWaitSemaphores =
-        &timelineSemaphore.get_raw_object();
-    submit_infos[1].pSignalSemaphores =
-        &timelineSemaphore.get_raw_object();
+    submit_infos[1].pWaitSemaphores = &timelineSemaphore.get_raw_object();
+    submit_infos[1].pSignalSemaphores = &timelineSemaphore.get_raw_object();
 
-    submit_infos[2].pWaitSemaphores =
-        &timelineSemaphore.get_raw_object();
+    submit_infos[2].pWaitSemaphores = &timelineSemaphore.get_raw_object();
     submit_infos[2].pSignalSemaphores =
         &frame_data[i].present_ready_sema->get_raw_object();
 
@@ -450,7 +449,7 @@ int main_entry(const entry::EntryData* data) {
 
     VkPresentInfoKHR present_info{
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,  // sType
-        nullptr        ,                     // pNext
+        nullptr,                             // pNext
         1,                                   // waitSemaphoreCount
         &frame_data[i++]
              .present_ready_sema->get_raw_object(),  // pWaitSemaphores

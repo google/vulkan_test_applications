@@ -19,8 +19,8 @@
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                        data);
+  vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
+                                        vulkan::VulkanApplicationOptions());
   {
     // 1. Render pass and framebuffer without attachments or dependencies. The
     // render pass begin info has render area with x/y offsets of value 5 and
@@ -146,9 +146,10 @@ int main_entry(const entry::EntryData* data) {
         },
     };
     ::VkImageView raw_image_view;
-    LOG_EXPECT(==, data->logger(), application.device()->vkCreateImageView(
-                                  application.device(), &image_view_create_info,
-                                  nullptr, &raw_image_view),
+    LOG_EXPECT(==, data->logger(),
+               application.device()->vkCreateImageView(
+                   application.device(), &image_view_create_info, nullptr,
+                   &raw_image_view),
                VK_SUCCESS);
     vulkan::VkImageView image_view(raw_image_view, nullptr,
                                    &application.device());
