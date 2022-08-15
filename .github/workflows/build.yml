@@ -1,5 +1,9 @@
-name: on_pr
-on: [pull_request]
+name: Build
+on: 
+  pull_request:
+  push:
+    branches:
+      - main
 env:  
   BUILD_TYPE: Release
 jobs:
