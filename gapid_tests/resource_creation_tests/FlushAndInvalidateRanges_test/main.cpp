@@ -24,7 +24,8 @@
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
   vulkan::VkCommandBuffer cmd_buf = app.GetCommandBuffer();
   ::VkCommandBuffer raw_cmd_buf = cmd_buf.get_command_buffer();
@@ -103,7 +104,7 @@ int main_entry(const entry::EntryData* data) {
                           map_size,                            // size
                           0,                                   // flags
                           reinterpret_cast<void**>(&buf_data)  // ppData
-                          );
+      );
       for (size_t i = 0; i < map_size; i++) {
         buf_data[i] = i & 0xFF;
       }
@@ -130,7 +131,10 @@ int main_entry(const entry::EntryData* data) {
 
       // Copy data from src buffer to dst buffer
       VkCommandBufferBeginInfo cmd_begin_info{
-          VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr, 0, nullptr,
+          VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+          nullptr,
+          0,
+          nullptr,
       };
       cmd_buf->vkBeginCommandBuffer(cmd_buf, &cmd_begin_info);
       VkMemoryBarrier flush_barrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr,
@@ -174,7 +178,7 @@ int main_entry(const entry::EntryData* data) {
                           map_size,                            // size
                           0,                                   // flags
                           reinterpret_cast<void**>(&buf_data)  // ppData
-                          );
+      );
       VkMappedMemoryRange invalidate_range{
           VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,  // sType
           nullptr,                                // pNext
@@ -222,7 +226,7 @@ int main_entry(const entry::EntryData* data) {
                           map_size,                            // size
                           0,                                   // flags
                           reinterpret_cast<void**>(&buf_data)  // ppData
-                          );
+      );
       for (size_t i = 0; i < map_size; i++) {
         if (i < 512 - i) {
           buf_data[i] = i & 0xFF;
@@ -254,7 +258,10 @@ int main_entry(const entry::EntryData* data) {
 
       // Copy data from src buffer to dst buffer
       VkCommandBufferBeginInfo cmd_begin_info{
-          VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr, 0, nullptr,
+          VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+          nullptr,
+          0,
+          nullptr,
       };
       cmd_buf->vkBeginCommandBuffer(cmd_buf, &cmd_begin_info);
       VkMemoryBarrier flush_barrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr,
@@ -296,7 +303,7 @@ int main_entry(const entry::EntryData* data) {
                           map_size,                            // size
                           0,                                   // flags
                           reinterpret_cast<void**>(&buf_data)  // ppData
-                          );
+      );
       VkMappedMemoryRange invalidate_range{
           VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,  // sType
           nullptr,                                // pNext

@@ -119,7 +119,7 @@ struct VulkanApplicationOptions {
     use_10bit_hdr = true;
     return *this;
   }
-  
+
   VulkanApplicationOptions& SetVulkanApiVersion(uint32_t vulkan_api_version) {
     this->vulkan_api_version = vulkan_api_version;
     return *this;
@@ -415,12 +415,14 @@ class DescriptorSet {
 
   static VkDescriptorPool CreateDescriptorPool(
       containers::Allocator* allocator, VkDevice* device,
-      std::initializer_list<VkDescriptorSetLayoutBinding> bindings, void* pNext = nullptr);
+      std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
+      void* pNext = nullptr);
 
   // Creates a descriptor set with one descriptor according to the given
   // |binding|.
   DescriptorSet(containers::Allocator* allocator, VkDevice* device,
-                std::initializer_list<VkDescriptorSetLayoutBinding> bindings, void* pNext = nullptr);
+                std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
+                void* pNext = nullptr);
 
   // Pools is designed to amortize the cost of descriptor set allocation.
   // But here we create a dedicated pool for each descriptor set. It suffers
@@ -580,30 +582,6 @@ class VulkanApplication {
 
   // On creation creates an instance, device, surface, swapchain, queues,
   // and command pool for the application.
-  // It also creates 3 memory arenas with the given sizes.
-  //  One for host-visible buffers.
-  //  One for device-only-accessible buffers.
-  //  One for device-only images.
-  VulkanApplication(
-      containers::Allocator* allocator, logging::Logger* log,
-      const entry::EntryData* entry_data,
-      const std::initializer_list<const char*> instance_extensions = {},
-      const std::initializer_list<const char*> device_extensions = {},
-      const VkPhysicalDeviceFeatures& features = {0},
-      uint32_t host_buffer_size = 1024 * 1024,
-      uint32_t device_image_size = 1024 * 1024,
-      uint32_t device_buffer_size = 1024 * 1024,
-      uint32_t coherent_buffer_size = 1024 * 1024,
-      bool use_async_compute_queue = false, bool use_sparse_binding = false,
-      bool use_device_groups = false, uint32_t device_peer_memory_size = 0,
-      bool use_protected_memory = false, bool use_host_query_reset = false,
-      VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-      bool use_shared_presentation = false,
-      bool use_mutable_swapchain_format = false,
-      const void* swapchain_extensions = nullptr, bool use_vulkan_1_1 = false,
-      bool use_10bit_hdr = false, void* device_next = nullptr,
-      uint32_t min_swapchain_image_count = 0);
-
   VulkanApplication(
       containers::Allocator* allocator, logging::Logger* log,
       const entry::EntryData* entry_data,
@@ -870,7 +848,8 @@ class VulkanApplication {
   // Allocates a descriptor set with one descriptor according to the given
   // |binding|.
   DescriptorSet AllocateDescriptorSet(
-      std::initializer_list<VkDescriptorSetLayoutBinding> bindings, void* pNext = nullptr) {
+      std::initializer_list<VkDescriptorSetLayoutBinding> bindings,
+      void* pNext = nullptr) {
     return DescriptorSet(allocator_, &device_, bindings, pNext);
   }
 

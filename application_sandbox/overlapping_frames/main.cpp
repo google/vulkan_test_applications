@@ -408,12 +408,12 @@ int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Start app: overlapping_frames");
 
   const uint32_t min_swapchain_image_count = 2;
-  const uint32_t default_size = 1024 * 1024;
+
   vulkan::VulkanApplication app(
-      data->allocator(), data->logger(), data, {}, {}, {0}, default_size,
-      default_size, default_size, default_size, false, false, false, 0, false,
-      false, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, false, false, nullptr, false,
-      false, nullptr, min_swapchain_image_count);
+      data->allocator(), data->logger(), data,
+      vulkan::VulkanApplicationOptions().SetMinSwapchainImageCount(
+          min_swapchain_image_count),
+      {}, {});
 
   auto sampler_images = buildSamplerImages(&app, data);
   vulkan::VulkanModel screen(data->allocator(), data->logger(), screen_data);

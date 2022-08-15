@@ -90,14 +90,15 @@ vulkan::VkRenderPass CreateRenderpass(const entry::EntryData* data,
           nullptr                           // pPreserveAttachments
       }},                                   // SubpassDescriptions
       {}                                    // SubpassDependencies
-      );
+  );
   return render_pass;
 }
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                vulkan::VulkanApplicationOptions());
   auto render_pass = CreateRenderpass(data, &app);
   VkExtent2D granularity = {0};
   app.device()->vkGetRenderAreaGranularity(app.device(), render_pass,

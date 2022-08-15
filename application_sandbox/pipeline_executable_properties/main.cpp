@@ -40,11 +40,15 @@ int main_entry(const entry::EntryData* data) {
           nullptr, true};
 
   vulkan::VulkanApplication app(
-      data->allocator(), data->logger(), data, {},
-      {VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME}, {0}, 1024 * 128,
-      1024 * 128, 1024 * 128, 1024 * 128, false, false, false, 0, false, false,
-        VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, false, false, nullptr, false, false,
-        &pipeline_executable_info_features);
+      data->allocator(), data->logger(), data,
+      vulkan::VulkanApplicationOptions()
+          .SetHostBufferSize(1024 * 128)
+          .SetDeviceImageSize(1024 * 128)
+          .SetDeviceBufferSize(1024 * 128)
+          .SetCoherentBufferSize(1024 * 128)
+          .SetSwapchainColorSpace(VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+          .SetDeviceExtensions(&pipeline_executable_info_features),
+      {}, {VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME});
 
   vulkan::VkDevice& device = app.device();
 

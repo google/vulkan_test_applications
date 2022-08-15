@@ -13,18 +13,20 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+
 #include "support/entry/entry.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/vulkan_application.h"
-
-#include <algorithm>
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
   vulkan::VulkanApplication application(data->allocator(), data->logger(), data,
-                                        {}, {}, {0}, 1024 * 100, 1024 * 100,
-                                        1024 * 100);
+                                        vulkan::VulkanApplicationOptions()
+                                            .SetHostBufferSize(1024 * 100)
+                                            .SetDeviceImageSize(1024 * 100)
+                                            .SetCoherentBufferSize(1024 * 100));
   {
     // Update a buffer with size 65536 bytes and 0 offset.
     size_t update_size = 65536;

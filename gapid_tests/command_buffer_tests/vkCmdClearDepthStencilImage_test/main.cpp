@@ -13,17 +13,18 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+
 #include "support/entry/entry.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_wrapper/sub_objects.h"
 
-#include <algorithm>
-
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                vulkan::VulkanApplicationOptions());
   vulkan::VkDevice& device = app.device();
   {
     // 1. Clear a 2D single layer, single mip level depth/stencil image
@@ -94,7 +95,7 @@ int main_entry(const entry::EntryData* data) {
         &clear_depth_stencil,                  // pDepthStencil
         1,                                     // rangeCount
         &clear_range                           // pRagnes
-        );
+    );
     cmd_buf->vkEndCommandBuffer(cmd_buf);
     VkSubmitInfo submit_info{VK_STRUCTURE_TYPE_SUBMIT_INFO,
                              nullptr,

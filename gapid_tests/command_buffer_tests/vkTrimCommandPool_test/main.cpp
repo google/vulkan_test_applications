@@ -25,15 +25,14 @@ int main_entry(const entry::EntryData* data) {
   vulkan::LibraryWrapper wrapper(data->allocator(), data->logger());
   vulkan::VkInstance instance(
       // vkTrimCommandPool should only be called with VK version 1.1 and greater
-      vulkan::CreateEmptyInstance(data->allocator(), &wrapper, VK_MAKE_VERSION(1, 1, 0)));
+      vulkan::CreateEmptyInstance(data->allocator(), &wrapper,
+                                  VK_MAKE_VERSION(1, 1, 0)));
   vulkan::VkDevice device(
       vulkan::CreateDefaultDevice(data->allocator(), instance));
   vulkan::VkCommandPool pool(
       vulkan::CreateDefaultCommandPool(data->allocator(), device, false));
 
-  {
-    device->vkTrimCommandPool(device, pool, 0);
-  }
+  { device->vkTrimCommandPool(device, pool, 0); }
 
   data->logger()->LogInfo("Application Shutdown");
   return 0;

@@ -32,7 +32,8 @@ uint32_t vertex_shader[] =
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
 
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                vulkan::VulkanApplicationOptions());
   // So we don't have to type app.device every time.
   vulkan::VkDevice& device = app.device();
 
@@ -60,13 +61,13 @@ int main_entry(const entry::EntryData* data) {
 
     vulkan::VkRenderPass render_pass = app.CreateRenderPass(
         {{
-             0,                                                 // flags
-             VK_FORMAT_D32_SFLOAT,                              // format
-             VK_SAMPLE_COUNT_1_BIT,                             // samples
-             VK_ATTACHMENT_LOAD_OP_DONT_CARE,                   // loadOp
-             VK_ATTACHMENT_STORE_OP_STORE,                      // storeOp
-             VK_ATTACHMENT_LOAD_OP_DONT_CARE,                   // stencilLoadOp
-             VK_ATTACHMENT_STORE_OP_DONT_CARE,                  // stencilStoreOp
+             0,                                 // flags
+             VK_FORMAT_D32_SFLOAT,              // format
+             VK_SAMPLE_COUNT_1_BIT,             // samples
+             VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // loadOp
+             VK_ATTACHMENT_STORE_OP_STORE,      // storeOp
+             VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // stencilLoadOp
+             VK_ATTACHMENT_STORE_OP_DONT_CARE,  // stencilStoreOp
              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,  // initialLayout
              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL   // finalLayout
          },
@@ -94,7 +95,7 @@ int main_entry(const entry::EntryData* data) {
             nullptr                           // pPreserveAttachments
         }},                                   // SubpassDescriptions
         {}                                    // SubpassDependencies
-        );
+    );
 
     vulkan::VulkanGraphicsPipeline pipeline =
         app.CreateGraphicsPipeline(&pipeline_layout, &render_pass, 0);

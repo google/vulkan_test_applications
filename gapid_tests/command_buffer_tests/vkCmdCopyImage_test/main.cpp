@@ -57,9 +57,12 @@ int main_entry(const entry::EntryData* data) {
     // 1. Copy from an uncompressed 2D color image, with only 1 layer, 1
     // miplevel and 0 offsets in all dimensions to another 2D image created
     // with same create info.
-    vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                          data, {}, {}, {0}, 1024 * 100,
-                                          1024 * 100, 1024 * 100);
+    vulkan::VulkanApplication application(
+        data->allocator(), data->logger(), data,
+        vulkan::VulkanApplicationOptions()
+            .SetHostBufferSize(1024 * 100)
+            .SetDeviceImageSize(1024 * 100)
+            .SetCoherentBufferSize(1024 * 100));
     vulkan::VkDevice& device = application.device();
 
     vulkan::ImagePointer src_image =
@@ -188,9 +191,13 @@ int main_entry(const entry::EntryData* data) {
     // dimensions but in BC3 format.
     VkPhysicalDeviceFeatures requested_features = {0};
     requested_features.textureCompressionBC = VK_TRUE;
-    vulkan::VulkanApplication application(data->allocator(), data->logger(),
-                                          data, {}, {}, requested_features,
-                                          1024 * 100, 1024 * 100, 1024 * 100);
+    vulkan::VulkanApplication application(
+        data->allocator(), data->logger(), data,
+        vulkan::VulkanApplicationOptions()
+            .SetHostBufferSize(1024 * 100)
+            .SetDeviceImageSize(1024 * 100)
+            .SetCoherentBufferSize(1024 * 100),
+        {}, {}, requested_features);
     vulkan::VkDevice& device = application.device();
     if (device.is_valid()) {
       VkImageCreateInfo src_image_create_info = sample_image_create_info;

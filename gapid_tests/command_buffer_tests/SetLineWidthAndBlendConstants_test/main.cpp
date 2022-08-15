@@ -96,7 +96,7 @@ vulkan::VulkanGraphicsPipeline CreateAndCommitPipeline(
           nullptr                           // pPreserveAttachments
       }},                                   // SubpassDescriptions
       {}                                    // SubpassDependencies
-      );
+  );
 
   vulkan::VulkanGraphicsPipeline pipeline =
       app.CreateGraphicsPipeline(&pipeline_layout, &render_pass, 0);
@@ -120,7 +120,8 @@ vulkan::VulkanGraphicsPipeline CreateAndCommitPipeline(
 
 int main_entry(const entry::EntryData* data) {
   data->logger()->LogInfo("Application Startup");
-  vulkan::VulkanApplication app(data->allocator(), data->logger(), data);
+  vulkan::VulkanApplication app(data->allocator(), data->logger(), data,
+                                vulkan::VulkanApplicationOptions());
 
   {
     // 1. Test vkCmdBlendConstants

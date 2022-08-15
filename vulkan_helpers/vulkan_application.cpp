@@ -42,8 +42,9 @@ VkDescriptorPool DescriptorSet::CreateDescriptorPool(
     pool_sizes.push_back({static_cast<VkDescriptorType>(p.first), p.second});
   }
 
-  return vulkan::CreateDescriptorPool(
-      device, static_cast<uint32_t>(pool_sizes.size()), pool_sizes.data(), 1, pNext);
+  return vulkan::CreateDescriptorPool(device,
+                                      static_cast<uint32_t>(pool_sizes.size()),
+                                      pool_sizes.data(), 1, pNext);
 }
 
 DescriptorSet::DescriptorSet(
@@ -53,69 +54,6 @@ DescriptorSet::DescriptorSet(
       layout_(CreateDescriptorSetLayout(allocator, device, bindings)),
       set_(AllocateDescriptorSet(device, pool_.get_raw_object(),
                                  layout_.get_raw_object())) {}
-
-VulkanApplicationOptions FromLegacyVulkanApplicationOptions(
-    uint32_t host_buffer_size = 1024 * 1024,
-    uint32_t device_image_size = 1024 * 1024,
-    uint32_t device_buffer_size = 1024 * 1024,
-    uint32_t coherent_buffer_size = 1024 * 1024,
-    bool use_async_compute_queue = false, bool use_sparse_binding = false,
-    bool use_device_groups = false, uint32_t device_peer_memory_size = 0,
-    bool use_protected_memory = false, bool use_host_query_reset = false,
-    VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-    bool use_shared_presentation = false,
-    bool use_mutable_swapchain_format = false,
-    const void* swapchain_extensions = nullptr, bool use_vulkan_1_1 = false,
-    bool use_10bit_hdr = false, void* device_next = nullptr,
-    uint32_t min_swapchain_image_count = 0) {
-  VulkanApplicationOptions options = {};
-  options.host_buffer_size = host_buffer_size;
-  options.device_image_size = device_image_size;
-  options.device_buffer_size = device_buffer_size;
-  options.coherent_buffer_size = coherent_buffer_size;
-  options.use_async_compute_queue = use_async_compute_queue;
-  options.use_sparse_binding = use_sparse_binding;
-  options.use_device_groups = use_device_groups;
-  options.device_peer_memory_size = device_peer_memory_size;
-  options.use_protected_memory = use_protected_memory;
-  options.use_host_query_reset = use_host_query_reset;
-  options.swapchain_color_space = swapchain_color_space;
-  options.use_shared_presentation = use_shared_presentation;
-  options.use_mutable_swapchain_format = use_mutable_swapchain_format;
-  options.swapchain_extensions = swapchain_extensions;
-  options.vulkan_api_version =
-      use_vulkan_1_1 ? VK_API_VERSION_1_1 : VK_API_VERSION_1_0;
-  options.use_10bit_hdr = use_10bit_hdr;
-  options.device_next = device_next;
-  options.min_swapchain_image_count = min_swapchain_image_count;
-  return options;
-}
-
-VulkanApplication::VulkanApplication(
-    containers::Allocator* allocator, logging::Logger* log,
-    const entry::EntryData* entry_data,
-    const std::initializer_list<const char*> instance_extensions,
-    const std::initializer_list<const char*> device_extensions,
-    const VkPhysicalDeviceFeatures& features, uint32_t host_buffer_size,
-    uint32_t device_image_size, uint32_t device_buffer_size,
-    uint32_t coherent_buffer_size, bool use_async_compute_queue,
-    bool use_sparse_binding, bool use_device_group,
-    uint32_t device_peer_memory_size, bool use_protected_memory,
-    bool use_host_query_reset, VkColorSpaceKHR swapchain_color_space,
-    bool use_shared_presentation, bool use_mutable_swapchain_format,
-    const void* swapchain_extensions, bool use_vulkan_1_1, bool use_10bit_hdr,
-    void* device_next, uint32_t min_swapchain_image_count)
-    : VulkanApplication(
-          allocator, log, entry_data,
-          FromLegacyVulkanApplicationOptions(
-              host_buffer_size, device_image_size, device_buffer_size,
-              coherent_buffer_size, use_async_compute_queue, use_sparse_binding,
-              use_device_group, device_peer_memory_size, use_protected_memory,
-              use_host_query_reset, swapchain_color_space,
-              use_shared_presentation, use_mutable_swapchain_format,
-              swapchain_extensions, use_vulkan_1_1, use_10bit_hdr, device_next,
-              min_swapchain_image_count),
-          instance_extensions, device_extensions, features) {}
 
 VulkanApplication::VulkanApplication(
     containers::Allocator* allocator, logging::Logger* log,

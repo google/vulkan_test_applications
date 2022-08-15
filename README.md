@@ -120,5 +120,5 @@ To build on Windows the following tools and libraries are required:
 [C++ Reference]: https://en.cppreference.com/w/cpp/17
 [CMake Version]: https://img.shields.io/badge/CMake-3.1-blue
 [CMake Reference]: https://cmake.org/cmake/help/v3.1
-[CI Badge]: https://github.com/google/vulkan_test_applications/actions/workflows/build.yml/badge.svg?branch=master
-[CI Workflow]: https://github.com/google/vulkan_test_applications/actions/workflows/build.yml?query=branch%3Amaster
+[Build Badge]: https://github.com/google/vulkan_test_applications/actions/workflows/build.yml/badge.svg?branch=master
+[Build Workflow]: https://github.com/google/vulkan_test_applications/actions/workflows/build.yml?query=branch%3Amaster
