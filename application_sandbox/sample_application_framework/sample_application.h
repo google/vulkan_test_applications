@@ -27,7 +27,7 @@ namespace sample_application {
 
 const static VkSampleCountFlagBits kVkMultiSampledSampleCount =
     VK_SAMPLE_COUNT_4_BIT;
-const static VkFormat kDepthFormat = VK_FORMAT_D16_UNORM;
+const static VkFormat kDepthFormat = VK_FORMAT_D32_SFLOAT;
 const static VkFormat kMutableSwapchainFormats[] = {VK_FORMAT_B8G8R8A8_UNORM,
                                                     VK_FORMAT_B8G8R8A8_SRGB};
 const static VkImageFormatListCreateInfoKHR kMutableSwapchainImageFormatList = {
