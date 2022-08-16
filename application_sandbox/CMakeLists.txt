@@ -4,14 +4,13 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 
 # Everything else depends on sample_application
 add_vulkan_subdirectory(sample_application_framework)
@@ -66,16 +65,19 @@ add_vulkan_subdirectory(display_timing)
 add_vulkan_subdirectory(draw_indexed_indirect_count)
 add_vulkan_subdirectory(driver_properties)
 add_vulkan_subdirectory(dynamic_rendering_cube)
+add_vulkan_subdirectory(dynamic_rendering_1_3)
 add_vulkan_subdirectory(execute_commands)
 add_vulkan_subdirectory(extended_dynamic_state)
 add_vulkan_subdirectory(fence_test)
 add_vulkan_subdirectory(fill_buffer)
-if (NOT APPLE)
-	add_vulkan_subdirectory(external_buffer)
-	add_vulkan_subdirectory(external_image)
-	add_vulkan_subdirectory(external_memory_host)
-	add_vulkan_subdirectory(foreign_buffer)
+
+if(NOT APPLE)
+    add_vulkan_subdirectory(external_buffer)
+    add_vulkan_subdirectory(external_image)
+    add_vulkan_subdirectory(external_memory_host)
+    add_vulkan_subdirectory(foreign_buffer)
 endif()
+
 add_vulkan_subdirectory(format_feature_flags2)
 add_vulkan_subdirectory(imageless_framebuffer)
 add_vulkan_subdirectory(hdr_metadata)
@@ -145,7 +147,7 @@ add_vulkan_subdirectory(viewport_index)
 add_vulkan_subdirectory(wireframe)
 add_vulkan_subdirectory(write_timestamp)
 
-if (NOT ANDROID)
+if(NOT ANDROID)
     string(REPLACE ";" "\n" ALL_SAMPLE_NAMES "${ALL_SAMPLE_NAMES}")
     write_file(${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/samples.txt ${ALL_SAMPLE_NAMES})
 endif()
