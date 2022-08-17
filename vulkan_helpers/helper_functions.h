@@ -462,8 +462,6 @@ inline VkFormat GetSupportedHighPrecisionStencilFormat(VkInstance* instance,
   if ((properties.optimalTilingFeatures &
        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0) {
     depth_format = VK_FORMAT_X8_D24_UNORM_PACK32;
-    (*instance)->vkGetPhysicalDeviceFormatProperties(device->physical_device(),
-                                                     depth_format, &properties);
   }
   return depth_format;
 }
