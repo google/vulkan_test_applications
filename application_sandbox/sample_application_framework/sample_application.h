@@ -272,8 +272,8 @@ class Sample {
           &application_.instance(), &application_.device());
       LOG_ASSERT(!=, data_->logger(), VK_FORMAT_UNDEFINED,
                  depth_stencil_format_);
-    }
-    if (options_.use_high_precision_depth && options_.enable_depth_buffer) {
+    } else if (options_.use_high_precision_depth &&
+               options_.enable_depth_buffer) {
       depth_stencil_format_ = GetSupportedHighPrecisionStencilFormat(
           &application_.instance(), &application_.device());
     }
