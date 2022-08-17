@@ -452,7 +452,7 @@ inline VkFormat GetSupportedDepthStencilFormat(VkInstance* instance,
 }
 
 // Returns the highest supported depth format, VK_FORMAT_D32_SFLOAT >
-// VK_FORMAT_X8_D24_UNORM_PACK32 > VK_FORMAT_D16_UNORM
+// VK_FORMAT_X8_D24_UNORM_PACK32
 inline VkFormat GetSupportedHighPrecisionStencilFormat(VkInstance* instance,
                                                        VkDevice* device) {
   VkFormatProperties properties = {};
