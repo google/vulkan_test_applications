@@ -24,11 +24,6 @@
 #include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
-using Vector4 = mathfu::Vector<float, 4>;
-
-namespace cube_model {
-#include "cube.obj.h"
-}
 
 // red cube
 const struct {
@@ -38,18 +33,18 @@ const struct {
   float normals[24];
   size_t num_indices;
   uint32_t indices[36];
-} cube_data = {8,
-               {0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
-                -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f,
-                -0.5f, -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f},
-               {1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-                1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f},
-               {0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
-                -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f,
-                -0.5f, -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f},
-               36,
-               {0, 1, 3, 3, 2, 0, 1, 0, 6, 6, 7, 1, 4, 5, 7, 7, 6, 4,
-                2, 3, 5, 5, 4, 2, 0, 2, 4, 4, 6, 0, 3, 1, 7, 7, 5, 3}};
+} red_cube_data = {8,
+                   {0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
+                    -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f,
+                    -0.5f, -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f},
+                   {1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+                    1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f},
+                   {0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
+                    -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f,
+                    -0.5f, -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f},
+                   36,
+                   {0, 1, 3, 3, 2, 0, 1, 0, 6, 6, 7, 1, 4, 5, 7, 7, 6, 4,
+                    2, 3, 5, 5, 4, 2, 0, 2, 4, 4, 6, 0, 3, 1, 7, 7, 5, 3}};
 
 // green cube
 const struct {
@@ -59,18 +54,18 @@ const struct {
   float normals[24];
   size_t num_indices;
   uint32_t indices[36];
-} cube_data2 = {8,
-                {1.0f,  0.5f,  0.5f,  1.0f,  -0.5f, 0.5f,  1.0f,  0.5f,
-                 -0.5f, 1.0f,  -0.5f, -0.5f, -1.0f, 0.5f,  -0.5f, -1.0f,
-                 -0.5f, -0.5f, -1.0f, 0.5f,  0.5f,  -1.0f, -0.5f, 0.5f},
-                {0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-                 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f},
-                {0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
-                 -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f,
-                 -0.5f, -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f},
-                36,
-                {0, 1, 3, 3, 2, 0, 1, 0, 6, 6, 7, 1, 4, 5, 7, 7, 6, 4,
-                 2, 3, 5, 5, 4, 2, 0, 2, 4, 4, 6, 0, 3, 1, 7, 7, 5, 3}};
+} green_cube_data = {8,
+                     {1.0f,  0.5f,  0.5f,  1.0f,  -0.5f, 0.5f,  1.0f,  0.5f,
+                      -0.5f, 1.0f,  -0.5f, -0.5f, -1.0f, 0.5f,  -0.5f, -1.0f,
+                      -0.5f, -0.5f, -1.0f, 0.5f,  0.5f,  -1.0f, -0.5f, 0.5f},
+                     {0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+                      1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f},
+                     {0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
+                      -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f,
+                      -0.5f, -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f},
+                     36,
+                     {0, 1, 3, 3, 2, 0, 1, 0, 6, 6, 7, 1, 4, 5, 7, 7, 6, 4,
+                      2, 3, 5, 5, 4, 2, 0, 2, 4, 4, 6, 0, 3, 1, 7, 7, 5, 3}};
 
 uint32_t cube_vertex_shader[] =
 #include "cube.vert.spv"
@@ -100,14 +95,16 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
  public:
   CubeSample(const entry::EntryData* data)
       : data_(data),
-        cubes_{
-            vulkan::VulkanModel(data->allocator(), data->logger(), cube_data),
-            vulkan::VulkanModel(data->allocator(), data->logger(), cube_data2)},
+        cubes_{vulkan::VulkanModel(data->allocator(), data->logger(),
+                                   red_cube_data),
+               vulkan::VulkanModel(data->allocator(), data->logger(),
+                                   green_cube_data)},
         Sample<CubeFrameData>(
             data->allocator(), data, 1, 512, 1, 1,
             sample_application::SampleOptions()
                 .EnableMultisampling()
                 .EnableDepthBuffer()
+                .UseHighPrecisionPrecisionDepth()
                 .SetVulkanApiVersion(VK_API_VERSION_1_1)
                 .AddDeviceExtensionStructure(&kFeat),
             {}, {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
@@ -119,7 +116,7 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     VkPhysicalDeviceExtendedDynamicState2FeaturesEXT ext_features{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT,
         nullptr,
-        VK_TRUE,
+        VK_FALSE,
         VK_FALSE,
         VK_FALSE,
     };

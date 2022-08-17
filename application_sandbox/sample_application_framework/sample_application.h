@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright 2022l Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ namespace sample_application {
 
 const static VkSampleCountFlagBits kVkMultiSampledSampleCount =
     VK_SAMPLE_COUNT_4_BIT;
-const static VkFormat kDepthFormat = VK_FORMAT_D32_SFLOAT;
+const static VkFormat kDepthFormat = VK_FORMAT_D16_UNORM;
 const static VkFormat kMutableSwapchainFormats[] = {VK_FORMAT_B8G8R8A8_UNORM,
                                                     VK_FORMAT_B8G8R8A8_SRGB};
 const static VkImageFormatListCreateInfoKHR kMutableSwapchainImageFormatList = {
@@ -50,6 +50,7 @@ struct SampleOptions {
   bool mutable_swapchain_format = false;
   bool enable_display_timing = false;
   bool enable_10bit_hdr = false;
+  bool use_high_precision_depth = false;
   void* device_extension_structures = nullptr;
   // The default value of zero means there is no application
   // enforced minimum and the number of swapchains images
@@ -112,6 +113,10 @@ struct SampleOptions {
   }
   SampleOptions& Enable10BitHDR() {
     enable_10bit_hdr = true;
+    return *this;
+  }
+  SampleOptions& UseHighPrecisionPrecisionDepth() {
+    use_high_precision_depth = true;
     return *this;
   }
   SampleOptions& AddDeviceExtensionStructure(void* device_extension_structure) {
@@ -267,6 +272,10 @@ class Sample {
           &application_.instance(), &application_.device());
       LOG_ASSERT(!=, data_->logger(), VK_FORMAT_UNDEFINED,
                  depth_stencil_format_);
+    }
+    if (options_.use_high_precision_depth && options_.enable_depth_buffer) {
+      depth_stencil_format_ = GetSupportedHighPrecisionStencilFormat(
+          &application_.instance(), &application_.device());
     }
 
     num_samples_ = options.enable_multisampling ? kVkMultiSampledSampleCount
