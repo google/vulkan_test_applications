@@ -245,11 +245,16 @@ struct CommandBufferFunctions {
         CONSTRUCT_LAZY_FUNCTION(vkCmdBindVertexBuffers2EXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetCullModeEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetDepthBoundsTestEnableEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetDepthBiasEnableEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetDepthCompareOpEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetDepthTestEnableEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetDepthWriteEnableEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetFrontFaceEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetLogicOpEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetPatchControlPointsEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetPrimitiveTopologyEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetPrimitiveRestartEnableEXT),
+        CONSTRUCT_LAZY_FUNCTION(vkCmdSetRasterizerDiscardEnableEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetScissorWithCountEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetStencilOpEXT),
         CONSTRUCT_LAZY_FUNCTION(vkCmdSetStencilTestEnableEXT),
@@ -327,12 +332,17 @@ struct CommandBufferFunctions {
   LAZY_FUNCTION(vkCmdPushDescriptorSetKHR);
   LAZY_FUNCTION(vkCmdBindVertexBuffers2EXT);
   LAZY_FUNCTION(vkCmdSetCullModeEXT);
+  LAZY_FUNCTION(vkCmdSetDepthBiasEnableEXT);
   LAZY_FUNCTION(vkCmdSetDepthBoundsTestEnableEXT);
   LAZY_FUNCTION(vkCmdSetDepthCompareOpEXT);
   LAZY_FUNCTION(vkCmdSetDepthTestEnableEXT);
   LAZY_FUNCTION(vkCmdSetDepthWriteEnableEXT);
   LAZY_FUNCTION(vkCmdSetFrontFaceEXT);
+  LAZY_FUNCTION(vkCmdSetLogicOpEXT);
+  LAZY_FUNCTION(vkCmdSetPatchControlPointsEXT);
   LAZY_FUNCTION(vkCmdSetPrimitiveTopologyEXT);
+  LAZY_FUNCTION(vkCmdSetPrimitiveRestartEnableEXT)
+  LAZY_FUNCTION(vkCmdSetRasterizerDiscardEnableEXT)
   LAZY_FUNCTION(vkCmdSetScissorWithCountEXT);
   LAZY_FUNCTION(vkCmdSetStencilOpEXT);
   LAZY_FUNCTION(vkCmdSetStencilTestEnableEXT);

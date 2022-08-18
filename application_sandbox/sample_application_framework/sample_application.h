@@ -50,6 +50,7 @@ struct SampleOptions {
   bool mutable_swapchain_format = false;
   bool enable_display_timing = false;
   bool enable_10bit_hdr = false;
+  bool use_high_precision_depth = false;
   void* device_extension_structures = nullptr;
   // The default value of zero means there is no application
   // enforced minimum and the number of swapchains images
@@ -112,6 +113,10 @@ struct SampleOptions {
   }
   SampleOptions& Enable10BitHDR() {
     enable_10bit_hdr = true;
+    return *this;
+  }
+  SampleOptions& UseHighPrecisionPrecisionDepth() {
+    use_high_precision_depth = true;
     return *this;
   }
   SampleOptions& AddDeviceExtensionStructure(void* device_extension_structure) {
@@ -267,6 +272,10 @@ class Sample {
           &application_.instance(), &application_.device());
       LOG_ASSERT(!=, data_->logger(), VK_FORMAT_UNDEFINED,
                  depth_stencil_format_);
+    } else if (options_.use_high_precision_depth &&
+               options_.enable_depth_buffer) {
+      depth_stencil_format_ = GetSupportedHighPrecisionStencilFormat(
+          &application_.instance(), &application_.device());
     }
 
     num_samples_ = options.enable_multisampling ? kVkMultiSampledSampleCount
