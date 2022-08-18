@@ -81,6 +81,8 @@ struct CubeFrameData {
   containers::unique_ptr<vulkan::DescriptorSet> cube_descriptor_set_;
 };
 
+// for now only enabling basic tended_dynamic_state2_support to use depth bias
+// element
 VkPhysicalDeviceExtendedDynamicState2FeaturesEXT kFeat{
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT,
     nullptr,
