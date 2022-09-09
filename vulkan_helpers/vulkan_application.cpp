@@ -485,7 +485,8 @@ VulkanApplication::CreateAndBindImage(const VkImageCreateInfo* create_info,
     // Otherwise we default to every GPU getting their own allocation
     if (device_indices == nullptr) {
       device_indices = &indices[0];
-      for (size_t i = 0; i < device_.num_devices(); ++i) {
+      for (uint32_t i = 0; i < static_cast<uint32_t>(device_.num_devices());
+           ++i) {
         indices[i] = i;
       }
     }
@@ -706,7 +707,8 @@ VulkanApplication::CreateAndBindBuffer(VulkanArena* heap,
     // Otherwise we default to every GPU getting their own allocation
     if (device_indices == nullptr) {
       device_indices = &indices[0];
-      for (size_t i = 0; i < device_.num_devices(); ++i) {
+      for (uint32_t i = 0; i < static_cast<uint32_t>(device_.num_devices());
+           ++i) {
         indices[i] = i;
       }
     }
@@ -901,7 +903,7 @@ VulkanApplication::FillImageLayersData(
       nullptr,
   };
   BufferPointer src_buffer = CreateAndBindHostBuffer(&buf_create_info);
-  std::copy_n(data.begin(), data.size(), src_buffer->base_address());
+  memcpy(src_buffer->base_address(), data.data(), data.size());
   src_buffer->flush();
 
   // Get a command buffer and add commands/barriers to it.

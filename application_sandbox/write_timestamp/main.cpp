@@ -203,7 +203,7 @@ class WriteTimestampSample
             data_->allocator(), app(), num_swapchain_images,
             VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    timestamp_data_->data().value = 0.0;
+    timestamp_data_->data().value = 0;
   }
 
   virtual void InitializeFrameData(
@@ -340,9 +340,9 @@ class WriteTimestampSample
     cmdBuffer->vkCmdResetQueryPool(cmdBuffer, *query_pool_,
                                    static_cast<uint32_t>(frame_index), 1);
 
-    cmdBuffer->vkCmdWriteTimestamp(cmdBuffer,
-                                   VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-                                   *query_pool_, frame_index);
+    cmdBuffer->vkCmdWriteTimestamp(
+        cmdBuffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, *query_pool_,
+        static_cast<uint32_t>(frame_index));
 
     cmdBuffer->vkCmdBeginRenderPass(cmdBuffer, &pass_begin,
                                     VK_SUBPASS_CONTENTS_INLINE);

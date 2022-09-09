@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <array>
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <array>
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 uint32_t fragment_shader[] =
 #include "render_quad.frag.spv"
@@ -73,11 +73,11 @@ void populateData(logging::Logger* log, uint8_t* dst, size_t size,
   }
   // staging image must have a wider format than the target image to avoid
   // precision lost.
-  if (target_pixel_width == 0 ) {
-      log->LogInfo("Target image format not supported:", target_format);
+  if (target_pixel_width == 0) {
+    log->LogInfo("Target image format not supported:", target_format);
   }
   if (staging_pixel_width == 0) {
-      log->LogInfo("Staging image format not supported:", staging_format);
+    log->LogInfo("Staging image format not supported:", staging_format);
   }
   LOG_ASSERT(!=, log, 0, target_pixel_width);
   LOG_ASSERT(!=, log, 0, staging_pixel_width);
@@ -170,7 +170,7 @@ class RenderQuadSample
                 },  // Color Attachment
                 {
                     0,                                         // flags
-                    VK_FORMAT_R8G8B8A8_UINT,               // format
+                    VK_FORMAT_R8G8B8A8_UINT,                   // format
                     num_samples(),                             // samples
                     VK_ATTACHMENT_LOAD_OP_LOAD,                // loadOp
                     VK_ATTACHMENT_STORE_OP_DONT_CARE,          // storeOp
@@ -207,9 +207,8 @@ class RenderQuadSample
             ));
 
     pipeline_ = containers::make_unique<vulkan::VulkanGraphicsPipeline>(
-        data_->allocator(),
-        app()->CreateGraphicsPipeline(pipeline_layout_.get(),
-                                      render_pass_.get(), 0));
+        data_->allocator(), app()->CreateGraphicsPipeline(
+                                pipeline_layout_.get(), render_pass_.get(), 0));
     pipeline_->AddShader(VK_SHADER_STAGE_VERTEX_BIT, "main", vertex_shader);
     pipeline_->AddShader(VK_SHADER_STAGE_FRAGMENT_BIT, "main", fragment_shader);
     pipeline_->SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
@@ -251,7 +250,7 @@ class RenderQuadSample
         nullptr,                              // pNext
         0,                                    // flags
         VK_IMAGE_TYPE_2D,                     // imageType
-        VK_FORMAT_R8G8B8A8_UINT,          // format
+        VK_FORMAT_R8G8B8A8_UINT,              // format
         {
             app()->swapchain().width(),   // width
             app()->swapchain().height(),  // height
@@ -291,9 +290,8 @@ class RenderQuadSample
                                            &raw_color_input_view));
     frame_data->color_input_view_ =
         containers::make_unique<vulkan::VkImageView>(
-            data_->allocator(),
-            vulkan::VkImageView(raw_color_input_view, nullptr,
-                                &app()->device()));
+            data_->allocator(), vulkan::VkImageView(raw_color_input_view,
+                                                    nullptr, &app()->device()));
     // depth input view
     view_info.image = *frame_data->depth_staging_img_;
     view_info.format = frame_data->depth_staging_img_->format();
@@ -304,9 +302,8 @@ class RenderQuadSample
                                            &raw_depth_input_view));
     frame_data->depth_input_view_ =
         containers::make_unique<vulkan::VkImageView>(
-            data_->allocator(),
-            vulkan::VkImageView(raw_depth_input_view, nullptr,
-                                &app()->device()));
+            data_->allocator(), vulkan::VkImageView(raw_depth_input_view,
+                                                    nullptr, &app()->device()));
 
     // Create a framebuffer for rendering
     VkImageView views[4] = {
@@ -433,11 +430,12 @@ class RenderQuadSample
     // copy from buf to img. The swapchain image must be larger in both
     // dimensions.
     LOG_ASSERT(>=, data_->logger(), app()->swapchain().width(), src_data.width);
-    LOG_ASSERT(>=, data_->logger(), app()->swapchain().height(), src_data.height);
-    uint32_t copy_width = src_data.width;
-    uint32_t copy_height = src_data.height;
+    LOG_ASSERT(>=, data_->logger(), app()->swapchain().height(),
+               src_data.height);
+    uint32_t copy_width = static_cast<uint32_t>(src_data.width);
+    uint32_t copy_height = static_cast<uint32_t>(src_data.height);
     VkBufferImageCopy copy_region{
-        color_data_->get_offset_for_frame(frame_index),
+        color_data_->get_offset_for_frame(static_cast<uint32_t>(frame_index)),
         0,
         0,
         {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},

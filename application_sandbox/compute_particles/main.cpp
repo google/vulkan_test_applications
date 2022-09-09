@@ -678,7 +678,7 @@ class ComputeParticlesSample
 
   virtual void Render(vulkan::VkQueue* queue, size_t frame_index,
                       ComputeParticlesFrameData* data) override {
-    compute_task_.SubmitComputeTask(frame_index,
+    compute_task_.SubmitComputeTask(static_cast<uint32_t>(frame_index),
                                     data->render_semaphore_->get_raw_object());
     // Get the next buffer that we use for the particle positions.
     auto* buffer = compute_task_.GetBufferForRender();
@@ -844,7 +844,7 @@ class ComputeParticlesSample
         VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
         nullptr,                        // pNext
         1,                              // waitSemaphoreCount
-        &compute_task_.GetSemaphoreForIndex(frame_index)
+        &compute_task_.GetSemaphoreForIndex(static_cast<uint32_t>(frame_index))
              ->get_raw_object(),  // pWaitSemaphores
         &waitStageMask,           // pWaitDstStageMask,
         1,                        // commandBufferCount

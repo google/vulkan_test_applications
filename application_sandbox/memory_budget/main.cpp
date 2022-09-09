@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -158,11 +158,12 @@ class CubeSample : public sample_application::Sample<CubeFrameData> {
     app()->instance()->vkGetPhysicalDeviceMemoryProperties2(
         app()->device().physical_device(), &memory_properties);
 
-    for (int i = 0; i < memory_properties.memoryProperties.memoryHeapCount;
+    for (uint32_t i = 0; i < memory_properties.memoryProperties.memoryHeapCount;
          ++i) {
       app()->GetLogger()->LogInfo("Heap ", i, ":");
       app()->GetLogger()->LogInfo(
-          "HeapSize:   ", memory_properties.memoryProperties.memoryHeaps[i].size);
+          "HeapSize:   ",
+          memory_properties.memoryProperties.memoryHeaps[i].size);
       app()->GetLogger()->LogInfo("HeapBudget: ",
                                   memory_budget_properties.heapBudget[i]);
       app()->GetLogger()->LogInfo("HeapUsage:  ",

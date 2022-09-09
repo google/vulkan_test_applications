@@ -327,8 +327,8 @@ class CalibratedTimestampsSample
                                                  data_->allocator());
 
       VkResult result = app()->device()->vkGetCalibratedTimestampsEXT(
-          app()->device(), time_domains_.size(), timestamp_infos.data(),
-          timestamps.data(), max_deviation.data());
+          app()->device(), static_cast<uint32_t>(time_domains_.size()),
+          timestamp_infos.data(), timestamps.data(), max_deviation.data());
 
       for (uint32_t i = 0; i < timestamp_infos.size(); i++) {
         app()->GetLogger()->LogInfo(

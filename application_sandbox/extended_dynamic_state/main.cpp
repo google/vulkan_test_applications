@@ -426,7 +426,7 @@ class ExtendedDynamicStateSample
         VK_STENCIL_OP_KEEP /* passOp */, VK_STENCIL_OP_ZERO /* depthFailOp */,
         VK_COMPARE_OP_EQUAL /* compareOp */);
     cmdBuffer->vkCmdSetStencilReference(cmdBuffer,
-                                        VK_STENCIL_FACE_FRONT_AND_BACK, 1.0f);
+                                        VK_STENCIL_FACE_FRONT_AND_BACK, 1);
     cmdBuffer->vkCmdDrawIndexed(
         cmdBuffer, static_cast<uint32_t>(extended_dynamic_state_.NumIndices()),
         4 /* instanceCount */, 0, 0, 0);

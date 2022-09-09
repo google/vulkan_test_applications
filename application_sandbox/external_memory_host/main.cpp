@@ -146,7 +146,8 @@ class VkBufferExternalMemoryHost {
 
     const auto& memory_properties = device_.physical_device_memory_properties();
     int idx = -1;
-    for (idx = 0; idx < memory_properties.memoryTypeCount; idx++) {
+    for (idx = 0; idx < static_cast<int>(memory_properties.memoryTypeCount);
+         idx++) {
       if (memoryTypeBits & (1U << idx)) {
         break;
       }

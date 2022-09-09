@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -273,7 +273,7 @@ class ManyCommandbuffersCube
       auto& cb = frame_data->dummy_command_buffers_[i];
       cb->vkResetCommandBuffer(cb, 0);
       cb->vkBeginCommandBuffer(cb, &sample_application::kBeginCommandBuffer);
-      cb->vkCmdSetLineWidth(cb, 1.0);
+      cb->vkCmdSetLineWidth(cb, 1.0f);
       cb->vkEndCommandBuffer(cb);
       VkSubmitInfo dummy_submit_info{
           VK_STRUCTURE_TYPE_SUBMIT_INFO,  // sType
@@ -303,8 +303,8 @@ class ManyCommandbuffersCube
     submit_info_list.push_back(cube_submit_info);
 
     app()->render_queue()->vkQueueSubmit(
-        app()->render_queue(), submit_info_list.size(), submit_info_list.data(),
-        static_cast<VkFence>(VK_NULL_HANDLE));
+        app()->render_queue(), static_cast<uint32_t>(submit_info_list.size()),
+        submit_info_list.data(), static_cast<VkFence>(VK_NULL_HANDLE));
   }
 
  private:
