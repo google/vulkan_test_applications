@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+
 #include "application_sandbox/sample_application_framework/sample_application.h"
+#include "mathfu/matrix.h"
+#include "mathfu/vector.h"
 #include "support/entry/entry.h"
 #include "vulkan_helpers/buffer_frame_data.h"
 #include "vulkan_helpers/helper_functions.h"
 #include "vulkan_helpers/vulkan_application.h"
 #include "vulkan_helpers/vulkan_model.h"
-
-#include <chrono>
-#include "mathfu/matrix.h"
-#include "mathfu/vector.h"
 
 using Mat44 = mathfu::Matrix<float, 4, 4>;
 using Vector4 = mathfu::Vector<float, 4>;
@@ -57,41 +57,39 @@ uint32_t mirror_vertex_shader[] =
     ;
 
 /// SAMPLE_LOCATION
-static VkSampleLocationEXT sample_locations[4]{
-//    {
-//        0.6f,  // x
-//        0.2f   // y
-//    },
-//    {
-//        0.6f,  // x
-//        0.5f   // y
-//    },
-//    {
-//        0.6f,  // x
-//        0.5f   // y
-//    },
-//    {
-//        0.6f,  // x
-//        0.2f   // y
-//    }
+static VkSampleLocationEXT sample_locations[4]{//    {
+                                               //        0.6f,  // x
+                                               //        0.2f   // y
+                                               //    },
+                                               //    {
+                                               //        0.6f,  // x
+                                               //        0.5f   // y
+                                               //    },
+                                               //    {
+                                               //        0.6f,  // x
+                                               //        0.5f   // y
+                                               //    },
+                                               //    {
+                                               //        0.6f,  // x
+                                               //        0.2f   // y
+                                               //    }
 
-    {
-        0.0f,  // x
-        0.0f   // y
-    },
-    {
-        0.0f,  // x
-        0.0f   // y
-    },
-    {
-        0.0f,  // x
-        0.0f   // y
-    },
-    {
-        0.0f,  // x
-        0.0f   // y
-    }
-};
+                                               {
+                                                   0.0f,  // x
+                                                   0.0f   // y
+                                               },
+                                               {
+                                                   0.0f,  // x
+                                                   0.0f   // y
+                                               },
+                                               {
+                                                   0.0f,  // x
+                                                   0.0f   // y
+                                               },
+                                               {
+                                                   0.0f,  // x
+                                                   0.0f   // y
+                                               }};
 static VkPhysicalDeviceSampleLocationsPropertiesEXT
     physical_device_sample_locations_properties{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT,
@@ -213,9 +211,9 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
         nullptr,                // pNext
         VK_SAMPLE_COUNT_4_BIT,  // sampleLocationsPerPixel
         physical_device_sample_locations_properties
-            .maxSampleLocationGridSize,  // sampleLocationGridSize
-        num_samples(),                   // sampleLocationsCount
-        sample_locations                 // pSampleLocations
+            .maxSampleLocationGridSize,        // sampleLocationGridSize
+        static_cast<uint32_t>(num_samples()),  // sampleLocationsCount
+        sample_locations                       // pSampleLocations
     };
     VkPipelineSampleLocationsStateCreateInfoEXT pipeline_sample_locations{
         VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT,
@@ -443,9 +441,9 @@ class StencilSample : public sample_application::Sample<StencilFrameData> {
         nullptr,                // pNext
         VK_SAMPLE_COUNT_4_BIT,  // sampleLocationsPerPixel
         physical_device_sample_locations_properties
-            .maxSampleLocationGridSize,  // sampleLocationGridSize
-        num_samples(),                   // sampleLocationsCount
-        sample_locations                 // pSampleLocations
+            .maxSampleLocationGridSize,        // sampleLocationGridSize
+        static_cast<uint32_t>(num_samples()),  // sampleLocationsCount
+        sample_locations                       // pSampleLocations
     };
     VkAttachmentSampleLocationsEXT attachment_sample_locations{
         1,                               // attachmentIndex;

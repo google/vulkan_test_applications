@@ -526,7 +526,8 @@ int main_entry(const entry::EntryData* data) {
                              g_pipeline);
   ref_buf->vkCmdPushConstants(
       ref_buf, g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-      sizeof(GeometryPushConstantData), &g_push_constant_data);
+      static_cast<uint32_t>(sizeof(GeometryPushConstantData)),
+      &g_push_constant_data);
   ref_buf->vkCmdDraw(ref_buf, 3, 1, 0, 0);
   ref_buf->vkCmdEndRenderPass(ref_buf);
   LOG_ASSERT(==, data->logger(), VK_SUCCESS,
@@ -558,10 +559,10 @@ int main_entry(const entry::EntryData* data) {
     // Update push constants
     std::chrono::steady_clock::time_point current_time_point =
         std::chrono::steady_clock::now();
-    float time_lapse = std::chrono::duration_cast<std::chrono::milliseconds>(
-                           current_time_point - start_time_point)
-                           .count();
-    g_push_constant_data.time = triangle_speed * time_lapse;
+    auto time_lapse = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          current_time_point - start_time_point)
+                          .count();
+    g_push_constant_data.time = triangle_speed * static_cast<float>(time_lapse);
 
     // Write command buffer
     auto& geometry_buf = frame_data[next_frame].gCommandBuffer;
@@ -584,7 +585,8 @@ int main_entry(const entry::EntryData* data) {
                                g_pipeline);
     geo_ref->vkCmdPushConstants(
         geo_ref, g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-        sizeof(GeometryPushConstantData), &g_push_constant_data);
+        static_cast<uint32_t>(sizeof(GeometryPushConstantData)),
+        &g_push_constant_data);
     geo_ref->vkCmdDraw(geo_ref, 3, 1, 0, 0);
     geo_ref->vkCmdEndRenderPass(geo_ref);
     LOG_ASSERT(==, data->logger(), VK_SUCCESS,

@@ -48,12 +48,12 @@ if (NOT DEFAULT_WINDOW_HEIGHT)
   set(DEFAULT_WINDOW_HEIGHT 100)
 endif()
 
-SET(DEFAULT_WINDOW_WIDTH ${DEFAULT_WINDOW_WIDTH} CACHE INT
+SET(DEFAULT_WINDOW_WIDTH "${DEFAULT_WINDOW_WIDTH}" CACHE STRING
     "Default window width for platforms that have resizable windows")
-SET(DEFAULT_WINDOW_HEIGHT ${DEFAULT_WINDOW_HEIGHT} CACHE INT
+SET(DEFAULT_WINDOW_HEIGHT "${DEFAULT_WINDOW_HEIGHT}" CACHE STRING
     "Default window height for platforms that have resizable windows")
 
-SET(OUTPUT_FRAME ${OUTPUT_FRAME} CACHE INT "Default output_frame value.")
+SET(OUTPUT_FRAME "${OUTPUT_FRAME}" CACHE STRING "Default output_frame value.")
 SET(OUTPUT_FILE ${OUTPUT_FILE} CACHE STRING "Output file for output_frame.")
 SET(SHADER_COMPILER ${SHADER_COMPILER} CACHE STRING "Shader language and compiler to use.")
 

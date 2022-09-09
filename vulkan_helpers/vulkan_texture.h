@@ -16,12 +16,12 @@
 #ifndef VULKAN_HELPERS_VULKAN_TEXTURE_H_
 #define VULKAN_HELPERS_VULKAN_TEXTURE_H_
 
+#include <initializer_list>
+
 #include "support/containers/allocator.h"
 #include "support/containers/vector.h"
 #include "support/log/log.h"
 #include "vulkan_helpers/vulkan_application.h"
-
-#include <initializer_list>
 
 namespace vulkan {
 // TODO(awoloszyn): Handle MIP chains.
@@ -58,8 +58,7 @@ struct VulkanTexture {
   VulkanTexture(containers::Allocator* allocator, logging::Logger* logger,
                 const T& t, size_t sparse_binding_block_size = 0u,
                 size_t multiplanar_plane_count = 0u,
-                size_t downsampled_width = 0u,
-                size_t downsampled_height = 0u)
+                size_t downsampled_width = 0u, size_t downsampled_height = 0u)
       : VulkanTexture(allocator, logger, t.format, t.width, t.height,
                       static_cast<const void*>(t.data), sizeof(t.data),
                       sparse_binding_block_size, multiplanar_plane_count,
@@ -75,8 +74,7 @@ struct VulkanTexture {
   void InitializeData(vulkan::VulkanApplication* application,
                       vulkan::VkCommandBuffer* cmdBuffer,
                       VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT,
-                      VkImageCreateFlags flags = 0,
-                      void* pNext = nullptr) {
+                      VkImageCreateFlags flags = 0, void* pNext = nullptr) {
     VkBufferCreateInfo create_info = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // sType
         nullptr,                               // pNext
@@ -112,8 +110,8 @@ struct VulkanTexture {
     if (sparse_binding_block_size_ > 0u) {
       image_create_info.flags =
           image_create_info.flags | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
-      sparse_image_ = application->CreateAndBindSparseImage(&image_create_info,
-          sparse_binding_block_size_);
+      sparse_image_ = application->CreateAndBindSparseImage(
+          &image_create_info, sparse_binding_block_size_);
     } else if (IsFormatMultiplanar(format_)) {
       VkSamplerYcbcrConversionImageFormatProperties ycbcr_conversion_properties{
           VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES_KHR,
@@ -148,8 +146,7 @@ struct VulkanTexture {
 
       image_create_info.pNext = &ycbcr_conversion_properties;
       image_ = application->CreateAndBindMultiPlanarImage(&image_create_info);
-    }
-    else {
+    } else {
       image_ = application->CreateAndBindImage(&image_create_info);
     }
 
@@ -234,9 +231,10 @@ struct VulkanTexture {
       };
 
       (*cmdBuffer)
-          ->vkCmdCopyBufferToImage(*cmdBuffer, *upload_buffer_, image(),
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                   multiplanar_plane_count_, copy_params);
+          ->vkCmdCopyBufferToImage(
+              *cmdBuffer, *upload_buffer_, image(),
+              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+              static_cast<uint32_t>(multiplanar_plane_count_), copy_params);
     } else {
       VkBufferImageCopy copy_params = {
           0,                                     // bufferOffset

@@ -577,7 +577,8 @@ int main_entry(const entry::EntryData* data) {
 
     DWORD bytes_writen;
     WriteFile(pipe_handle, client_data_handles.data(),
-              sizeof(HANDLE) * client_data_handles.size(), &bytes_writen, NULL);
+              static_cast<DWORD>(sizeof(HANDLE) * client_data_handles.size()),
+              &bytes_writen, NULL);
     FlushFileBuffers(pipe_handle);
 
     CloseHandle(current_process);
