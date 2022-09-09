@@ -1,1 +1,0 @@
-add_vulkan_subdirectory(vkDestroyNullHandles)
