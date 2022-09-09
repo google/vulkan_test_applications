@@ -1,2 +1,0 @@
-add_vulkan_subdirectory(vkCreateDevice)
-add_vulkan_subdirectory(vkCreateInstance)

@@ -1,4 +1,0 @@
-add_vulkan_subdirectory(Event_test)
-add_vulkan_subdirectory(Fence_test)
-add_vulkan_subdirectory(vkCmdPipelineBarrier_test)
-add_vulkan_subdirectory(vkDeviceWaitIdle_test)
