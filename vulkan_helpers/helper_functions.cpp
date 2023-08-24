@@ -20,6 +20,7 @@
 #include <fstream>
 #include <tuple>
 
+#include "support/containers/string.h"
 #include "support/containers/vector.h"
 #include "support/log/log.h"
 
@@ -326,6 +327,7 @@ VkDevice CreateDefaultDevice(containers::Allocator* allocator,
       ==, instance.GetLogger(),
       instance->vkCreateDevice(physical_device, &info, nullptr, &raw_device),
       VK_SUCCESS);
+  instance->GetLogger()->LogInfo("Selected Device: ", properties.deviceName);
   return vulkan::VkDevice(allocator, raw_device, nullptr, &instance,
                           &properties, physical_device);
 }
@@ -460,8 +462,8 @@ struct QueueCreateInfo {
 }  // namespace
 
 VkDevice CreateDeviceForSwapchain(
-    containers::Allocator* allocator, VkInstance* instance,
-    VkSurfaceKHR* surface, uint32_t* present_queue_index,
+    containers::Allocator* allocator, const entry::EntryData* entry_data,
+    VkInstance* instance, VkSurfaceKHR* surface, uint32_t* present_queue_index,
     uint32_t* graphics_queue_index, bool use_protected_memory,
     const std::initializer_list<const char*> extensions,
     const VkPhysicalDeviceFeatures& features,
@@ -485,6 +487,17 @@ VkDevice CreateDeviceForSwapchain(
     VkPhysicalDeviceProperties physical_device_properties;
     (*instance)->vkGetPhysicalDeviceProperties(device,
                                                &physical_device_properties);
+
+    if (entry_data->force_adapter()) {
+      if (strcmp(entry_data->force_adapter(),
+                 physical_device_properties.deviceName) != 0) {
+        instance->GetLogger()->LogInfo(
+            "Skipping device: \"", physical_device_properties.deviceName,
+            "\" as it does not match requested device: ",
+            entry_data->force_adapter());
+        continue;
+      }
+    }
 
     containers::vector<VkExtensionProperties> available_extensions(allocator);
     uint32_t num_extensions = 0;
@@ -517,12 +530,14 @@ VkDevice CreateDeviceForSwapchain(
     uint32_t backup_present_queue_family_index = 0xFFFFFFFF;
     for (; present_queue_family_index < properties.size();
          ++present_queue_family_index) {
-      VkBool32 supports_swapchain = false;
-      LOG_EXPECT(==, instance->GetLogger(),
-                 (*instance)->vkGetPhysicalDeviceSurfaceSupportKHR(
-                     device, present_queue_family_index, *surface,
-                     &supports_swapchain),
-                 VK_SUCCESS);
+      VkBool32 supports_swapchain = *surface == VK_NULL_HANDLE;
+      if (!supports_swapchain) {
+        LOG_EXPECT(==, instance->GetLogger(),
+                   (*instance)->vkGetPhysicalDeviceSurfaceSupportKHR(
+                       device, present_queue_family_index, *surface,
+                       &supports_swapchain),
+                   VK_SUCCESS);
+      }
       if (supports_swapchain) {
         if (!try_to_find_separate_present_queue) {
           break;
@@ -650,6 +665,8 @@ VkDevice CreateDeviceForSwapchain(
                                            &raw_device),
                VK_SUCCESS);
 
+    instance->GetLogger()->LogInfo("Selected Device: ",
+                                   physical_device_properties.deviceName);
     instance->GetLogger()->LogInfo("Enabled Device Extensions: ");
     for (auto& extension : enabled_extensions) {
       instance->GetLogger()->LogInfo("    ", extension);
@@ -819,6 +836,7 @@ VkDevice CreateDeviceGroupForSwapchain(
 
   float priority = 1.f;
   containers::vector<float> additional_priorities(allocator);
+  containers::vector<containers::string> physical_device_names(allocator);
   additional_priorities.push_back(1.0f);
   for (auto& group : props) {
     uint32_t present_queue_indices[VK_MAX_DEVICE_GROUP_SIZE];
@@ -829,6 +847,10 @@ VkDevice CreateDeviceGroupForSwapchain(
     containers::vector<QueueCreateInfo> queue_create_infos(allocator);
 
     for (size_t i = 0; i < group.physicalDeviceCount; ++i) {
+      VkPhysicalDeviceProperties properties;
+      (*instance)->vkGetPhysicalDeviceProperties(group.physicalDevices[i],
+                                                 &properties);
+      physical_device_names.push_back(properties.deviceName);
       auto newQueueCreateInfos = GetAcceptableQueues(
           allocator, group.physicalDevices[i], instance, surface,
           &present_queue_indices[i], &graphics_queue_indices[i], extensions,
@@ -908,6 +930,10 @@ VkDevice CreateDeviceGroupForSwapchain(
                (*instance)->vkCreateDevice(group.physicalDevices[0], &info,
                                            nullptr, &raw_device),
                VK_SUCCESS);
+    instance->GetLogger()->LogInfo("Selected DeviceGroup Devices:");
+    for (auto& pd : physical_device_names) {
+      instance->GetLogger()->LogInfo("    ", pd);
+    }
 
     instance->GetLogger()->LogInfo("Enabled Device Extensions: ");
     for (auto& extension : enabled_extensions) {
@@ -1028,7 +1054,7 @@ VkSwapchainKHR CreateDefaultSwapchain(
     uint32_t present_queue_index, const entry::EntryData* data,
     VkColorSpaceKHR swapchain_color_space, bool use_shared_presentation,
     VkSwapchainCreateFlagsKHR flags, bool use_10bit_hdr, const void* extensions,
-    uint32_t min_image_count) {
+    uint32_t min_image_count, VkPresentModeKHR preferred_present_mode) {
   ::VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent = {0, 0};
   containers::vector<VkSurfaceFormatKHR> surface_formats(allocator);
@@ -1106,6 +1132,13 @@ VkSwapchainKHR CreateDefaultSwapchain(
                    device->physical_device(), *surface, &num_present_modes,
                    present_modes.data()),
                VK_SUCCESS);
+
+    for (size_t i = 0; i < present_modes.size(); ++i) {
+      if (present_modes[i] == preferred_present_mode) {
+        present_modes[0] = preferred_present_mode;
+        break;
+      }
+    }
 
     uint32_t chosenAlpha =
         static_cast<uint32_t>(surface_caps.supportedCompositeAlpha);

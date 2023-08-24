@@ -58,6 +58,8 @@ struct VulkanApplicationOptions {
   bool use_host_query_reset = false;
   bool use_shared_presentation = false;
   bool use_mutable_swapchain_format = false;
+  bool no_present = false;
+
   uint32_t vulkan_api_version = VK_API_VERSION_1_0;
   bool use_10bit_hdr = false;
 
@@ -65,6 +67,7 @@ struct VulkanApplicationOptions {
   const void* swapchain_extensions = nullptr;
   uint32_t min_swapchain_image_count = 0;
   void* device_next = nullptr;
+  VkPresentModeKHR preferred_present_mode = VK_PRESENT_MODE_MAX_ENUM_KHR;
 
   VulkanApplicationOptions& SetHostBufferSize(uint32_t size_in_bytes) {
     host_buffer_size = size_in_bytes;
@@ -119,6 +122,11 @@ struct VulkanApplicationOptions {
     use_10bit_hdr = true;
     return *this;
   }
+  VulkanApplicationOptions& SetPreferredPresentMode(
+      VkPresentModeKHR present_mode) {
+    preferred_present_mode = present_mode;
+    return *this;
+  }
 
   VulkanApplicationOptions& SetVulkanApiVersion(uint32_t vulkan_api_version) {
     this->vulkan_api_version = vulkan_api_version;
@@ -143,6 +151,10 @@ struct VulkanApplicationOptions {
 
   VulkanApplicationOptions& SetDeviceExtensions(void* pnext) {
     device_next = pnext;
+    return *this;
+  }
+  VulkanApplicationOptions& DisablePresent() {
+    no_present = true;
     return *this;
   }
 };

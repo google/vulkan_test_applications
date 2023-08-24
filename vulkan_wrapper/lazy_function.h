@@ -41,8 +41,8 @@ class LazyFunction {
 
 template <typename T, typename HANDLE, typename WRAPPER>
 template <typename... Args>
-typename std::result_of<T(Args...)>::type LazyFunction<T, HANDLE, WRAPPER>::
-operator()(const Args&... args) {
+typename std::result_of<T(Args...)>::type
+LazyFunction<T, HANDLE, WRAPPER>::operator()(const Args&... args) {
   if (!ptr_) {
     ptr_ = reinterpret_cast<T>(wrapper_->getProcAddr(handle_, function_name_));
     if (ptr_) {

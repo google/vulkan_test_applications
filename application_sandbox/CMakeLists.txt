@@ -148,6 +148,9 @@ add_vulkan_subdirectory(viewport_index)
 add_vulkan_subdirectory(wireframe)
 add_vulkan_subdirectory(write_timestamp)
 
+add_vulkan_subdirectory(raw_render)
+
+
 if(NOT ANDROID)
     string(REPLACE ";" "\n" ALL_SAMPLE_NAMES "${ALL_SAMPLE_NAMES}")
     write_file(${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/samples.txt ${ALL_SAMPLE_NAMES})

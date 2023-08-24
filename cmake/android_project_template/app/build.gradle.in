@@ -1,12 +1,15 @@
-apply plugin: 'com.android.application'
+plugins {
+    id 'com.android.application'
+}
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion "28.0.2"
+    namespace 'com.example.myapplication'
+    compileSdk 26
+
     defaultConfig {
         applicationId "com.example.test.@ANDROID_TARGET_NAME@"
-        minSdkVersion 26
-        targetSdkVersion 26
+        minSdk 26
+        targetSdk 31
         versionCode 1
         versionName "1.0"
         externalNativeBuild {
@@ -14,8 +17,14 @@ android {
                 cppFlags "-std=c++11"
                 arguments "-DFIXED_TIMESTEP=@FIXED_TIMESTEP@",
                       "-DPREFER_SEPARATE_PRESENT=@PREFER_SEPARATE_PRESENT@"
+                targets "@ANDROID_TARGET_NAME@", "VkLayer_CallbackSwapchain"
+                abiFilters "@ANDROID_ABIS@"
             }
         }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     buildTypes {
         release {
@@ -25,19 +34,11 @@ android {
     }
     externalNativeBuild {
         cmake {
-            path "CMakeLists.txt"
+            path file('CMakeLists.txt')
+            version '3.18.1'
         }
     }
-    defaultConfig {
-        externalNativeBuild {
-            cmake {
-                targets "@ANDROID_TARGET_NAME@", "VkLayer_CallbackSwapchain"
-                abiFilters "@ANDROID_ABIS@"
-            }
-        }
+    buildFeatures {
+        prefab true
     }
-}
-
-dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
 }

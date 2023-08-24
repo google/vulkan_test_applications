@@ -23,7 +23,7 @@
 #include <mutex>
 #include <thread>
 
-#include "support/entry/entry_config.h"
+#include "entry_config.h"
 #include "support/log/log.h"
 
 #if defined __ANDROID__
@@ -50,7 +50,7 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
                      bool separate_present, int64_t output_frame_index,
                      const char* output_frame_file, const char* shader_compiler,
                      bool validation, const char* load_pipeline_cache,
-                     const char* write_pipeline_cache
+                     const char* write_pipeline_cache, std::string force_adapter
 #if defined __ANDROID__
                      ,
                      android_app* app
@@ -67,7 +67,8 @@ EntryData::EntryData(containers::Allocator* allocator, uint32_t width,
       log_(logging::GetLogger(allocator)),
       allocator_(allocator),
       load_pipeline_cache_(load_pipeline_cache ? load_pipeline_cache : ""),
-      write_pipeline_cache_(write_pipeline_cache ? write_pipeline_cache : "")
+      write_pipeline_cache_(write_pipeline_cache ? write_pipeline_cache : ""),
+      force_adapter_(force_adapter)
 #if defined __ANDROID__
       ,
       native_window_handle_(app->window),
@@ -150,6 +151,7 @@ struct CommandLineArgs {
   bool validation;
   const char* load_pipeline_cache;
   const char* write_pipeline_cache;
+  std::string force_adapter;
 };
 
 void print_usage(const char** argv) {
@@ -167,6 +169,7 @@ void print_usage(const char** argv) {
   std::cerr << "  -validation                   Turns on the validation layers if available" << std::endl;
   std::cerr << "  -output-file                  Sets the output file for the output-frame argument" << std::endl;
   std::cerr << "  -wait-for-debugger            Forces the application to pause on starup until a debugger is attached" << std::endl;
+  std::cerr << "  -force-adapter=\"<adapter_name>\"  Forces the application to use the given adapter (PhysicalDeviceProperties name) if it is valid" << std::endl;
   std::cerr << "  -help                         Print this help" << std::endl;
   // clang-format on
 }
@@ -207,6 +210,10 @@ void parse_args(CommandLineArgs* args, int argc, const char** argv) {
       args->shader_compiler = argv[i] + 17;
     } else if (strncmp(argv[i], "-wait-for-debugger", 19) == 0) {
       args->wait_for_debugger = true;
+    } else if (strncmp(argv[i], "-force-adapter=\"", 16) == 0) {
+      args->force_adapter = std::string(argv[i] + 16, strlen(argv[i]) - 17);
+    } else if (strncmp(argv[i], "-force-adapter=", 15) == 0) {
+      args->force_adapter = std::string(argv[i] + 15);
     } else if (strncmp(argv[i], "-help", 5) == 0) {
       print_usage(argv);
       std::exit(0);
@@ -279,7 +286,7 @@ void android_main(android_app* app) {
                                   static_cast<uint32_t>(height), FIXED_TIMESTEP,
                                   PREFER_SEPARATE_PRESENT, output_frame,
                                   output_file, shader_compiler, false, nullptr,
-                                  nullptr, app);
+                                  nullptr, "", app);
       data.entry_data = &entry_data;
       int return_value = main_entry(&entry_data);
       // Do not modify this line, scripts may look for it in the output.
@@ -367,7 +374,7 @@ int main(int argc, const char** argv) {
         &root_allocator, args.window_width, args.window_height,
         args.fixed_timestep, args.prefer_separate_present, args.output_frame,
         args.output_file, args.shader_compiler, args.validation,
-        args.load_pipeline_cache, args.write_pipeline_cache);
+        args.load_pipeline_cache, args.write_pipeline_cache, args.force);
     if (args.output_frame == -1) {
       bool window_created = entry_data.CreateWindow();
       if (!window_created) {
@@ -473,11 +480,12 @@ int main(int argc, const char** argv) {
   int return_value = 0;
   containers::LeakCheckAllocator root_allocator;
   {
-    entry::EntryData entry_data(
-        &root_allocator, args.window_width, args.window_height,
-        args.fixed_timestep, args.prefer_separate_present, args.output_frame,
-        args.output_file, args.shader_compiler, args.validation,
-        args.load_pipeline_cache, args.write_pipeline_cache);
+    entry::EntryData entry_data(&root_allocator, args.window_width,
+                                args.window_height, args.fixed_timestep,
+                                args.prefer_separate_present, args.output_frame,
+                                args.output_file, args.shader_compiler,
+                                args.validation, args.load_pipeline_cache,
+                                args.write_pipeline_cache, args.force_adapter);
     if (args.output_frame == -1) {
       bool window_created = entry_data.CreateWindow();
       if (!window_created) {
@@ -559,9 +567,10 @@ bool entry::EntryData::CreateWindowWin32() {
     // NOTE: This style setup removes support for resizing and maximizing the
     // window. These operations cause a VK_ERROR_OUT_OF_DATE that is not handled
     // properly.
-    auto style = WS_OVERLAPPED | WS_MINIMIZEBOX | WS_SYSMENU;
+    auto style =
+        WS_OVERLAPPED | WS_MINIMIZEBOX | WS_SYSMENU | WS_OVERLAPPEDWINDOW;
 
-    AdjustWindowRect(&rect, style, FALSE);
+    AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
 
     native_window_handle_ = CreateWindowEx(
         0, "Sample application", "", style, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -587,6 +596,7 @@ static char file_path[1024 * 1024] = {};
 static char layer_path[1024 * 1024] = {};
 // Main for WIN32
 int main(int argc, const char** argv) {
+  SetProcessDPIAware();
   CommandLineArgs args;
   parse_args(&args, argc, argv);
 
@@ -616,11 +626,12 @@ int main(int argc, const char** argv) {
   int return_value = 0;
   containers::LeakCheckAllocator root_allocator;
   {
-    entry::EntryData entry_data(
-        &root_allocator, args.window_width, args.window_height,
-        args.fixed_timestep, args.prefer_separate_present, args.output_frame,
-        args.output_file, args.shader_compiler, args.validation,
-        args.load_pipeline_cache, args.write_pipeline_cache);
+    entry::EntryData entry_data(&root_allocator, args.window_width,
+                                args.window_height, args.fixed_timestep,
+                                args.prefer_separate_present, args.output_frame,
+                                args.output_file, args.shader_compiler,
+                                args.validation, args.load_pipeline_cache,
+                                args.write_pipeline_cache, args.force_adapter);
 
     if (args.output_frame == -1) {
       bool window_created = entry_data.CreateWindowWin32();
@@ -668,7 +679,7 @@ int main(int argc, const char** argv) {
       &root_allocator, args.window_width, args.window_height,
       args.fixed_timestep, args.prefer_separate_present, args.output_frame,
       args.output_file, args.shader_compiler, args.validation,
-      args.load_pipeline_cache, args.write_pipeline_cache);
+      args.load_pipeline_cache, args.write_pipeline_cache, args.force_adapter);
   if (args.output_frame == -1) {
     bool window_created = entry_data.CreateWindow();
     if (!window_created) {

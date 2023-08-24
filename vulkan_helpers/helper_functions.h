@@ -135,8 +135,8 @@ VkSurfaceKHR CreateDefaultSurface(VkInstance* instance,
 // will be 0xFFFFFFFF
 // Note: They may be the same or different.
 VkDevice CreateDeviceForSwapchain(
-    containers::Allocator* allocator, VkInstance* instance,
-    VkSurfaceKHR* surface, uint32_t* graphics_queue_index,
+    containers::Allocator* allocator, const entry::EntryData* entry_data,
+    VkInstance* instance, VkSurfaceKHR* surface, uint32_t* graphics_queue_index,
     uint32_t* present_queue_index, bool use_protected_memory,
     const std::initializer_list<const char*> extensions = {},
     const VkPhysicalDeviceFeatures& features = {0},
@@ -190,7 +190,8 @@ VkSwapchainKHR CreateDefaultSwapchain(
     VkColorSpaceKHR swapchain_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
     bool use_shared_presentation = false, VkSwapchainCreateFlagsKHR flags = 0,
     bool use_10bit_hdr = false, const void* extensions = nullptr,
-    uint32_t min_image_count = 0);
+    uint32_t min_image_count = 0,
+    VkPresentModeKHR preferred_present_mode = VK_PRESENT_MODE_MAX_ENUM_KHR);
 
 // Returns a uint32_t with only the lowest bit set.
 uint32_t inline GetLSB(uint32_t val) { return ((val - 1) ^ val) & val; }

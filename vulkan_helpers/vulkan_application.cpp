@@ -74,7 +74,9 @@ VulkanApplication::VulkanApplication(
       instance_(CreateVerisonedInstanceForApplicaiton(
           allocator_, &library_wrapper_, entry_data_,
           options.vulkan_api_version, instance_extensions)),
-      surface_(CreateDefaultSurface(&instance_, entry_data_)),
+      surface_(options.no_present
+                   ? vulkan::VkSurfaceKHR(VK_NULL_HANDLE, nullptr, nullptr)
+                   : CreateDefaultSurface(&instance_, entry_data_)),
       device_(!options.use_device_groups
                   ? CreateDevice(device_extensions, features,
                                  options.use_async_compute_queue,
@@ -85,15 +87,20 @@ VulkanApplication::VulkanApplication(
                                       options.use_async_compute_queue,
                                       options.use_sparse_binding,
                                       options.device_next)),
-      swapchain_(CreateDefaultSwapchain(
-          &instance_, &device_, &surface_, allocator_, render_queue_index_,
-          present_queue_index_, entry_data_, options.swapchain_color_space,
-          options.use_shared_presentation,
-          options.use_mutable_swapchain_format
-              ? VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR
-              : 0,
-          options.use_10bit_hdr, options.swapchain_extensions,
-          options.min_swapchain_image_count)),
+      swapchain_(options.no_present
+                     ? vulkan::VkSwapchainKHR(VK_NULL_HANDLE, nullptr, nullptr,
+                                              0, 0, 0, VK_FORMAT_UNDEFINED)
+                     : CreateDefaultSwapchain(
+                           &instance_, &device_, &surface_, allocator_,
+                           render_queue_index_, present_queue_index_,
+                           entry_data_, options.swapchain_color_space,
+                           options.use_shared_presentation,
+                           options.use_mutable_swapchain_format
+                               ? VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR
+                               : 0,
+                           options.use_10bit_hdr, options.swapchain_extensions,
+                           options.min_swapchain_image_count,
+                           options.preferred_present_mode)),
       command_pools_(allocator_),
       pipeline_cache_(CreateDefaultPipelineCache(&device_, entry_data)),
       host_accessible_heap_(allocator_),
@@ -145,9 +152,10 @@ VulkanApplication::VulkanApplication(
         entry_data->output_frame_file(), log_, entry_data_, should_exit_};
     set_callback(swapchain_, &cb_data::fn, cb);
   }
-
-  vulkan::LoadContainer(log_, device_->vkGetSwapchainImagesKHR,
-                        &swapchain_images_, device_, swapchain_);
+  if (!options.no_present) {
+    vulkan::LoadContainer(log_, device_->vkGetSwapchainImagesKHR,
+                          &swapchain_images_, device_, swapchain_);
+  }
   // Relevant spec sections for determining what memory we will be allowed
   // to use for our buffer allocations.
   //  The memoryTypeBits member is identical for all VkBuffer objects created
@@ -206,7 +214,7 @@ VulkanApplication::VulkanApplication(
           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
           VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT};
   VkMemoryPropertyFlags property_flags[3] = {
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
           (use_protected_memory_ ? VK_MEMORY_PROPERTY_PROTECTED_BIT : 0u),
       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
@@ -445,7 +453,7 @@ VkDevice VulkanApplication::CreateDevice(
   // surface_
 
   vulkan::VkDevice device(vulkan::CreateDeviceForSwapchain(
-      allocator_, &instance_, &surface_, &render_queue_index_,
+      allocator_, entry_data_, &instance_, &surface_, &render_queue_index_,
       &present_queue_index_, use_protected_memory_, extensions, features,
       entry_data_->prefer_separate_present(),
       create_async_compute_queue ? &compute_queue_index_ : nullptr,

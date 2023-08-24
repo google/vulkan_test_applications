@@ -70,8 +70,8 @@ class EntryData {
             bool fixed_timestep, bool separate_present,
             int64_t output_frame_index, const char* output_frame_file,
             const char* shader_compiler, bool validation,
-            const char* load_pipeline_cache,
-            const char* write_pipeline_cache
+            const char* load_pipeline_cache, const char* write_pipeline_cache,
+            std::string force_adapter
 #if defined __ANDROID__
             ,
             android_app* app
@@ -133,11 +133,16 @@ class EntryData {
   const char* output_frame_file() const { return output_frame_file_; }
   const char* shader_compiler() const { return shader_compiler_; }
   bool validation() const { return validation_; }
-  const char* load_pipeline_cache() const { 
-    return load_pipeline_cache_.empty()? nullptr: load_pipeline_cache_.c_str();
+  const char* load_pipeline_cache() const {
+    return load_pipeline_cache_.empty() ? nullptr
+                                        : load_pipeline_cache_.c_str();
   }
   const char* write_pipeline_cache() const {
-    return write_pipeline_cache_.empty()? nullptr: write_pipeline_cache_.c_str();
+    return write_pipeline_cache_.empty() ? nullptr
+                                         : write_pipeline_cache_.c_str();
+  }
+  const char* force_adapter() const {
+    return force_adapter_.empty() ? nullptr : force_adapter_.c_str();
   }
 
  private:
@@ -153,7 +158,7 @@ class EntryData {
   containers::Allocator* allocator_;
   std::string load_pipeline_cache_;
   std::string write_pipeline_cache_;
-
+  std::string force_adapter_;
 #if defined __ANDROID__
   ANativeWindow* native_window_handle_;
   std::string os_version_;
